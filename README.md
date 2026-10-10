@@ -2,7 +2,7 @@
 
 Hardware password typer. Firmware for the M5Stack StickS3 (ESP32-S3).
 
-The device is a USB keyboard. The side button selects a stored entry. The front button types its password. A paired Bluetooth LE keypad can also type: each key types one entry. Two ways add and change entries: a command line on a USB serial port, and a web page in the Wi-Fi setup mode.
+The device is a USB keyboard. The side button selects a stored entry. The front button types its password. A paired Bluetooth LE keypad can also type: each key types one entry, and Enter and Backspace go to the computer. Two ways add and change entries: a command line on a USB serial port, and a web page in the Wi-Fi setup mode.
 
 For the buttons, the commands, and the security limits, refer to [docs/usage.md](docs/usage.md).
 
@@ -52,7 +52,7 @@ tools/                Host scripts.
 | `ui` | Screen content and button actions. |
 | `sysinfo` | Chip information in the log. |
 
-Threads: `ui_run` runs in the main task. `cli` has its own task. TinyUSB has its own task. In the Wi-Fi setup mode, the web server, the DNS server, and the Wi-Fi driver have their own tasks. `ui_run` starts and stops this mode. `keypad` has its own task, and the NimBLE host has a task after the first Bluetooth start. `vault`, `rng`, and the typing function in `usbdev` have locks.
+Threads: `ui_run` runs in the main task. `cli` has its own task. TinyUSB has its own task. In the Wi-Fi setup mode, the web server, the DNS server, and the Wi-Fi driver have their own tasks. `ui_run` starts and stops this mode. `keypad` has its own task, and the NimBLE host has a task after the first Bluetooth start. `vault`, `rng`, and the keyboard functions in `usbdev` have locks.
 
 ## USB
 

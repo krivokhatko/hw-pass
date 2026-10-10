@@ -145,7 +145,13 @@ A key without an entry types nothing. The screen shows "Key 5: no entry".
 
 The keypad disconnects when it sleeps. A key push wakes it, and it connects again in about 1 s. Some keypads do not send the key that wakes them. Then push the key again.
 
-The keypad does not type in the Wi-Fi setup mode and during a pairing.
+The keypad does not type in the Wi-Fi setup mode and during a pairing. Enter and Backspace also do not go to the computer then.
+
+### Enter and Backspace
+
+Enter and Backspace on the keypad go to the computer, as on a keyboard. For example, type a password with a key, then push Enter. Hold Backspace to delete more characters. These two keys type no entry, and you cannot give them to an entry.
+
+If you push a different key while you hold Enter or Backspace, the computer gets the release at once: a held key does not repeat while the device types or shows a message.
 
 ### Remove the keypad
 
@@ -233,7 +239,7 @@ Wi-Fi:
 Bluetooth keypad:
 
 - Bluetooth is off until you start a pairing. With a paired keypad, Bluetooth is on and the device waits for the keypad. After `unpair` or a pairing that did not complete, Bluetooth stays on until the next restart, but it does not send or receive.
-- A person with the paired keypad can type all passwords that have a key, also when the screen is dark. Keep the keypad as safe as the device.
+- A person with the paired keypad can type all passwords that have a key, and push Enter and Backspace on the computer, also when the screen is dark. Keep the keypad as safe as the device.
 - Only the buttons can start a pairing. At other times, the device refuses a new pairing. It connects only to the paired keypad, and uses its keys only on a link that the bonding keys encrypt.
 - With a passkey, a different device cannot get into the pairing. A keypad without a passkey pairs with "Just Works": a person near you with special equipment can get into such a pairing. Pair such a keypad where no unknown persons are near.
 - The bonding keys are in the `nvs` partition. Flash encryption is off: a person with the device can read the bonding keys and make a false keypad. This person can also read the passwords.

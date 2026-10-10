@@ -30,6 +30,11 @@
 #define HINT_MS         300     /* Keypad hold time before the progress bar shows */
 #define HOLD_STEP_MS    100     /* Redraw interval of the hold progress bar */
 
+/* Keypad keys that go to the USB host: HID usage IDs */
+#define KEY_ENTER       0x28
+#define KEY_BACKSPACE   0x2A
+#define KEY_PAD_ENTER   0x58
+
 /* Wi-Fi setup screen: QR code in a square at the left, text at the right. */
 #define QR_BOX          DISPLAY_H
 #define QR_VERSION_MAX  4
@@ -367,8 +372,17 @@ static void bind_key(uint8_t key)
     vTaskDelay(pdMS_TO_TICKS(INFO_MS));
 }
 
+/* Enter and Backspace go to the USB host as they are: after a password,
+ * or to correct text. They have no entry. */
+static bool passthru(uint8_t key)
+{
+    return key == KEY_ENTER || key == KEY_BACKSPACE || key == KEY_PAD_ENTER;
+}
+
 /* Read the keypad keys. A tap types, a hold binds. The times come from
- * the events: a slow loop does not change a tap into a hold. */
+ * the events: a slow loop does not change a tap into a hold. Before an
+ * action, the host gets the release of all keys: else it repeats a
+ * held key while the UI does not read the keypad. */
 static bool poll_keypad(void)
 {
     keypad_event_t ev;
@@ -378,8 +392,11 @@ static bool poll_keypad(void)
     while (keypad_event(&ev)) {
         dirty = true;
         if (ev.key == 0) {
+            usbdev_key(0, false);
             s_kp_key = 0;
             s_kp_held = 0;
+        } else if (passthru(ev.key)) {
+            usbdev_key(ev.key, ev.down);
         } else if (ev.down && s_kp_key == 0) {
             s_kp_key = ev.key;
             s_kp_ms = ev.ms;
@@ -388,6 +405,7 @@ static bool poll_keypad(void)
             s_kp_key = 0;
             s_kp_held = 0;
             if (!s_kp_used) {
+                usbdev_key(0, false);
                 display_backlight(BRIGHTNESS);
                 if (ev.ms - s_kp_ms >= BIND_MS) {
                     bind_key(ev.key);
@@ -399,6 +417,7 @@ static bool poll_keypad(void)
         }
     }
     if (s_kp_key != 0 && !s_kp_used && now_ms() - s_kp_ms >= BIND_MS) {
+        usbdev_key(0, false);
         display_backlight(BRIGHTNESS);
         bind_key(s_kp_key);
         s_kp_used = true;
@@ -598,6 +617,7 @@ void ui_run(void)
 
             s_web_start = false;
             s_hold_ms = hold = 0;
+            usbdev_key(0, false);
             if (cli || web) {
                 web_mode(!cli);
             } else {

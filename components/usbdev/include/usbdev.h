@@ -25,6 +25,11 @@ bool usbdev_caps_lock(void);
  * not turn Caps Lock off. */
 esp_err_t usbdev_type(const char *s, bool enter);
 
+/* Push (down) or release a key: HID usage ID, page 0x07. The key stays
+ * down until its release, and the host repeats it. Key 0 releases all
+ * keys. Typing also releases them. */
+esp_err_t usbdev_key(uint8_t key, bool down);
+
 /* A terminal holds the serial port open (DTR is on). */
 bool usbdev_serial_open(void);
 

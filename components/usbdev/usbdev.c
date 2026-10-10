@@ -81,7 +81,8 @@ static const char *s_strings[STR_COUNT] = {
 static const char *TAG = "usbdev";
 static StreamBufferHandle_t s_rx;
 static SemaphoreHandle_t s_tx_lock;
-static SemaphoreHandle_t s_type_lock;
+static SemaphoreHandle_t s_type_lock;   /* Typing and s_held */
+static uint8_t s_held[6];               /* Keys that usbdev_key holds down */
 static volatile uint8_t s_leds;
 
 /* ---- HID callbacks (TinyUSB task) ---- */
@@ -118,10 +119,8 @@ bool usbdev_caps_lock(void)
     return s_leds & KEYBOARD_LED_CAPSLOCK;
 }
 
-static bool send_report(uint8_t mod, uint8_t key)
+static bool send_keys(uint8_t mod, const uint8_t keys[6])
 {
-    uint8_t keys[6] = { key };
-
     for (int ms = 0; !tud_hid_ready(); ms++) {
         if (ms >= 200 || !usbdev_ready()) {
             return false;
@@ -133,6 +132,13 @@ static bool send_report(uint8_t mod, uint8_t key)
     }
     vTaskDelay(pdMS_TO_TICKS(KEY_DELAY_MS));
     return true;
+}
+
+static bool send_report(uint8_t mod, uint8_t key)
+{
+    uint8_t keys[6] = { key };
+
+    return send_keys(mod, keys);
 }
 
 /* Some hosts need the modifier in an earlier report than the key. */
@@ -174,6 +180,7 @@ esp_err_t usbdev_type(const char *s, bool enter)
         return ESP_ERR_INVALID_STATE;
     }
     xSemaphoreTake(s_type_lock, portMAX_DELAY);
+    memset(s_held, 0, sizeof(s_held));  /* The next report releases them. */
     /* If Caps Lock does not turn off, the host state is unknown. Do not
      * type: the text can have the wrong case. The second push below
      * restores the host state. */
@@ -198,6 +205,30 @@ esp_err_t usbdev_type(const char *s, bool enter)
     }
     if (caps) {
         set_caps_lock(true);
+    }
+    xSemaphoreGive(s_type_lock);
+    return ok ? ESP_OK : ESP_FAIL;
+}
+
+esp_err_t usbdev_key(uint8_t key, bool down)
+{
+    uint8_t keys[6] = { 0 };
+    bool ok = true;
+    int n = 0;
+
+    xSemaphoreTake(s_type_lock, portMAX_DELAY);
+    for (int i = 0; i < 6; i++) {
+        if (key != 0 && s_held[i] != 0 && s_held[i] != key) {
+            keys[n++] = s_held[i];
+        }
+    }
+    if (key != 0 && down && n < 6) {
+        keys[n] = key;
+    }
+    /* Send only a change: the UI releases all keys before each action. */
+    if (memcmp(keys, s_held, sizeof(keys)) != 0) {
+        memcpy(s_held, keys, sizeof(keys));
+        ok = usbdev_ready() && send_keys(0, keys);
     }
     xSemaphoreGive(s_type_lock);
     return ok ? ESP_OK : ESP_FAIL;

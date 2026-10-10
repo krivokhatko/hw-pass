@@ -42,7 +42,12 @@ These steps are complete on the current machine. Use them for a new machine.
 
 ## Attach the device
 
-In PowerShell, run:
+The device has two USB identities (see "USB identities"). Windows sees each identity as a different device. Bind both one time, in an administrator PowerShell:
+
+1. Start the hw-pass firmware. Run `usbipd list` and find `303a:4005`. Run `usbipd bind --busid <BUSID>`.
+2. Put the device in download mode (`dfu` command, or hold the power button). Find `303a:1001` and bind it.
+
+Then run:
 
 ```
 usbipd attach --wsl --busid <BUSID> --auto-attach
@@ -53,9 +58,19 @@ Keep the window open. Without `--auto-attach`, a disconnected device does not co
 These events disconnect the device:
 
 - A watchdog reset or a power cycle.
-- A change between firmware that uses the built-in USB Serial/JTAG and firmware with its own USB stack (UIFlow2).
+- A change between firmware that uses the built-in USB Serial/JTAG and firmware with its own USB stack (hw-pass, UIFlow2). This includes the `dfu` command and the start of hw-pass after flashing.
 
 A reset through the RTS line does not disconnect the device.
+
+### Device is attached, but no data
+
+Symptom: the port opens, but esptool shows "No serial data received", and `dmesg` shows many `vhci_hcd: unlink` lines. Cause: the USB identity changed without a disconnect, and Windows still uses the old endpoint layout. Detach the device from the WSL side:
+
+```
+echo 0 | sudo tee /sys/devices/platform/vhci_hcd.0/detach
+```
+
+`0` is the vhci port. `/sys/devices/platform/vhci_hcd.0/status` shows the port of each attached device. usbipd restarts the device, and `--auto-attach` attaches it again after a few seconds. If this does not help, disconnect the USB cable and connect it again.
 
 ## Reset through DTR and RTS
 
@@ -70,6 +85,7 @@ The USB Serial/JTAG controller uses the DTR and RTS lines to reset the chip.
 | Firmware | VID:PID | Product |
 |---|---|---|
 | ROM download mode, ESP-IDF app | `303a:1001` | USB JTAG/serial debug unit |
+| hw-pass firmware (after start-up) | `303a:4005` | hw-pass password typer |
 | UIFlow2 | `303a:832b` | StickS3(UiFlow2) |
 
 ## Enter download mode from UIFlow2

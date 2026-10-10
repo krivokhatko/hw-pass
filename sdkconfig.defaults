@@ -4,4 +4,12 @@ CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
 CONFIG_PARTITION_TABLE_CUSTOM=y
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
 # UART0 is not wired to USB; use the built-in USB Serial/JTAG as console.
+# The application gives the USB PHY to TinyUSB after start-up.
 CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
+# 1 ms tick for key timing and button sampling.
+CONFIG_FREERTOS_HZ=1000
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=6144
+# USB device: HID keyboard and CDC-ACM serial port.
+CONFIG_TINYUSB_CDC_ENABLED=y
+CONFIG_TINYUSB_HID_COUNT=1
+CONFIG_TINYUSB_DEBUG_LEVEL=0

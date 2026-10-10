@@ -1,19 +1,41 @@
-/* Application entry point. Start the modules, then run the heartbeat. */
-#include <inttypes.h>
-#include <stdint.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
+/* Application entry point. Start the modules, then run the user interface. */
 #include "esp_log.h"
+#include "nvs_flash.h"
+#include "cli.h"
+#include "display.h"
+#include "pm1.h"
 #include "sysinfo.h"
+#include "ui.h"
+#include "usbdev.h"
+#include "vault.h"
 
 static const char *TAG = "main";
 
+/* Log an error and continue. The USB serial port must stay available,
+ * because it is the only way to restart into download mode. */
+static void check(esp_err_t err, const char *what)
+{
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "%s: %s", what, esp_err_to_name(err));
+    }
+}
+
 void app_main(void)
 {
+    esp_err_t err;
+
     sysinfo_log();
 
-    for (uint32_t n = 0;; n++) {
-        ESP_LOGI(TAG, "alive %" PRIu32, n);
-        vTaskDelay(pdMS_TO_TICKS(1000));
+    err = nvs_flash_init();
+    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        nvs_flash_erase();
+        err = nvs_flash_init();
     }
+    check(err, "nvs");
+    check(pm1_init(), "pm1");
+    check(display_init(), "display");
+    check(vault_init(), "vault");
+    check(usbdev_init(), "usb");
+    check(cli_start(), "cli");
+    ui_run();
 }

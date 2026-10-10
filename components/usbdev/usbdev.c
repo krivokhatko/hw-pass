@@ -29,7 +29,7 @@
 #define EP_CDC_OUT      0x03
 #define EP_CDC_IN       0x83
 
-#define KEY_DELAY_MS    5       /* After each report. Slow hosts lose fast keys. */
+#define KEY_DELAY_MS    10      /* After each report. RDP and slow hosts lose fast keys. */
 #define CAPS_HOLD_MS    200     /* macOS ignores short Caps Lock pushes. */
 #define CAPS_WAIT_MS    500     /* Time for the host to send the new LED state. */
 #define TX_WAIT_MS      100

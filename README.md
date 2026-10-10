@@ -47,6 +47,7 @@ tools/                Host scripts.
 | `usbdev` | TinyUSB device: HID boot keyboard and CDC-ACM serial port. |
 | `cli` | Command line on the USB serial port. |
 | `web` | Wi-Fi setup mode: access point, captive DNS, web server, and the page (`www/index.html`). |
+| `backup` | Encrypted backup of the entries. The file format is the same as `openssl enc`. |
 | `ui` | Screen content and button actions. |
 | `sysinfo` | Chip information in the log. |
 

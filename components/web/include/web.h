@@ -20,9 +20,11 @@ typedef struct {
 /* Wi-Fi setup mode: an access point with a web page that changes the
  * entries. Call web_start and web_stop from one task only. */
 
-/* Start the access point, the DNS server, and the web server. Returns
+/* Start the access point, the DNS server, and the web server. buttons is
+ * true if the user started the mode with the buttons on the device: only
+ * then the page can make a backup with the passwords. Returns
  * ESP_ERR_NOT_SUPPORTED if the build has no Wi-Fi (CONFIG_HWPASS_WEB). */
-esp_err_t web_start(web_info_t *info);
+esp_err_t web_start(web_info_t *info, bool buttons);
 
 /* Stop all and turn the radio off. Safe to call when the mode is off. */
 void web_stop(void);

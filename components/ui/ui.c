@@ -274,8 +274,8 @@ static void type_selected(bool enter)
 }
 
 /* Wi-Fi setup mode. Return when a button push, the page, the command
- * line, or the timeout stops it. */
-static void web_mode(void)
+ * line, or the timeout stops it. buttons: the buttons started it. */
+static void web_mode(bool buttons)
 {
     bool armed = false;     /* Both buttons were up after the start. */
     bool connected = false;
@@ -284,7 +284,7 @@ static void web_mode(void)
 
     display_backlight(BRIGHTNESS);
     show_message("Wi-Fi setup", "Starting", C_ACCENT);
-    err = web_start(&s_web);
+    err = web_start(&s_web, buttons);
     if (err != ESP_OK) {
         vault_zero(&s_web, sizeof(s_web));
         show_message("Wi-Fi error", err == ESP_ERR_NOT_SUPPORTED ? "Not in this build" : esp_err_to_name(err), C_ERROR);
@@ -366,9 +366,13 @@ void ui_run(void)
         }
         s_web_stop = false;     /* The mode is off. */
         if (s_web_start || hold >= BOTH_MS) {
+            /* A request from the command line counts first: the USB host
+             * gets the Wi-Fi password. */
+            bool buttons = !s_web_start;
+
             s_web_start = false;
             s_hold_ms = hold = 0;
-            web_mode();
+            web_mode(buttons);
             /* The buttons were not sampled during the start, the stop and
              * the messages. A push in this time must not type. Both buttons
              * can still be down: this push is used. */

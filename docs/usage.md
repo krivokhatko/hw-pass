@@ -69,9 +69,10 @@ The page:
 
 | Part | Use |
 |---|---|
-| Entries | Push an entry to rename it, change its password, move it, or delete it. Delete needs two pushes. |
+| Entries | Push an entry to rename it, change its password, move it, or delete it. To move it, push "Up" or "Down", or type a position and push "Move to". Delete needs two pushes. |
 | Add an entry | Type the password two times, or make a random password of 8 to 127 characters. |
 | Import | One entry on each line: `label,password`. See below. |
+| Backup | Download all entries as an encrypted file. See below. |
 | Erase all entries | Type `YES` to confirm. |
 
 Import rules:
@@ -83,6 +84,33 @@ Import rules:
 - The device writes all entries in one step. If the write fails, the vault keeps the old entries.
 
 Like the command line, the page cannot show a password.
+
+### Backup
+
+The backup file contains all labels and passwords. The device encrypts the file with your passphrase. The page and the browser get only the encrypted file.
+
+1. Start the setup mode with the buttons. After a start with the `web` command, the page cannot make a backup (see "Security").
+2. Type a passphrase of 12 to 127 printable ASCII characters two times.
+3. Push "Download backup". The device needs about 5 s. The browser saves `hw-pass-backup-<date>.txt`.
+
+If the browser does not save the file (for example, the Android sign-in window), the page shows the text. Copy it into a text file.
+
+Keep the passphrase in a safe place. Without it, nobody can read the file, also not you.
+
+To read the file on a computer, use OpenSSL 1.1.1 or later:
+
+```
+openssl enc -d -a -aes-256-cbc -pbkdf2 -md sha512 -iter 210000 -in hw-pass-backup-<date>.txt
+```
+
+The output has one `label,password` line for each entry: the format of "Import". To put the entries on a device, paste the lines into "Import". Check these lines first:
+
+- A label with a comma. Import uses the first comma as the end of the label.
+- A password that starts or ends with a space. Import refuses it. Use "Add an entry".
+
+Delete the decrypted text after use.
+
+File format: the format of `openssl enc -a`. "Salted__", an 8-byte random salt, then AES-256-CBC with PKCS#7 padding, all in base64 lines of 64 characters. PBKDF2-HMAC-SHA512 with 210000 iterations makes the key and the IV from the passphrase and the salt.
 
 ## Serial command line
 
@@ -98,7 +126,7 @@ The baud rate has no effect. Push Enter to get the prompt.
 | `help` | Show the commands. |
 | `list` | Show the entries. |
 | `add <label>` | Add an entry. Asks for the password two times. The password does not echo. |
-| `gen [len] <label>` | Add an entry with a random password of 8 to 127 characters. The default length is 20. |
+| `gen [len] <label>` | Add an entry with a random password of 8 to 127 characters. The default length is 20. See "Random passwords". |
 | `pass <n>` | Change the password of entry n. |
 | `name <n> <label>` | Change the label of entry n. |
 | `del <n>` | Delete entry n. |
@@ -119,6 +147,18 @@ Limits:
 
 The command line cannot show a password. Only the front button can type it.
 
+## Random passwords
+
+`gen` and the page make passwords with upper and lower case letters, digits, and these symbols: `+ - . : @ _`
+
+These symbols have no special function in bash, zsh, cmd, and PowerShell. You can type such a password in a command line without quotes or escape characters. The first character is always a letter or a digit, because a symbol at the start can be an option (`-x`) or have a special function (`@x` in PowerShell).
+
+Each password has at least one character of each class.
+
+## Typing speed
+
+The device sends one key report each 10 ms: a password of 20 characters takes about 0.5 s. A faster speed can lose keys in a remote desktop (RDP) session or on a slow host.
+
 ## Key layout
 
 The device sends US key codes. On a host with a different key layout, some characters change (for example, `y` and `z` on a German layout). Use `kbtest` to check the host:
@@ -137,12 +177,15 @@ Read these limits before you store important passwords:
 - There is no PIN. A person with the device can type all passwords.
 - `del` and `pass` mark the old data as deleted, but the old bytes stay in flash until NVS reuses the page. `wipe` erases the full vault partition.
 - `gen` and the random passwords of the page use the hardware random number generator. Its entropy source is the ADC noise when the radio is off, and the radio when Wi-Fi is on.
+- The backup file is as safe as its passphrase. PBKDF2 with 210000 iterations makes each guess slow, but a short or common passphrase is easy to guess. Use 4 or more random words, or 16 or more random characters.
 
 Wi-Fi:
 
 - The radio is off, except in the Wi-Fi setup mode. A build with `CONFIG_HWPASS_WEB=n` has no Wi-Fi code.
 - Each start makes a new network name and a new random Wi-Fi password of 16 characters (about 79 bits). The network uses WPA2/WPA3 and accepts one device. The transmit power is low (11 dBm).
 - The device keeps no Wi-Fi data in flash.
-- The page uses HTTP inside the encrypted Wi-Fi link. A person who has the Wi-Fi password while the mode is on can change and erase entries, but cannot read the passwords.
+- The page uses HTTP inside the encrypted Wi-Fi link. A person who has the Wi-Fi password while the mode is on can change and erase entries.
+- The page can make a backup only if the buttons started the mode. Then only the screen shows the Wi-Fi password. A person who sees the screen while the mode is on can make a backup with their own passphrase, and read all passwords. Such a person can also type all passwords with the front button.
+- The `web` command sends the Wi-Fi password to the USB host. A program on the host could join the network and make a backup. Thus after a start with `web`, the page cannot make a backup.
 - The page accepts changes only with the session token and the host name `192.168.4.1`. Other web sites in the same browser cannot send changes.
 - The firmware sets its copies of a password to zero after use. The Wi-Fi driver and the TCP/IP stack also keep the received bytes in their buffers until other data overwrites them. These buffers are in RAM only. A restart removes them.

@@ -70,6 +70,22 @@ body.off main { opacity: .4; pointer-events: none; }
   <textarea id="data" rows="5" spellcheck="false" autocomplete="off"></textarea>
   <div class="row"><button id="import" type="button">Import</button></div>
 
+  <h2>Backup</h2>
+  <div id="backupbox">
+    <p>The backup file contains all entries with the passwords, encrypted with a passphrase.
+      Without the passphrase, nobody can read the file. Keep the passphrase in a safe place.</p>
+    <div class="row">
+      <input id="bp1" type="password" autocomplete="new-password">
+      <input id="bp2" type="password" placeholder="Again" autocomplete="new-password">
+    </div>
+    <div class="row"><button id="backup" type="button">Download backup</button></div>
+    <div id="filebox" class="hidden">
+      <p>If no file downloads, copy this text into a file:</p>
+      <textarea id="file" rows="5" readonly spellcheck="false"></textarea>
+    </div>
+  </div>
+  <p id="nobackup" class="hidden">To make a backup, start the setup mode with the buttons on the device.</p>
+
   <h2>Device</h2>
   <p id="info"></p>
   <div class="row"><button id="wipe" type="button" class="danger">Erase all entries</button></div>
@@ -177,7 +193,7 @@ function same(a, b) {
 }
 
 function move(i, to) {
-  if (to >= 0 && to < st.entries.length) {
+  if (to !== i && to >= 0 && to < st.entries.length) {
     open = to;
     act('move', { i, to });
   }
@@ -197,13 +213,24 @@ function editor(label, i) {
     }
   });
   del.className = 'danger';
+  const n = st.entries.length;
+  const pos = el('input', { type: 'number', min: 1, max: n, value: i + 1, title: 'Position' });
+  const moveTo = button('Move to', () => {
+    const to = Number(pos.value) - 1;
+    if (Number.isInteger(to) && to >= 0 && to < n) {
+      move(i, to);
+    } else {
+      say('Give a position from 1 to ' + n + '.', false);
+    }
+  });
   return el('div', { className: 'edit' },
     el('div', { className: 'row' }, name,
       button('Rename', () => act('label', { i, label: name.value }, 'Renamed entry ' + (i + 1) + '.'))),
     el('div', { className: 'row' }, p1, p2,
       button('Change password', () => same(p1, p2) &&
         act('secret', { i, secret: p1.value }, 'Changed the password of ' + label + '.'))),
-    el('div', { className: 'row' }, button('Up', () => move(i, i - 1)), button('Down', () => move(i, i + 1)), del));
+    el('div', { className: 'row' }, button('Up', () => move(i, i - 1)), button('Down', () => move(i, i + 1)), pos, moveTo),
+    el('div', { className: 'row' }, del));
 }
 
 function render() {
@@ -230,6 +257,10 @@ function render() {
   if ($('len').value === '') {
     $('len').value = st.genDefault;
   }
+  $('backupbox').classList.toggle('hidden', !st.backup);
+  $('nobackup').classList.toggle('hidden', st.backup);
+  $('bp1').placeholder = 'Passphrase (' + st.passMin + ' or more characters)';
+  $('bp1').maxLength = $('bp2').maxLength = st.passMax;
   $('info').textContent = 'Firmware ' + st.version +
     '. The page cannot show a password. Push the front button on the device to type it.';
 }
@@ -271,6 +302,40 @@ $('import').onclick = async () => {
     $('data').value = '';
     say('Imported ' + (st.entries.length - before) + ' entries.', true);
   }
+};
+
+// The device encrypts. The page gets no password.
+$('backup').onclick = async () => {
+  const pass = $('bp1').value;
+  if (pass.length < st.passMin) {
+    say('The passphrase must have ' + st.passMin + ' or more characters.', false);
+    return;
+  }
+  if (pass !== $('bp2').value) {
+    say('The two passphrases are not the same.', false);
+    return;
+  }
+  say('Making the backup. This takes some seconds.', true);
+  $('backup').disabled = true;
+  const ok = await act('backup', { pass });
+  $('backup').disabled = false;
+  if (!ok) {
+    return;
+  }
+  const d = new Date();
+  const name = 'hw-pass-backup-' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0') + '.txt';
+  const url = URL.createObjectURL(new Blob([st.file], { type: 'text/plain' }));
+  const a = el('a', { href: url, download: name });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+  $('file').value = st.file;
+  $('filebox').classList.remove('hidden');
+  delete st.file;
+  $('bp1').value = $('bp2').value = '';
+  say('The backup ' + name + ' is ready.', true);
 };
 
 $('wipe').onclick = () => $('wipebox').classList.toggle('hidden');

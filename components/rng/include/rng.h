@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
 #include "esp_err.h"
 
 #ifdef __cplusplus
@@ -17,8 +18,13 @@ esp_err_t rng_init(void);
  * characters have the same probability. */
 void rng_text(char *buf, int len, const char *set);
 
+/* Fill buf with len random bytes. */
+void rng_bytes(void *buf, size_t len);
+
 /* Fill buf with a random password of len characters (4 or more), then a
- * NUL. It has upper and lower case letters, digits, and symbols. */
+ * NUL. It has upper and lower case letters, digits, and symbols that need
+ * no escape in a shell: + - . : @ _
+ * The first character is a letter or a digit. */
 void rng_password(char *buf, int len);
 
 /* The ADC noise source and the radio must not run at the same time.

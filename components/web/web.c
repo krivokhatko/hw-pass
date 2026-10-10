@@ -7,7 +7,10 @@
  * - Requests must use WEB_IP as the host. This stops DNS rebinding.
  *   Requests for other hosts get a redirect to the page (captive portal).
  * - A change needs the session token in the X-Token header. A page from
- *   another site cannot set this header, because there is no CORS. */
+ *   another site cannot set this header, because there is no CORS.
+ * - A backup contains all passwords. The page can make one only if the
+ *   buttons started the mode: then only the screen shows the Wi-Fi
+ *   password. The "web" command sends it to the USB host. */
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -27,6 +30,7 @@
 #include "esp_netif.h"
 #include "esp_timer.h"
 #include "esp_wifi.h"
+#include "backup.h"
 #include "rng.h"
 #include "vault.h"
 #include "dns.h"
@@ -60,6 +64,7 @@ extern const char s_page_end[] asm("_binary_index_html_end");
 static volatile bool s_active;
 static volatile bool s_done;
 static volatile bool s_connected;
+static bool s_backup_ok;                /* The buttons started the mode. */
 static volatile uint32_t s_last_ms;     /* Time of the last request from the page */
 static char s_token[TOKEN_LEN + 1];
 static web_info_t s_info;
@@ -127,13 +132,14 @@ static esp_err_t send_error(httpd_req_t *req, const char *status, const char *fm
     return send_json(req, status, json);
 }
 
-/* The list and the limits. Labels only: the page never gets a password. */
-static esp_err_t send_state(httpd_req_t *req)
+/* The list and the limits. Labels only: the page never gets a password.
+ * extra: more JSON members, or "". */
+static esp_err_t send_state(httpd_req_t *req, const char *extra)
 {
     /* Read the generation first. If the list changes after this, the
      * page has an old generation, and its next change gets 409. */
     uint32_t gen = vault_generation();
-    size_t size = 384 + VAULT_MAX * (2 * VAULT_LABEL_MAX + 3);
+    size_t size = 448 + VAULT_MAX * (2 * VAULT_LABEL_MAX + 3) + strlen(extra);
     char label[VAULT_LABEL_MAX + 1];
     char *buf = malloc(size);
     esp_err_t err;
@@ -144,10 +150,11 @@ static esp_err_t send_state(httpd_req_t *req)
     }
     n = snprintf(buf, size,
                  "{\"version\":\"%s\",\"gen\":%lu,\"left\":%lu,\"token\":\"%s\",\"max\":%d,"
-                 "\"labelMax\":%d,\"secretMax\":%d,\"genMin\":%d,\"genDefault\":%d,\"entries\":[",
+                 "\"labelMax\":%d,\"secretMax\":%d,\"genMin\":%d,\"genDefault\":%d,"
+                 "\"backup\":%s,\"passMin\":%d,\"passMax\":%d,\"entries\":[",
                  esp_app_get_description()->version, (unsigned long)gen, (unsigned long)web_left_s(),
                  s_token, VAULT_MAX, VAULT_LABEL_MAX, VAULT_SECRET_MAX, RNG_PASSWORD_MIN,
-                 RNG_PASSWORD_DEFAULT);
+                 RNG_PASSWORD_DEFAULT, s_backup_ok ? "true" : "false", BACKUP_PASS_MIN, BACKUP_PASS_MAX);
     for (int i = 0; vault_label(i, label, sizeof(label)) == ESP_OK; i++) {
         if (i > 0) {
             buf[n++] = ',';
@@ -161,7 +168,7 @@ static esp_err_t send_state(httpd_req_t *req)
         }
         buf[n++] = '"';
     }
-    strcpy(buf + n, "]}");
+    snprintf(buf + n, size - n, "]%s}", extra);
     err = send_json(req, ST_OK, buf);
     free(buf);
     return err;
@@ -172,7 +179,7 @@ static esp_err_t reply(httpd_req_t *req, esp_err_t err, const char *what)
 {
     switch (err) {
     case ESP_OK:
-        return send_state(req);
+        return send_state(req, "");
     case ESP_ERR_NOT_FOUND:
         return send_error(req, ST_CONFLICT, "No entry has this number. Check the list.");
     case ESP_ERR_INVALID_STATE:
@@ -520,7 +527,56 @@ static esp_err_t act_import(httpd_req_t *req, const char *body)
     if (msg[0]) {
         return send_error(req, err == ESP_OK || err == ESP_ERR_NO_MEM ? ST_BAD : ST_ERROR, "%s", msg);
     }
-    return send_state(req);
+    return send_state(req, "");
+}
+
+/* Encrypted backup of all entries, in the member "file" of the state. */
+static esp_err_t act_backup(httpd_req_t *req, const char *body)
+{
+    char pass[FIELD_MAX], *text, *json, *w;
+    size_t lines = 0;
+    esp_err_t err;
+
+    if (!s_backup_ok) {
+        return send_error(req, ST_FORBIDDEN, "Start the setup mode with the buttons on the device to make a backup.");
+    }
+    if (!field(body, "pass", pass, sizeof(pass))) {
+        return bad_field(req, "passphrase");
+    }
+    err = backup_export(pass, &text);
+    vault_zero(pass, sizeof(pass));
+    if (err == ESP_ERR_INVALID_SIZE) {
+        return send_error(req, ST_BAD, "The passphrase must have %d to %d characters.", BACKUP_PASS_MIN, BACKUP_PASS_MAX);
+    }
+    if (err == ESP_ERR_INVALID_ARG) {
+        return send_error(req, ST_BAD, "The passphrase must contain only printable ASCII characters.");
+    }
+    if (err != ESP_OK) {
+        return send_error(req, ST_ERROR, "Cannot make the backup: %s.", esp_err_to_name(err));
+    }
+    /* Base64 needs no JSON escape. Only the line feeds. */
+    for (const char *r = text; *r; r++) {
+        lines += *r == '\n';
+    }
+    json = malloc(strlen(text) + lines + 16);
+    if (!json) {
+        free(text);
+        return send_error(req, ST_ERROR, "No memory.");
+    }
+    w = json + sprintf(json, ",\"file\":\"");
+    for (const char *r = text; *r; r++) {
+        if (*r == '\n') {
+            *w++ = '\\';
+            *w++ = 'n';
+        } else {
+            *w++ = *r;
+        }
+    }
+    strcpy(w, "\"");
+    free(text);
+    err = send_state(req, json);
+    free(json);
+    return err;
 }
 
 static esp_err_t act_done(httpd_req_t *req, const char *body)
@@ -543,6 +599,7 @@ static const struct {
     { "delete", act_delete },
     { "wipe", act_wipe },
     { "import", act_import },
+    { "backup", act_backup },
     { "done", act_done },
 };
 
@@ -585,7 +642,7 @@ static esp_err_t state_get(httpd_req_t *req)
     if (!own_host(req)) {
         return send_error(req, ST_FORBIDDEN, "Use %s.", s_portal);
     }
-    return send_state(req);
+    return send_state(req, "");
 }
 
 static esp_err_t page_get(httpd_req_t *req)
@@ -726,13 +783,14 @@ static esp_err_t start_server(void)
     return httpd_register_err_handler(s_server, HTTPD_404_NOT_FOUND, not_found);
 }
 
-esp_err_t web_start(web_info_t *info)
+esp_err_t web_start(web_info_t *info, bool buttons)
 {
     esp_err_t err;
 
     if (s_active) {
         return ESP_ERR_INVALID_STATE;
     }
+    s_backup_ok = buttons;
     /* Make the secrets before the radio starts: the ADC noise source is free. */
     strcpy(info->ssid, "hw-pass-");
     rng_text(info->ssid + strlen(info->ssid), 4, s_upper);
@@ -783,13 +841,14 @@ void web_stop(void)
     vault_zero(s_token, sizeof(s_token));
     vault_zero(&s_info, sizeof(s_info));
     s_connected = false;
+    s_backup_ok = false;
     ESP_LOGI(TAG, "Wi-Fi setup mode off");
     s_active = false;   /* Last: the command line waits for this. */
 }
 
 #else   /* CONFIG_HWPASS_WEB */
 
-esp_err_t web_start(web_info_t *info)
+esp_err_t web_start(web_info_t *info, bool buttons)
 {
     return ESP_ERR_NOT_SUPPORTED;
 }

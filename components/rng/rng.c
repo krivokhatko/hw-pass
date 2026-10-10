@@ -3,6 +3,7 @@
  * safe to call from different tasks. */
 #include <ctype.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 #include "freertos/FreeRTOS.h"
@@ -12,10 +13,12 @@
 #include "vault.h"
 #include "rng.h"
 
-static const char s_symbols[] = "!#%+-.:=?@_";
+/* Symbols without a special function in bash, zsh, cmd, and PowerShell,
+ * when they are not the first character. */
+static const char s_symbols[] = "+-.:@_";
 static const char s_password_set[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                                      "abcdefghijklmnopqrstuvwxyz"
-                                     "0123456789!#%+-.:=?@_";
+                                     "0123456789+-.:@_";
 
 static SemaphoreHandle_t s_lock;
 static bool s_radio;
@@ -71,10 +74,15 @@ static void pick(char *buf, int len, const char *set)
     vault_zero(rnd, sizeof(rnd));
 }
 
-static bool has_classes(const char *s)
+/* True if s has all classes, and a letter or digit first. A symbol
+ * first can be an option (-x), a splat (@x), or a response file (@x). */
+static bool good(const char *s)
 {
     bool upper = false, lower = false, digit = false, symbol = false;
 
+    if (!isalnum((unsigned char)s[0])) {
+        return false;
+    }
     for (; *s; s++) {
         upper |= isupper((unsigned char)*s) != 0;
         lower |= islower((unsigned char)*s) != 0;
@@ -91,11 +99,20 @@ void rng_text(char *buf, int len, const char *set)
     end();
 }
 
+void rng_bytes(void *buf, size_t len)
+{
+    begin();
+    esp_fill_random(buf, len);
+    end();
+}
+
+/* A rejected password is not used: all accepted passwords have the same
+ * probability. */
 void rng_password(char *buf, int len)
 {
     begin();
     do {
         pick(buf, len, s_password_set);
-    } while (!has_classes(buf));
+    } while (!good(buf));
     end();
 }

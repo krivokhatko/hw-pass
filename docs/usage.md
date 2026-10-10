@@ -42,7 +42,7 @@ The baud rate has no effect. Push Enter to get the prompt.
 | `help` | Show the commands. |
 | `list` | Show the entries. |
 | `add <label>` | Add an entry. Asks for the password two times. The password does not echo. |
-| `gen [len] <label>` | Add an entry with a random password. The default length is 20. |
+| `gen [len] <label>` | Add an entry with a random password of 8 to 127 characters. The default length is 20. |
 | `pass <n>` | Change the password of entry n. |
 | `name <n> <label>` | Change the label of entry n. |
 | `del <n>` | Delete entry n. |

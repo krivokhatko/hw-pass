@@ -24,7 +24,8 @@ if port=$(find_port "$APP_ID"); then
     stty -F "$port" raw -echo
     exec 3<>"$port"
     sleep 0.3
-    printf 'dfu\r' >&3
+    # Ctrl+C first: it stops a command that waits for input.
+    printf '\003dfu\r' >&3
     sleep 0.5
     exec 3<&-
 fi

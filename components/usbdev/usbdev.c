@@ -192,6 +192,10 @@ esp_err_t usbdev_type(const char *s, bool enter)
     if (ok && enter) {
         ok = push_key(0, HID_KEY_ENTER, 0);
     }
+    if (!ok) {
+        /* A failed push can leave a key down. The host then repeats it. */
+        send_report(0, 0);
+    }
     if (caps) {
         set_caps_lock(true);
     }

@@ -190,8 +190,8 @@ void ui_run(void)
     for (;;) {
         press_t side = buttons_poll(BUTTON_SIDE);
         press_t front = buttons_poll(BUTTON_FRONT);
-        int n = vault_count();
         bool dirty = false;
+        int n;
 
         if (s_dfu_request) {
             show_message("Download mode", "Flash with idf.py", C_ACCENT);
@@ -207,11 +207,14 @@ void ui_run(void)
         }
         if (generation != vault_generation()) {
             generation = vault_generation();
-            if (s_sel >= n) {
-                s_sel = n > 0 ? n - 1 : 0;
-            }
             idle_ms = 0;
             dirty = true;
+        }
+        /* Read the count after the generation. The vault changes the
+         * count first, thus this count is not older than the generation. */
+        n = vault_count();
+        if (s_sel >= n) {
+            s_sel = n > 0 ? n - 1 : 0;
         }
         if (usb != usbdev_ready()) {
             usb = !usb;

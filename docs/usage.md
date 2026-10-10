@@ -37,7 +37,7 @@ Use a phone or a laptop to add and change entries.
 
 1. Hold the two buttons for 2 s. A bar on the screen shows the progress.
 2. The screen shows a QR code, the network name, and the Wi-Fi password.
-3. Phone: scan the QR code with the camera. The phone connects and opens the page. If the page does not open, open `http://192.168.4.1/`.
+3. Phone: scan the QR code with the camera. The phone connects. An iPhone usually opens the page by itself. On Android, tap the "Sign in to Wi-Fi network" notification, or tap the network in the Wi-Fi settings. The page opens in the sign-in window.
    Laptop: connect to the network with the password, then open `http://192.168.4.1/`.
 4. Change the entries. Then push "Done" on the page.
 
@@ -50,7 +50,9 @@ Use a phone or a laptop to add and change entries.
             Button: stop
 ```
 
-When a device connects, the QR code changes to the page address, and the screen shows "Connected".
+When a device connects, the QR code changes to the page address. The screen shows "Connected" and how to open the page.
+
+Android sends the requests of a browser over mobile data while the Wi-Fi network has no internet. Then the browser cannot open `http://192.168.4.1/`, or shows `ERR_NETWORK_CHANGED`. The sign-in window uses the Wi-Fi network. To use a browser, turn off mobile data first.
 
 The `web` command on the serial port also starts the mode. It shows the network name and the Wi-Fi password, so you can copy them.
 

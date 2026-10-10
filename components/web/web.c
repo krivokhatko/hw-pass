@@ -614,9 +614,17 @@ static esp_err_t not_found(httpd_req_t *req, httpd_err_code_t code)
 
 static void on_event(void *arg, esp_event_base_t base, int32_t id, void *data)
 {
-    if (base == IP_EVENT && id == IP_EVENT_AP_STAIPASSIGNED) {
+    if (base == WIFI_EVENT && id == WIFI_EVENT_AP_STACONNECTED) {
+        ESP_LOGI(TAG, "Device joined");
+    } else if (base == IP_EVENT && id == IP_EVENT_AP_STAIPASSIGNED) {
+        const ip_event_ap_staipassigned_t *e = data;
+
+        ESP_LOGI(TAG, "Device address " IPSTR, IP2STR(&e->ip));
         s_connected = true;
     } else if (base == WIFI_EVENT && id == WIFI_EVENT_AP_STADISCONNECTED) {
+        const wifi_event_ap_stadisconnected_t *e = data;
+
+        ESP_LOGI(TAG, "Device left, reason %u", e->reason);
         s_connected = false;    /* Only one device can connect. */
     }
 }
@@ -641,6 +649,7 @@ static esp_err_t init_once(void)
         ESP_RETURN_ON_FALSE(s_netif, ESP_FAIL, TAG, "AP netif");
     }
     ESP_RETURN_ON_ERROR(esp_event_handler_register(IP_EVENT, IP_EVENT_AP_STAIPASSIGNED, on_event, NULL), TAG, "event");
+    ESP_RETURN_ON_ERROR(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_AP_STACONNECTED, on_event, NULL), TAG, "event");
     ESP_RETURN_ON_ERROR(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_AP_STADISCONNECTED, on_event, NULL), TAG, "event");
     /* The log goes to the command line. Keep the start quiet, and stop
      * the warnings about the requests of connectivity checks. */

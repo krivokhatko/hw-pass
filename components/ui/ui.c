@@ -184,7 +184,9 @@ static void draw_qr(esp_qrcode_handle_t qr)
 }
 
 /* Before a device connects: a QR code to join the network, the network
- * name and the password. After: a QR code of the page address. */
+ * name and the password. After: a QR code of the page address. Android
+ * sends browser requests over mobile data while the network has no
+ * internet. Its sign-in window uses the Wi-Fi network. */
 static void draw_web(void)
 {
     esp_qrcode_config_t cfg = {
@@ -210,17 +212,19 @@ static void draw_web(void)
     display_text(WEB_X, 2, "Wi-Fi", &font_8x16, C_ACCENT, C_BG);
     display_text(DISPLAY_W - 2 - (int)strlen(text) * font_8x16.w, 2, text, &font_8x16, C_DIM, C_BG);
     if (connected) {
-        display_text(WEB_X, 26, "Connected", &font_8x16, C_OK, C_BG);
-        display_text(WEB_X, 50, "Open", &font_8x16, C_DIM, C_BG);
-        display_text(WEB_X, 68, WEB_IP, &font_8x16, C_TEXT, C_BG);
+        display_text(WEB_X, 22, "Connected", &font_8x16, C_OK, C_BG);
+        display_text(WEB_X, 42, "Phone: tap", &font_8x16, C_DIM, C_BG);
+        display_text(WEB_X, 58, "Sign in", &font_8x16, C_TEXT, C_BG);
+        display_text(WEB_X, 78, "PC: open", &font_8x16, C_DIM, C_BG);
+        display_text(WEB_X, 94, WEB_IP, &font_8x16, C_TEXT, C_BG);
     } else {
         /* The password in two lines of 8 characters. */
         display_text(WEB_X, 22, s_web.ssid, &font_8x16, C_TEXT, C_BG);
         snprintf(text, sizeof(text), "%.8s", s_web.password);
         display_text(WEB_X, 44, text, &font_12x24, C_TEXT, C_BG);
         display_text(WEB_X, 68, s_web.password + 8, &font_12x24, C_TEXT, C_BG);
+        display_text(WEB_X, 98, "Scan the QR", &font_8x16, C_DIM, C_BG);
     }
-    display_text(WEB_X, 98, "Scan the QR", &font_8x16, C_DIM, C_BG);
     display_text(WEB_X, 117, "Button: stop", &font_8x16, C_DIM, C_BG);
     display_flush();
     vault_zero(text, sizeof(text));

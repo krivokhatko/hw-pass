@@ -17,11 +17,16 @@ CONFIG_TINYUSB_DEBUG_LEVEL=0
 CONFIG_ESP_WIFI_NVS_ENABLED=n
 # Browsers send long request headers.
 CONFIG_HTTPD_MAX_REQ_HDR_LEN=2048
-# Bluetooth LE keypad: NimBLE host, central role only. One link, one bond
+# Bluetooth LE keypad: NimBLE host, central role. One link, one bond
 # and one more during a new pairing. Bonding keys stay in NVS.
+# The keypad also sends requests to the device (the FBK21C looks for an
+# iPhone service). If no answer comes in 30 s, the keypad sends no more
+# keys. The GATT server answers; it needs the peripheral role. The device
+# does not advertise: no other device can connect to it.
 CONFIG_BT_ENABLED=y
 CONFIG_BT_NIMBLE_ENABLED=y
-CONFIG_BT_NIMBLE_ROLE_PERIPHERAL=n
+CONFIG_BT_NIMBLE_ROLE_PERIPHERAL=y
+CONFIG_BT_NIMBLE_GATT_SERVER=y
 CONFIG_BT_NIMBLE_ROLE_BROADCASTER=n
 CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1
 CONFIG_BT_NIMBLE_MAX_BONDS=2

@@ -1,4 +1,5 @@
-/* Two buttons, active low. Debounce by sampling, detect short and long presses. */
+/* Two buttons, active low. Debounce by sampling, detect short and long
+ * presses, and pushes of both buttons together. */
 #include <stdbool.h>
 #include <stdint.h>
 #include "driver/gpio.h"
@@ -14,6 +15,7 @@ static struct {
     uint8_t changes;    /* Samples that differ from the debounced state */
     uint32_t held_ms;
 } s_btn[BUTTON_COUNT];
+static uint32_t s_both_ms;
 
 esp_err_t buttons_init(void)
 {
@@ -41,6 +43,11 @@ press_t buttons_poll(button_t b)
             return PRESS_SHORT;
         }
     }
+    /* Both down: no single events for this push, also not at release. */
+    if (s_btn[BUTTON_FRONT].down && s_btn[BUTTON_SIDE].down) {
+        s_btn[BUTTON_FRONT].long_sent = true;
+        s_btn[BUTTON_SIDE].long_sent = true;
+    }
 
     if (s_btn[b].down && !s_btn[b].long_sent) {
         s_btn[b].held_ms += BUTTONS_POLL_MS;
@@ -50,4 +57,24 @@ press_t buttons_poll(button_t b)
         }
     }
     return PRESS_NONE;
+}
+
+uint32_t buttons_both_ms(void)
+{
+    if (s_btn[BUTTON_FRONT].down && s_btn[BUTTON_SIDE].down) {
+        s_both_ms += BUTTONS_POLL_MS;
+    } else {
+        s_both_ms = 0;
+    }
+    return s_both_ms;
+}
+
+void buttons_consume(void)
+{
+    for (int b = 0; b < BUTTON_COUNT; b++) {
+        s_btn[b].down = gpio_get_level(s_pin[b]) == 0;
+        s_btn[b].long_sent = true;
+        s_btn[b].changes = 0;
+    }
+    s_both_ms = 0;
 }

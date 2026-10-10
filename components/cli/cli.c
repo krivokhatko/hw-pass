@@ -9,23 +9,22 @@
 #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "bootloader_random.h"
 #include "esp_app_desc.h"
-#include "esp_random.h"
+#include "esp_system.h"
 #include "nvs.h"
 #include "display.h"
+#include "rng.h"
 #include "ui.h"
 #include "usbdev.h"
 #include "vault.h"
+#include "web.h"
 #include "cli.h"
 
 #define LINE_SIZE       160
 #define FOREVER         UINT32_MAX
-#define GEN_DEFAULT     20
-#define GEN_MIN         8
 #define KBTEST_DELAY_MS 3000
+#define WEB_WAIT_MS     5000
 
-static const char s_symbols[] = "!#%+-.:=?@_";
 static const char s_kbtest[] = " !\"#$%&'()*+,-./0123456789:;<=>?@"
                                "ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`"
                                "abcdefghijklmnopqrstuvwxyz{|}~";
@@ -242,46 +241,6 @@ static void cmd_add(char *arg)
     vault_zero(secret, sizeof(secret));
 }
 
-static bool has_classes(const char *s)
-{
-    bool upper = false, lower = false, digit = false, symbol = false;
-
-    for (; *s; s++) {
-        upper |= isupper((unsigned char)*s) != 0;
-        lower |= islower((unsigned char)*s) != 0;
-        digit |= isdigit((unsigned char)*s) != 0;
-        symbol |= strchr(s_symbols, *s) != NULL;
-    }
-    return upper && lower && digit && symbol;
-}
-
-/* Fill buf with len random characters. Each class occurs at least once. */
-static void generate(char *buf, int len)
-{
-    static const char set[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                              "abcdefghijklmnopqrstuvwxyz"
-                              "0123456789!#%+-.:=?@_";
-    const int n = sizeof(set) - 1;
-    const int limit = 256 - 256 % n;    /* Reject these bytes: no bias. */
-    uint8_t rnd[32];
-
-    /* Without Wi-Fi, the RNG needs the ADC noise source for true entropy. */
-    bootloader_random_enable();
-    do {
-        for (int i = 0; i < len;) {
-            esp_fill_random(rnd, sizeof(rnd));
-            for (int j = 0; j < (int)sizeof(rnd) && i < len; j++) {
-                if (rnd[j] < limit) {
-                    buf[i++] = set[rnd[j] % n];
-                }
-            }
-        }
-        buf[len] = '\0';
-    } while (!has_classes(buf));
-    bootloader_random_disable();
-    vault_zero(rnd, sizeof(rnd));
-}
-
 static void cmd_gen(char *arg)
 {
     char secret[VAULT_SECRET_MAX + 1];
@@ -289,20 +248,20 @@ static void cmd_gen(char *arg)
     long len = strtol(arg, &label, 10);
 
     if (label == arg || (*label != ' ' && *label != '\0')) {
-        len = GEN_DEFAULT;     /* No length. The label can start with a digit. */
+        len = RNG_PASSWORD_DEFAULT;     /* No length. The label can start with a digit. */
         label = arg;
     }
     while (*label == ' ') {
         label++;
     }
-    if (len < GEN_MIN || len > VAULT_SECRET_MAX) {
-        out("The length must be %d to %d.\n", GEN_MIN, VAULT_SECRET_MAX);
+    if (len < RNG_PASSWORD_MIN || len > VAULT_SECRET_MAX) {
+        out("The length must be %d to %d.\n", RNG_PASSWORD_MIN, VAULT_SECRET_MAX);
         return;
     }
     if (!report(vault_check_text(label, VAULT_LABEL_MAX), "label")) {
         return;
     }
-    generate(secret, len);
+    rng_password(secret, len);
     if (report(vault_add(label, secret), "password")) {
         out("Added entry %d: %s, with a random password of %ld characters.\n", vault_count(), label, len);
     }
@@ -409,7 +368,36 @@ static void cmd_info(char *arg)
     out("NVS:       %u of %u slots used\n", (unsigned)stats.used_entries, (unsigned)stats.total_entries);
     out("USB host:  %s, Caps Lock %s\n", usbdev_ready() ? "ready" : "not ready",
         usbdev_caps_lock() ? "on" : "off");
+    out("Wi-Fi:     %s\n", !web_active() ? "off" : web_connected() ? "on, 1 device" : "on, no device");
+    out("Heap:      %u bytes free, %u minimum\n", (unsigned)esp_get_free_heap_size(),
+        (unsigned)esp_get_minimum_free_heap_size());
     out("LCD:       power mode 0x%02X (0x9C is correct)\n", display_power_mode());
+}
+
+/* The Wi-Fi password is not a vault secret. It is new at each start. */
+static void cmd_web(char *arg)
+{
+    web_info_t info;
+
+    if (web_active()) {
+        ui_web(false);
+        for (int i = 0; i < WEB_WAIT_MS / 100 && web_active(); i++) {
+            vTaskDelay(pdMS_TO_TICKS(100));
+        }
+        out("Wi-Fi setup mode is %s.\n", web_active() ? "still on" : "off");
+        return;
+    }
+    ui_web(true);
+    for (int i = 0; i < WEB_WAIT_MS / 100 && web_get_info(&info) != ESP_OK; i++) {
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+    if (web_get_info(&info) != ESP_OK) {
+        out("Wi-Fi setup mode did not start. Look at the screen.\n");
+        return;
+    }
+    out("Wi-Fi setup mode is on. Push a button on the device to stop it.\n");
+    out("Network:   %s\nPassword:  %s\nPage:      http://%s/\n", info.ssid, info.password, WEB_IP);
+    vault_zero(&info, sizeof(info));
 }
 
 static void cmd_dfu(char *arg)
@@ -435,6 +423,7 @@ static const struct {
     { "move", "<n> <pos>", "Move entry n to position pos.", cmd_move },
     { "wipe", "", "Erase all entries.", cmd_wipe },
     { "kbtest", "", "Type all ASCII characters. Checks the key layout.", cmd_kbtest },
+    { "web", "", "Start or stop the Wi-Fi setup mode.", cmd_web },
     { "rotate", "", "Turn the screen 180 degrees.", cmd_rotate },
     { "info", "", "Show the device status.", cmd_info },
     { "dfu", "", "Restart into download mode for flashing.", cmd_dfu },

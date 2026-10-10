@@ -2,7 +2,7 @@
 
 Hardware password typer. Firmware for the M5Stack StickS3 (ESP32-S3).
 
-The device is a USB keyboard. The side button selects a stored entry. The front button types its password. A USB serial port gives a command line to add and change entries.
+The device is a USB keyboard. The side button selects a stored entry. The front button types its password. Two ways add and change entries: a command line on a USB serial port, and a web page in the Wi-Fi setup mode.
 
 For the buttons, the commands, and the security limits, refer to [docs/usage.md](docs/usage.md).
 
@@ -41,14 +41,16 @@ tools/                Host scripts.
 |---|---|
 | `pm1` | M5PM1 power chip: watchdog off, LCD power on, speaker off. |
 | `display` | ST7789 LCD, backlight, frame buffer, and text. |
-| `buttons` | Front and side buttons: debounce, short and long push. |
+| `buttons` | Front and side buttons: debounce, short and long push, push of both. |
 | `vault` | Password entries in the `vault` NVS partition. |
+| `rng` | Random passwords. Selects the entropy source: ADC noise or radio. |
 | `usbdev` | TinyUSB device: HID boot keyboard and CDC-ACM serial port. |
 | `cli` | Command line on the USB serial port. |
+| `web` | Wi-Fi setup mode: access point, captive DNS, web server, and the page (`www/index.html`). |
 | `ui` | Screen content and button actions. |
 | `sysinfo` | Chip information in the log. |
 
-Threads: `ui_run` runs in the main task. `cli` has its own task. TinyUSB has its own task. `vault` and the typing function in `usbdev` have locks.
+Threads: `ui_run` runs in the main task. `cli` has its own task. TinyUSB has its own task. In the Wi-Fi setup mode, the web server, the DNS server, and the Wi-Fi driver have their own tasks. `ui_run` starts and stops this mode. `vault`, `rng`, and the typing function in `usbdev` have locks.
 
 ## USB
 
@@ -83,6 +85,8 @@ To change the configuration:
 1. Add or change the option in `sdkconfig.defaults`.
 2. Delete `sdkconfig`.
 3. Run `idf.py build`.
+
+Project options are in the "hw-pass" menu of `idf.py menuconfig`. For a build without Wi-Fi, add `CONFIG_HWPASS_WEB=n` to `sdkconfig.defaults`.
 
 ## Add a module
 

@@ -30,6 +30,9 @@ esp_err_t vault_label(int i, char *buf, size_t size);
 esp_err_t vault_secret(int i, char *buf, size_t size);
 
 esp_err_t vault_add(const char *label, const char *secret);
+
+/* Add n entries with one write. Adds all or nothing. */
+esp_err_t vault_add_many(const char *const labels[], const char *const secrets[], int n);
 esp_err_t vault_set_label(int i, const char *label);
 esp_err_t vault_set_secret(int i, const char *secret);
 esp_err_t vault_delete(int i);
@@ -39,6 +42,11 @@ esp_err_t vault_move(int from, int to);
 
 /* Erase the partition. This also removes the deleted data from flash. */
 esp_err_t vault_wipe(void);
+
+/* Hold the lock over more than one call. Between vault_hold and
+ * vault_release, other tasks cannot change the entries. Keep it short. */
+void vault_hold(void);
+void vault_release(void);
 
 /* Return ESP_OK if s has 1..max printable ASCII characters. */
 esp_err_t vault_check_text(const char *s, size_t max);

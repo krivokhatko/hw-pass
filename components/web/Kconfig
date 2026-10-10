@@ -1,0 +1,10 @@
+menu "hw-pass"
+
+    config HWPASS_WEB
+        bool "Wi-Fi setup mode with a web page"
+        default y
+        help
+            Both buttons start a Wi-Fi access point with a web page that
+            changes the entries. Turn this off for a build without Wi-Fi.
+
+endmenu

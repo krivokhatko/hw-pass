@@ -117,7 +117,7 @@ static esp_err_t open_partition(void)
 
 esp_err_t vault_init(void)
 {
-    s_lock = xSemaphoreCreateMutex();
+    s_lock = xSemaphoreCreateRecursiveMutex();
     ESP_RETURN_ON_FALSE(s_lock, ESP_ERR_NO_MEM, TAG, "no memory");
     ESP_RETURN_ON_ERROR(open_partition(), TAG, "open");
     ESP_RETURN_ON_ERROR(load(), TAG, "load");
@@ -137,13 +137,23 @@ uint32_t vault_generation(void)
 
 static void lock(void)
 {
-    xSemaphoreTake(s_lock, portMAX_DELAY);
+    xSemaphoreTakeRecursive(s_lock, portMAX_DELAY);
 }
 
 static esp_err_t unlock(esp_err_t err)
 {
-    xSemaphoreGive(s_lock);
+    xSemaphoreGiveRecursive(s_lock);
     return err;
+}
+
+void vault_hold(void)
+{
+    lock();
+}
+
+void vault_release(void)
+{
+    unlock(ESP_OK);
 }
 
 static bool valid(int i)
@@ -173,17 +183,26 @@ esp_err_t vault_secret(int i, char *buf, size_t size)
 
 esp_err_t vault_add(const char *label, const char *secret)
 {
-    entry_t *e;
+    return vault_add_many(&label, &secret, 1);
+}
 
-    ESP_RETURN_ON_ERROR(vault_check_text(label, VAULT_LABEL_MAX), TAG, "label");
-    ESP_RETURN_ON_ERROR(vault_check_text(secret, VAULT_SECRET_MAX), TAG, "secret");
+esp_err_t vault_add_many(const char *const labels[], const char *const secrets[], int n)
+{
+    for (int i = 0; i < n; i++) {
+        ESP_RETURN_ON_ERROR(vault_check_text(labels[i], VAULT_LABEL_MAX), TAG, "label");
+        ESP_RETURN_ON_ERROR(vault_check_text(secrets[i], VAULT_SECRET_MAX), TAG, "secret");
+    }
     lock();
-    if (s_store.count >= VAULT_MAX) {
+    if (n > VAULT_MAX - s_store.count) {
         return unlock(ESP_ERR_NO_MEM);
     }
-    e = &s_store.entry[s_store.count++];
-    strlcpy(e->label, label, sizeof(e->label));
-    strlcpy(e->secret, secret, sizeof(e->secret));
+    for (int i = 0; i < n; i++) {
+        entry_t *e = &s_store.entry[s_store.count++];
+
+        strlcpy(e->label, labels[i], sizeof(e->label));
+        strlcpy(e->secret, secrets[i], sizeof(e->secret));
+    }
+    /* If the write fails, save() loads the old entries: nothing is added. */
     return unlock(save());
 }
 

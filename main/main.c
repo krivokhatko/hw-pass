@@ -4,6 +4,7 @@
 #include "cli.h"
 #include "display.h"
 #include "pm1.h"
+#include "rng.h"
 #include "sysinfo.h"
 #include "ui.h"
 #include "usbdev.h"
@@ -35,6 +36,7 @@ void app_main(void)
     check(pm1_init(), "pm1");
     check(display_init(), "display");
     check(vault_init(), "vault");
+    check(rng_init(), "rng");
     check(usbdev_init(), "usb");
     check(cli_start(), "cli");
     ui_run();

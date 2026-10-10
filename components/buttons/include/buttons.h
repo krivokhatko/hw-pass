@@ -28,6 +28,15 @@ esp_err_t buttons_init(void);
 /* Sample a button and return its event. Call every BUTTONS_POLL_MS. */
 press_t buttons_poll(button_t b);
 
+/* Return the time in ms that both buttons are down together, else 0.
+ * A push of both buttons gives no single events, also not at release.
+ * Call one time in each poll cycle, after buttons_poll for both buttons. */
+uint32_t buttons_both_ms(void);
+
+/* Ignore the pushes that are in progress: a button that is down gives no
+ * event, also not at release. Call after a long time without buttons_poll. */
+void buttons_consume(void);
+
 #ifdef __cplusplus
 }
 #endif

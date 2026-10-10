@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>hw-pass</title>
+<style>
+:root { color-scheme: light dark; --accent: #ffb000; --ok: #00a040; --error: #e02828; --line: #8885; }
+* { box-sizing: border-box; }
+body { font: 16px/1.4 system-ui, sans-serif; max-width: 40rem; margin: 0 auto; padding: 0 1rem 2rem; }
+header { position: sticky; top: 0; display: flex; align-items: center; gap: .75rem; padding: .6rem 0;
+  border-bottom: 3px solid var(--accent); background: Canvas; }
+h1 { flex: 1; margin: 0; font-size: 1.3rem; }
+h2 { margin: 1.5rem 0 .5rem; font-size: 1.05rem; }
+#left { opacity: .7; font-variant-numeric: tabular-nums; }
+#msg { min-height: 1.4em; margin: .6rem 0; font-weight: 600; }
+.ok { color: var(--ok); }
+.error { color: var(--error); }
+.danger { color: var(--error); }
+.hidden { display: none; }
+ol { margin: 0; padding: 0; list-style: none; counter-reset: n; }
+li { border-bottom: 1px solid var(--line); }
+li > button { width: 100%; padding: .6rem .2rem; border: 0; background: none; text-align: left; font-size: 1.05rem; }
+li > button::before { counter-increment: n; content: counter(n) "."; display: inline-block; width: 2.2em; opacity: .6; }
+li.open > button { font-weight: 600; }
+.edit { padding: 0 0 .6rem 2.4rem; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: .4rem 0; }
+input[type=text], input[type=password], input[type=number] { flex: 1 1 9rem; min-width: 0; padding: .45rem; font: inherit; }
+input[type=number] { flex: 0 0 6rem; }
+textarea { width: 100%; padding: .45rem; font: 14px ui-monospace, monospace; }
+button { padding: .45rem .8rem; font: inherit; cursor: pointer; }
+body.off main { opacity: .4; pointer-events: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>hw-pass</h1>
+  <span id="left"></span>
+  <button id="done" type="button">Done</button>
+</header>
+<p id="msg" role="status"></p>
+<main>
+  <h2>Entries <span id="count"></span></h2>
+  <p id="empty" class="hidden">No entries.</p>
+  <ol id="list"></ol>
+
+  <h2>Add an entry</h2>
+  <form id="add" autocomplete="off">
+    <div class="row"><input id="label" type="text" placeholder="Label" required></div>
+    <div class="row">
+      <label><input type="radio" name="mode" value="type" checked> Type a password</label>
+      <label><input type="radio" name="mode" value="gen"> Make a random password</label>
+    </div>
+    <div id="typed">
+      <div class="row">
+        <input id="p1" type="password" placeholder="Password" autocomplete="new-password">
+        <input id="p2" type="password" placeholder="Again" autocomplete="new-password">
+      </div>
+      <label><input id="show" type="checkbox"> Show the password</label>
+    </div>
+    <div id="gen" class="row hidden">
+      <label for="len">Length</label> <input id="len" type="number">
+    </div>
+    <div class="row"><button type="submit">Add</button></div>
+  </form>
+
+  <h2>Import</h2>
+  <p>One entry on each line: <code>label,password</code>. The password is all text after the first comma.</p>
+  <textarea id="data" rows="5" spellcheck="false" autocomplete="off"></textarea>
+  <div class="row"><button id="import" type="button">Import</button></div>
+
+  <h2>Device</h2>
+  <p id="info"></p>
+  <div class="row"><button id="wipe" type="button" class="danger">Erase all entries</button></div>
+  <div id="wipebox" class="row hidden">
+    <input id="yes" type="text" placeholder="Type YES">
+    <button id="wipego" type="button" class="danger">Erase</button>
+  </div>
+</main>
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+let st = null;      // State from the device
+let open = -1;      // Entry with the open editor
+let left = 0;       // Seconds until Wi-Fi turns off
+let off = false;
+
+function say(text, ok) {
+  $('msg').textContent = text;
+  $('msg').className = ok ? 'ok' : 'error';
+}
+
+function stop(text, ok) {
+  off = true;
+  document.body.classList.add('off');
+  $('done').disabled = true;
+  $('left').textContent = 'Wi-Fi off';
+  say(text, ok);
+}
+
+function showLeft() {
+  $('left').textContent = 'Wi-Fi off in ' + Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0');
+}
+
+// GET without data, POST with data. Labels only: the device never sends a password.
+async function api(path, data) {
+  const opt = data === undefined ? {} : {
+    method: 'POST',
+    headers: { 'X-Token': st.token },
+    body: new URLSearchParams(Object.assign({ gen: st.gen }, data)),
+  };
+  let r, j;
+  try {
+    r = await fetch('/api/' + path, opt);
+    j = await r.json();
+  } catch (e) {
+    // Can be a short loss of the Wi-Fi link: the page stays usable.
+    say('No answer from the device. Check the Wi-Fi connection and try again.', false);
+    throw e;
+  }
+  if (!r.ok) {
+    say(j.error || 'Error ' + r.status, false);
+    if (r.status === 409) {
+      open = -1;
+      load();
+    }
+    throw new Error(j.error);
+  }
+  st = j;
+  left = j.left;
+  showLeft();
+  render();
+  return j;
+}
+
+// Do a change. Show the result. Return true if it worked.
+async function act(path, data, done) {
+  try {
+    await api(path, data);
+  } catch (e) {
+    return false;
+  }
+  if (done) {
+    say(done, true);
+  }
+  return true;
+}
+
+async function load() {
+  try {
+    await api('state');
+  } catch (e) {
+  }
+}
+
+function el(tag, props, ...children) {
+  const e = Object.assign(document.createElement(tag), props);
+  e.append(...children);
+  return e;
+}
+
+function button(text, onclick) {
+  return el('button', { type: 'button', textContent: text, onclick });
+}
+
+function same(a, b) {
+  if (a.value === '') {
+    say('Type the password.', false);
+    return false;
+  }
+  if (a.value !== b.value) {
+    say('The two passwords are not the same.', false);
+    return false;
+  }
+  return true;
+}
+
+function move(i, to) {
+  if (to >= 0 && to < st.entries.length) {
+    open = to;
+    act('move', { i, to });
+  }
+}
+
+function editor(label, i) {
+  const name = el('input', { type: 'text', value: label, maxLength: st.labelMax });
+  const p1 = el('input', { type: 'password', placeholder: 'New password', maxLength: st.secretMax, autocomplete: 'new-password' });
+  const p2 = el('input', { type: 'password', placeholder: 'Again', maxLength: st.secretMax, autocomplete: 'new-password' });
+  const del = button('Delete', () => {
+    if (del.dataset.armed) {
+      open = -1;
+      act('delete', { i }, 'Deleted ' + label + '.');
+    } else {
+      del.dataset.armed = '1';
+      del.textContent = 'Push again to delete';
+    }
+  });
+  del.className = 'danger';
+  return el('div', { className: 'edit' },
+    el('div', { className: 'row' }, name,
+      button('Rename', () => act('label', { i, label: name.value }, 'Renamed entry ' + (i + 1) + '.'))),
+    el('div', { className: 'row' }, p1, p2,
+      button('Change password', () => same(p1, p2) &&
+        act('secret', { i, secret: p1.value }, 'Changed the password of ' + label + '.'))),
+    el('div', { className: 'row' }, button('Up', () => move(i, i - 1)), button('Down', () => move(i, i + 1)), del));
+}
+
+function render() {
+  const n = st.entries.length;
+  if (open >= n) {
+    open = -1;
+  }
+  $('count').textContent = '(' + n + ' of ' + st.max + ')';
+  $('empty').classList.toggle('hidden', n > 0);
+  $('list').replaceChildren(...st.entries.map((label, i) => {
+    const li = el('li', { className: i === open ? 'open' : '' }, button(label, () => {
+      open = open === i ? -1 : i;
+      render();
+    }));
+    if (i === open) {
+      li.append(editor(label, i));
+    }
+    return li;
+  }));
+  $('label').maxLength = st.labelMax;
+  $('p1').maxLength = $('p2').maxLength = st.secretMax;
+  $('len').min = st.genMin;
+  $('len').max = st.secretMax;
+  if ($('len').value === '') {
+    $('len').value = st.genDefault;
+  }
+  $('info').textContent = 'Firmware ' + st.version +
+    '. The page cannot show a password. Push the front button on the device to type it.';
+}
+
+function genMode() {
+  return document.querySelector('input[name=mode]:checked').value === 'gen';
+}
+
+function updateForm() {
+  const gen = genMode();
+  $('typed').classList.toggle('hidden', gen);
+  $('gen').classList.toggle('hidden', !gen);
+  $('p1').type = $('p2').type = $('show').checked ? 'text' : 'password';
+}
+
+$('add').onchange = updateForm;
+
+$('add').onsubmit = async (ev) => {
+  ev.preventDefault();
+  const label = $('label').value;
+  let data;
+  if (genMode()) {
+    data = { label, len: $('len').value };
+  } else if (same($('p1'), $('p2'))) {
+    data = { label, secret: $('p1').value };
+  } else {
+    return;
+  }
+  if (await act('add', data, 'Added ' + label + '.')) {
+    $('add').reset();
+    $('len').value = st.genDefault;
+    updateForm();
+  }
+};
+
+$('import').onclick = async () => {
+  const before = st.entries.length;
+  if (await act('import', { data: $('data').value })) {
+    $('data').value = '';
+    say('Imported ' + (st.entries.length - before) + ' entries.', true);
+  }
+};
+
+$('wipe').onclick = () => $('wipebox').classList.toggle('hidden');
+
+$('wipego').onclick = async () => {
+  if ($('yes').value !== 'YES') {
+    say('Type YES to erase all entries.', false);
+    return;
+  }
+  open = -1;
+  if (await act('wipe', { confirm: 'YES' }, 'All entries are erased.')) {
+    $('yes').value = '';
+    $('wipebox').classList.add('hidden');
+  }
+};
+
+$('done').onclick = () => {
+  if (st) {
+    fetch('/api/done', { method: 'POST', headers: { 'X-Token': st.token } }).catch(() => {});
+  }
+  stop('Wi-Fi turns off. You can close this page.', true);
+};
+
+setInterval(() => {
+  if (off || !st) {
+    return;
+  }
+  if (left > 0) {
+    left--;
+  }
+  if (left === 0) {
+    stop('Wi-Fi is off after 5 minutes without use. Start the setup mode again on the device.', false);
+  } else {
+    showLeft();
+  }
+}, 1000);
+
+load();
+</script>
+</body>
+</html>

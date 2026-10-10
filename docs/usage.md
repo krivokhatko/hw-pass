@@ -130,10 +130,12 @@ If the device finds no keypad in 60 s, the screen shows "No keypad found". A but
 ### Give a key to an entry
 
 1. Select the entry with the side button.
-2. Hold a key on the keypad for 2 s. The footer shows "Hold to bind key" and a bar.
+2. Hold a key on the keypad for 2 s, then release it. The footer shows "Hold to bind key" and a bar. After 2 s, it shows "Release: bind key".
 3. The screen shows "Key 5 types" and the label of the entry.
 
 An entry has one key, and a key has one entry. A new key of the entry replaces its old key. A key that had a different entry moves to the selected entry. To remove the key, hold it again on the same entry: the screen shows "Key 5 removed".
+
+If the keypad disconnects while you hold the key, the key gets no entry.
 
 The list shows the key at the right side of the entry. The `list` command also shows it.
 
@@ -240,6 +242,6 @@ Bluetooth keypad:
 
 - Bluetooth is off until you start a pairing. With a paired keypad, Bluetooth is on and the device waits for the keypad. After `unpair` or a pairing that did not complete, Bluetooth stays on until the next restart, but it does not send or receive.
 - A person with the paired keypad can type all passwords that have a key, and push Enter and Backspace on the computer, also when the screen is dark. Keep the keypad as safe as the device.
-- Only the buttons can start a pairing. At other times, the device refuses a new pairing. It connects only to the paired keypad, and uses its keys only on a link that the bonding keys encrypt.
+- Only the buttons can start a pairing. At other times, the device refuses a new pairing. It connects only to the paired keypad, and uses its keys only on a link that the bonding keys encrypt. If the keypad loses its bonding keys, for example after a pairing with a different computer on the same channel, pair it again with the buttons.
 - With a passkey, a different device cannot get into the pairing. A keypad without a passkey pairs with "Just Works": a person near you with special equipment can get into such a pairing. Pair such a keypad where no unknown persons are near.
 - The bonding keys are in the `nvs` partition. Flash encryption is off: a person with the device can read the bonding keys and make a false keypad. This person can also read the passwords.

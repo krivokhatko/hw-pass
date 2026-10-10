@@ -8,7 +8,8 @@
  * - The device connects only to the paired keypad, and only if it has
  *   the bonding keys. It uses the keys of the keypad only on a link that
  *   these keys encrypt. Outside a pairing, it refuses a passkey request
- *   and a new pairing: a connection cannot make new keys.
+ *   and a new pairing, and the host does not pair again by itself
+ *   (CMakeLists.txt): a connection cannot make new keys.
  * - In a pairing, the screen shows a random passkey, and the user types
  *   it on the keypad. This stops a man in the middle. A keypad without
  *   passkey entry pairs without this protection ("Just Works").
@@ -40,6 +41,10 @@ void keypad_key_name(uint8_t key, char buf[KEYPAD_KEY_NAME])
 #include "nimble/nimble_port.h"
 #include "nimble/nimble_port_freertos.h"
 #include "rng.h"
+
+#if MYNEWT_VAL(BLE_RESTART_PAIR)
+#error "BLE_RESTART_PAIR pairs again without the user: see CMakeLists.txt"
+#endif
 
 #define UUID_HID            0x1812
 #define UUID_DEVICE_NAME    0x2A00
@@ -173,6 +178,7 @@ static void request(cmd_t cmd)
     unlock();
 }
 
+/* A pairing starts here: from now on, a stop stops it. */
 static cmd_t take_cmd(void)
 {
     cmd_t cmd;
@@ -180,6 +186,7 @@ static cmd_t take_cmd(void)
     lock();
     cmd = s_cmd;
     s_cmd = CMD_NONE;
+    s_pairing = cmd == CMD_PAIR;
     xEventGroupClearBits(s_events, EV_CMD);
     unlock();
     return cmd;
@@ -693,12 +700,14 @@ static int encrypt(uint32_t ms)
     return s_status;
 }
 
+/* The keypad has bonding keys with an LTK. Without the LTK, the host
+ * pairs again at the encryption: a connection would make new keys. */
 static bool bonded(const ble_addr_t *addr)
 {
     struct ble_store_key_sec key = { .peer_addr = *addr };
     struct ble_store_value_sec value;
 
-    return ble_store_read_peer_sec(&key, &value) == 0;
+    return ble_store_read_peer_sec(&key, &value) == 0 && value.ltk_present;
 }
 
 /* Use the keys of the link. The keypad keeps the subscription in its
@@ -824,7 +833,6 @@ static void pair(void)
     int rc;
 
     get_peer(&old);
-    s_pairing = true;
     set_pair(KEYPAD_PAIR_SEARCHING, "", NULL);
     rc = scan();
     if (rc != 0) {
@@ -843,7 +851,8 @@ static void pair(void)
         goto end;
     }
     rc = encrypt(PAIR_MS);
-    if (rc != 0 || ble_gap_conn_find(s_conn, &desc) != 0 || !desc.sec_state.bonded) {
+    if (rc != 0 || ble_gap_conn_find(s_conn, &desc) != 0 || !desc.sec_state.bonded ||
+        !bonded(&desc.peer_id_addr)) {
         ESP_LOGE(TAG, "pairing: %d", rc);
         error = "Pairing failed";
         goto end;
@@ -860,9 +869,17 @@ static void pair(void)
         error = "Pairing failed";
         goto end;
     }
+    /* A stop before this point stops the pairing. A later stop does nothing. */
+    lock();
+    if (stopped()) {
+        unlock();
+        error = "Stopped";
+        goto end;
+    }
+    s_pairing = false;
+    unlock();
     keep_only(&p.addr);
     save_peer(&p);
-    s_pairing = false;  /* Before DONE: a stop after DONE does nothing. */
     set_pair(KEYPAD_PAIR_DONE, p.name, NULL);
     hold_link();
     return;
@@ -917,17 +934,21 @@ static void keypad_task(void *arg)
     for (;;) {
         cmd_t cmd = take_cmd();
 
+        if (cmd == CMD_UNPAIR) {    /* Also when Bluetooth does not start */
+            forget();
+            continue;
+        }
         if ((cmd == CMD_PAIR || have_peer()) && start() != ESP_OK) {
             if (cmd == CMD_PAIR) {
+                s_pairing = false;
                 set_pair(KEYPAD_PAIR_FAILED, NULL, "Bluetooth error");
             }
-            wait(EV_CMD, FOREVER);
+            /* The host can become ready later, for example after a reset. */
+            wait(EV_CMD | EV_SYNC, FOREVER);
             continue;
         }
         if (cmd == CMD_PAIR) {
             pair();
-        } else if (cmd == CMD_UNPAIR) {
-            forget();
         } else if (have_peer()) {
             serve();
         } else {

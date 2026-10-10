@@ -66,7 +66,6 @@ static int s_sel;
 static uint32_t s_hold_ms;      /* Both buttons are down: progress bar */
 static uint8_t s_kp_key;        /* The keypad key that is down, or 0 */
 static uint32_t s_kp_ms;        /* Time of its push */
-static bool s_kp_used;          /* Its hold gave it the selected entry. */
 static uint32_t s_kp_held;      /* Hold time of the progress bar */
 static web_info_t s_web;
 
@@ -213,7 +212,8 @@ static void draw_list(void)
         draw_both_hold();
     } else if (s_kp_held >= HINT_MS) {
         keypad_key_name(s_kp_key, name);
-        snprintf(text, sizeof(text), "Hold to bind key %s", name);
+        snprintf(text, sizeof(text), s_kp_held >= BIND_MS ? "Release: bind key %s" : "Hold to bind key %s",
+                 name);
         display_fill(0, FOOTER_Y - 3, DISPLAY_W * s_kp_held / BIND_MS, 2, C_BT);
         display_text(4, FOOTER_Y, text, &font_8x16, C_BT, C_BG);
     } else if (n > 0) {
@@ -380,9 +380,11 @@ static bool passthru(uint8_t key)
 }
 
 /* Read the keypad keys. A tap types, a hold binds. The times come from
- * the events: a slow loop does not change a tap into a hold. Before an
- * action, the host gets the release of all keys: else it repeats a
- * held key while the UI does not read the keypad. */
+ * the events: a slow loop does not change a tap into a hold. Only the
+ * release binds: after a lost link, the cancel comes some seconds late,
+ * and a tap must not become a hold. Before an action, the host gets the
+ * release of all keys: else it repeats a held key while the UI does not
+ * read the keypad. */
 static bool poll_keypad(void)
 {
     keypad_event_t ev;
@@ -400,30 +402,23 @@ static bool poll_keypad(void)
         } else if (ev.down && s_kp_key == 0) {
             s_kp_key = ev.key;
             s_kp_ms = ev.ms;
-            s_kp_used = false;
         } else if (!ev.down && ev.key == s_kp_key) {
             s_kp_key = 0;
             s_kp_held = 0;
-            if (!s_kp_used) {
-                usbdev_key(0, false);
-                display_backlight(BRIGHTNESS);
-                if (ev.ms - s_kp_ms >= BIND_MS) {
-                    bind_key(ev.key);
-                } else {
-                    type_key(ev.key);
-                }
+            usbdev_key(0, false);
+            display_backlight(BRIGHTNESS);
+            if (ev.ms - s_kp_ms >= BIND_MS) {
+                bind_key(ev.key);
+            } else {
+                type_key(ev.key);
             }
             break;  /* Read the next events in the next cycle. */
         }
     }
-    if (s_kp_key != 0 && !s_kp_used && now_ms() - s_kp_ms >= BIND_MS) {
-        usbdev_key(0, false);
-        display_backlight(BRIGHTNESS);
-        bind_key(s_kp_key);
-        s_kp_used = true;
-        dirty = true;
+    held = s_kp_key != 0 ? now_ms() - s_kp_ms : 0;
+    if (held > BIND_MS) {
+        held = BIND_MS;     /* The bar is full: no more redraws. */
     }
-    held = s_kp_key != 0 && !s_kp_used ? now_ms() - s_kp_ms : 0;
     if (held / HOLD_STEP_MS != s_kp_held / HOLD_STEP_MS) {
         s_kp_held = held;
         dirty = true;

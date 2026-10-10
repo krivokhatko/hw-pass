@@ -83,6 +83,7 @@ static StreamBufferHandle_t s_rx;
 static SemaphoreHandle_t s_tx_lock;
 static SemaphoreHandle_t s_type_lock;   /* Typing and s_held */
 static uint8_t s_held[6];               /* Keys that usbdev_key holds down */
+static bool s_held_lost;                /* The host did not get s_held. */
 static volatile uint8_t s_leds;
 
 /* ---- HID callbacks (TinyUSB task) ---- */
@@ -181,6 +182,7 @@ esp_err_t usbdev_type(const char *s, bool enter)
     }
     xSemaphoreTake(s_type_lock, portMAX_DELAY);
     memset(s_held, 0, sizeof(s_held));  /* The next report releases them. */
+    s_held_lost = false;
     /* If Caps Lock does not turn off, the host state is unknown. Do not
      * type: the text can have the wrong case. The second push below
      * restores the host state. */
@@ -201,7 +203,7 @@ esp_err_t usbdev_type(const char *s, bool enter)
     }
     if (!ok) {
         /* A failed push can leave a key down. The host then repeats it. */
-        send_report(0, 0);
+        s_held_lost = !send_report(0, 0);
     }
     if (caps) {
         set_caps_lock(true);
@@ -225,10 +227,12 @@ esp_err_t usbdev_key(uint8_t key, bool down)
     if (key != 0 && down && n < 6) {
         keys[n] = key;
     }
-    /* Send only a change: the UI releases all keys before each action. */
-    if (memcmp(keys, s_held, sizeof(keys)) != 0) {
+    /* Send only a change: the UI releases all keys before each action.
+     * After an error, send again: a lost release makes the host repeat. */
+    if (memcmp(keys, s_held, sizeof(keys)) != 0 || s_held_lost) {
         memcpy(s_held, keys, sizeof(keys));
         ok = usbdev_ready() && send_keys(0, keys);
+        s_held_lost = !ok;
     }
     xSemaphoreGive(s_type_lock);
     return ok ? ESP_OK : ESP_FAIL;

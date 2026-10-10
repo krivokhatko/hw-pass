@@ -753,7 +753,7 @@ static esp_err_t start_wifi(const web_info_t *info)
     if (err == ESP_OK) {
         err = esp_wifi_start();
     }
-    rng_radio_unlock(radio);
+    rng_radio_unlock(RNG_RADIO_WIFI, radio);
     vault_zero(&cfg, sizeof(cfg));
     ESP_RETURN_ON_ERROR(err, TAG, "Wi-Fi start");
 
@@ -837,7 +837,7 @@ void web_stop(void)
     if (err != ESP_OK && err != ESP_ERR_WIFI_NOT_INIT) {
         ESP_LOGE(TAG, "Wi-Fi stop: %s", esp_err_to_name(err));
     }
-    rng_radio_unlock(err != ESP_OK && err != ESP_ERR_WIFI_NOT_INIT);
+    rng_radio_unlock(RNG_RADIO_WIFI, err != ESP_OK && err != ESP_ERR_WIFI_NOT_INIT);
     vault_zero(s_token, sizeof(s_token));
     vault_zero(&s_info, sizeof(s_info));
     s_connected = false;

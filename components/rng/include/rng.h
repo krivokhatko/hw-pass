@@ -27,11 +27,15 @@ void rng_bytes(void *buf, size_t len);
  * The first character is a letter or a digit. */
 void rng_password(char *buf, int len);
 
+typedef enum {
+    RNG_RADIO_WIFI = 1 << 0,
+    RNG_RADIO_BT = 1 << 1,
+} rng_radio_t;
+
 /* The ADC noise source and the radio must not run at the same time.
- * Hold the lock while the radio starts or stops, then give the new
- * radio state. */
+ * Hold the lock while a radio starts or stops, then give its new state. */
 void rng_radio_lock(void);
-void rng_radio_unlock(bool radio_on);
+void rng_radio_unlock(rng_radio_t radio, bool on);
 
 #ifdef __cplusplus
 }

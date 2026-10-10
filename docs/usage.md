@@ -8,9 +8,9 @@ hw-pass is a USB keyboard that types stored passwords. Select an entry with the 
 |---|---|---|
 | Side (KEY2) | Select the next entry | Select the previous entry |
 | Front (KEY1, below the screen) | Type the password | Type the password, then push Enter |
-| Both together | - | Hold 2 s: start the Wi-Fi setup mode |
+| Both together | - | Hold 2 s, then release: start the Wi-Fi setup mode. Hold 5 s, then release: pair a Bluetooth keypad. |
 
-Push the two buttons at the same time. If you hold the front button alone for 0.6 s, the device types the password.
+Push the two buttons at the same time. If you hold the front button alone for 0.6 s, the device types the password. The footer shows what occurs when you release the two buttons.
 
 The screen goes dark after 60 s without activity. The first push turns it on again and does nothing else.
 
@@ -23,19 +23,21 @@ The power button on the other side belongs to the power chip:
 ## Screen
 
 ```
-hw-pass        3/12  USB      <- position, USB state (green: ready)
-  GitHub
+hw-pass     3/12  BT  USB     <- position, keypad state, USB state (green: ready)
+  GitHub                 1    <- the keypad key of the entry
   Mail                        <- the selected entry has a color bar
-  Bank
+  Bank                   2
 ------------------------------
 Side: next  Front: type
 ```
+
+"BT" shows only when a keypad is paired. Green: the keypad is connected. Gray: the device waits for the keypad.
 
 ## Wi-Fi setup mode
 
 Use a phone or a laptop to add and change entries.
 
-1. Hold the two buttons for 2 s. A bar on the screen shows the progress.
+1. Hold the two buttons for 2 s, then release them. A bar on the screen shows the progress.
 2. The screen shows a QR code, the network name, and the Wi-Fi password.
 3. Phone: scan the QR code with the camera. The phone connects. An iPhone usually opens the page by itself. On Android, tap the "Sign in to Wi-Fi network" notification, or tap the network in the Wi-Fi settings. The page opens in the sign-in window.
    Laptop: connect to the network with the password, then open `http://192.168.4.1/`.
@@ -112,6 +114,43 @@ Delete the decrypted text after use.
 
 File format: the format of `openssl enc -a`. "Salted__", an 8-byte random salt, then AES-256-CBC with PKCS#7 padding, all in base64 lines of 64 characters. PBKDF2-HMAC-SHA512 with 210000 iterations makes the key and the IV from the passphrase and the salt.
 
+## Bluetooth keypad
+
+A Bluetooth LE keyboard can type passwords, for example the numeric keypad A4Tech FBK21C. Each key can type one entry. The device keeps one keypad.
+
+### Pair a keypad
+
+1. Hold the two buttons for 5 s, then release them. After 2 s, the footer shows "Release: Wi-Fi. Hold: keypad". After 5 s, it shows "Release: pair keypad".
+2. Put the keypad in pairing mode. FBK21C: hold Enter and `*` (channel BT1), or Enter and `-` (channel BT2), for 3 s. If a PC uses one channel, use the other channel for the device.
+3. The screen shows the name of the keypad. If the screen shows a passkey of 6 digits, type the digits on the keypad, then push Enter.
+4. The screen shows "Keypad paired".
+
+If the device finds no keypad in 60 s, the screen shows "No keypad found". A button push stops the pairing. If the pairing does not complete, the old keypad stays paired. A new keypad replaces the old keypad.
+
+### Give a key to an entry
+
+1. Select the entry with the side button.
+2. Hold a key on the keypad for 2 s. The footer shows "Hold to bind key" and a bar.
+3. The screen shows "Key 5 types" and the label of the entry.
+
+An entry has one key, and a key has one entry. A new key of the entry replaces its old key. A key that had a different entry moves to the selected entry. To remove the key, hold it again on the same entry: the screen shows "Key 5 removed".
+
+The list shows the key at the right side of the entry. The `list` command also shows it.
+
+### Type with a key
+
+Push the key and release it in less than 2 s. The device types the password of the entry, without Enter. The selection does not change. The keypad also types when the screen is dark.
+
+A key without an entry types nothing. The screen shows "Key 5: no entry".
+
+The keypad disconnects when it sleeps. A key push wakes it, and it connects again in about 1 s. Some keypads do not send the key that wakes them. Then push the key again.
+
+The keypad does not type in the Wi-Fi setup mode and during a pairing.
+
+### Remove the keypad
+
+Type `unpair` on the serial port. The entries keep their keys: a new keypad types the same entries with the same keys.
+
 ## Serial command line
 
 The device is also a USB serial port (CDC-ACM). Use it to add and change entries. Open the port with any terminal program, for example:
@@ -124,7 +163,7 @@ The baud rate has no effect. Push Enter to get the prompt.
 | Command | Action |
 |---|---|
 | `help` | Show the commands. |
-| `list` | Show the entries. |
+| `list` | Show the entries and their keypad keys. |
 | `add <label>` | Add an entry. Asks for the password two times. The password does not echo. |
 | `gen [len] <label>` | Add an entry with a random password of 8 to 127 characters. The default length is 20. See "Random passwords". |
 | `pass <n>` | Change the password of entry n. |
@@ -134,8 +173,9 @@ The baud rate has no effect. Push Enter to get the prompt.
 | `wipe` | Erase all entries. |
 | `kbtest` | Type all printable ASCII characters. Checks the key layout of the host. |
 | `web` | Start the Wi-Fi setup mode and show the network name and the Wi-Fi password. If the mode is on, stop it. |
+| `unpair` | Remove the Bluetooth keypad. The entries keep their keys. |
 | `rotate` | Turn the screen 180 degrees. The device keeps the setting. |
-| `info` | Show the firmware version and the device state. |
+| `info` | Show the firmware version and the device state, also the keypad. |
 | `dfu` | Restart into ROM download mode for flashing. |
 
 Limits:
@@ -176,12 +216,12 @@ Read these limits before you store important passwords:
 - Flash encryption is off. A person with the device can read the passwords from the flash with esptool.
 - There is no PIN. A person with the device can type all passwords.
 - `del` and `pass` mark the old data as deleted, but the old bytes stay in flash until NVS reuses the page. `wipe` erases the full vault partition.
-- `gen` and the random passwords of the page use the hardware random number generator. Its entropy source is the ADC noise when the radio is off, and the radio when Wi-Fi is on.
+- `gen` and the random passwords of the page use the hardware random number generator. Its entropy source is the ADC noise when the radio is off, and the radio when Wi-Fi or Bluetooth is on.
 - The backup file is as safe as its passphrase. PBKDF2 with 210000 iterations makes each guess slow, but a short or common passphrase is easy to guess. Use 4 or more random words, or 16 or more random characters.
 
 Wi-Fi:
 
-- The radio is off, except in the Wi-Fi setup mode. A build with `CONFIG_HWPASS_WEB=n` has no Wi-Fi code.
+- Wi-Fi is off, except in the Wi-Fi setup mode. A build with `CONFIG_HWPASS_WEB=n` has no Wi-Fi code.
 - Each start makes a new network name and a new random Wi-Fi password of 16 characters (about 79 bits). The network uses WPA2/WPA3 and accepts one device. The transmit power is low (11 dBm).
 - The device keeps no Wi-Fi data in flash.
 - The page uses HTTP inside the encrypted Wi-Fi link. A person who has the Wi-Fi password while the mode is on can change and erase entries.
@@ -189,3 +229,11 @@ Wi-Fi:
 - The `web` command sends the Wi-Fi password to the USB host. A program on the host could join the network and make a backup. Thus after a start with `web`, the page cannot make a backup.
 - The page accepts changes only with the session token and the host name `192.168.4.1`. Other web sites in the same browser cannot send changes.
 - The firmware sets its copies of a password to zero after use. The Wi-Fi driver and the TCP/IP stack also keep the received bytes in their buffers until other data overwrites them. These buffers are in RAM only. A restart removes them.
+
+Bluetooth keypad:
+
+- Bluetooth is off until you start a pairing. With a paired keypad, Bluetooth is on and the device waits for the keypad. After `unpair` or a pairing that did not complete, Bluetooth stays on until the next restart, but it does not send or receive.
+- A person with the paired keypad can type all passwords that have a key, also when the screen is dark. Keep the keypad as safe as the device.
+- Only the buttons can start a pairing. At other times, the device refuses a new pairing. It connects only to the paired keypad, and uses its keys only on a link that the bonding keys encrypt.
+- With a passkey, a different device cannot get into the pairing. A keypad without a passkey pairs with "Just Works": a person near you with special equipment can get into such a pairing. Pair such a keypad where no unknown persons are near.
+- The bonding keys are in the `nvs` partition. Flash encryption is off: a person with the device can read the bonding keys and make a false keypad. This person can also read the passwords.

@@ -3,6 +3,7 @@
 #include "nvs_flash.h"
 #include "cli.h"
 #include "display.h"
+#include "keypad.h"
 #include "pm1.h"
 #include "rng.h"
 #include "sysinfo.h"
@@ -38,6 +39,7 @@ void app_main(void)
     check(vault_init(), "vault");
     check(rng_init(), "rng");
     check(usbdev_init(), "usb");
+    check(keypad_init(), "keypad");
     check(cli_start(), "cli");
     ui_run();
 }

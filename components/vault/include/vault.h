@@ -40,6 +40,16 @@ esp_err_t vault_delete(int i);
 /* Move entry `from` to position `to`. The entries between shift by one. */
 esp_err_t vault_move(int from, int to);
 
+/* Keypad key of entry i: a HID key code. 0: no key, or no entry i. */
+uint8_t vault_key(int i);
+
+/* Return the entry with this key, or -1. */
+int vault_find_key(uint8_t key);
+
+/* Give entry i this key. Another entry with this key loses it. Key 0
+ * removes the key of entry i. */
+esp_err_t vault_set_key(int i, uint8_t key);
+
 /* Erase the partition. This also removes the deleted data from flash. */
 esp_err_t vault_wipe(void);
 

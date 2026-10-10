@@ -1,6 +1,6 @@
 /* True random characters. The hardware RNG needs an entropy source: the
- * radio when Wi-Fi runs, else the ADC noise source. All functions are
- * safe to call from different tasks. */
+ * radio when Wi-Fi or Bluetooth runs, else the ADC noise source. All
+ * functions are safe to call from different tasks. */
 #include <ctype.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -21,7 +21,7 @@ static const char s_password_set[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                                      "0123456789+-.:@_";
 
 static SemaphoreHandle_t s_lock;
-static bool s_radio;
+static unsigned s_radio;  /* rng_radio_t bits of the radios that run */
 
 esp_err_t rng_init(void)
 {
@@ -34,9 +34,13 @@ void rng_radio_lock(void)
     xSemaphoreTake(s_lock, portMAX_DELAY);
 }
 
-void rng_radio_unlock(bool radio_on)
+void rng_radio_unlock(rng_radio_t radio, bool on)
 {
-    s_radio = radio_on;
+    if (on) {
+        s_radio |= radio;
+    } else {
+        s_radio &= ~radio;
+    }
     xSemaphoreGive(s_lock);
 }
 

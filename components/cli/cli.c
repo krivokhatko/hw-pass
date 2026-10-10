@@ -13,6 +13,7 @@
 #include "esp_system.h"
 #include "nvs.h"
 #include "display.h"
+#include "keypad.h"
 #include "rng.h"
 #include "ui.h"
 #include "usbdev.h"
@@ -212,13 +213,19 @@ static void cmd_help(char *arg);
 
 static void cmd_list(char *arg)
 {
-    char label[VAULT_LABEL_MAX + 1];
+    char label[VAULT_LABEL_MAX + 1], key[KEYPAD_KEY_NAME];
 
     if (vault_count() == 0) {
         out("The vault is empty. Use \"add <label>\".\n");
     }
     for (int i = 0; i < vault_count(); i++) {
-        if (vault_label(i, label, sizeof(label)) == ESP_OK) {
+        if (vault_label(i, label, sizeof(label)) != ESP_OK) {
+            continue;
+        }
+        if (vault_key(i) != 0) {
+            keypad_key_name(vault_key(i), key);
+            out("%3d  %-*s  key %s\n", i + 1, VAULT_LABEL_MAX, label, key);
+        } else {
             out("%3d  %s\n", i + 1, label);
         }
     }
@@ -351,6 +358,28 @@ static void cmd_kbtest(char *arg)
     }
 }
 
+static void cmd_unpair(char *arg)
+{
+    char name[KEYPAD_NAME_MAX + 1], question[64];
+    esp_err_t err;
+
+    keypad_name(name, sizeof(name));
+    if (keypad_state() == KEYPAD_NONE) {
+        out("No keypad is paired.\n");
+        return;
+    }
+    snprintf(question, sizeof(question), "Remove the keypad %s?", name);
+    if (!confirm(question)) {
+        return;
+    }
+    err = keypad_unpair();
+    if (err == ESP_OK) {
+        out("The keypad is removed. The entries keep their keys.\n");
+    } else {
+        out("Error: %s.\n", esp_err_to_name(err));
+    }
+}
+
 static void cmd_rotate(char *arg)
 {
     ui_flip();
@@ -361,6 +390,7 @@ static void cmd_info(char *arg)
 {
     const esp_app_desc_t *app = esp_app_get_description();
     nvs_stats_t stats = { 0 };
+    char name[KEYPAD_NAME_MAX + 1];
 
     nvs_get_stats("vault", &stats);
     out("Firmware:  %s %s (ESP-IDF %s)\n", app->project_name, app->version, app->idf_ver);
@@ -369,6 +399,18 @@ static void cmd_info(char *arg)
     out("USB host:  %s, Caps Lock %s\n", usbdev_ready() ? "ready" : "not ready",
         usbdev_caps_lock() ? "on" : "off");
     out("Wi-Fi:     %s\n", !web_active() ? "off" : web_connected() ? "on, 1 device" : "on, no device");
+    keypad_name(name, sizeof(name));
+    switch (keypad_state()) {
+    case KEYPAD_NONE:
+        out("Keypad:    none\n");
+        break;
+    case KEYPAD_WAITING:
+        out("Keypad:    %s, not connected\n", name);
+        break;
+    case KEYPAD_CONNECTED:
+        out("Keypad:    %s, connected\n", name);
+        break;
+    }
     out("Heap:      %u bytes free, %u minimum\n", (unsigned)esp_get_free_heap_size(),
         (unsigned)esp_get_minimum_free_heap_size());
     out("LCD:       power mode 0x%02X (0x9C is correct)\n", display_power_mode());
@@ -424,6 +466,7 @@ static const struct {
     { "wipe", "", "Erase all entries.", cmd_wipe },
     { "kbtest", "", "Type all ASCII characters. Checks the key layout.", cmd_kbtest },
     { "web", "", "Start or stop the Wi-Fi setup mode.", cmd_web },
+    { "unpair", "", "Remove the Bluetooth keypad.", cmd_unpair },
     { "rotate", "", "Turn the screen 180 degrees.", cmd_rotate },
     { "info", "", "Show the device status.", cmd_info },
     { "dfu", "", "Restart into download mode for flashing.", cmd_dfu },

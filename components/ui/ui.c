@@ -1,6 +1,7 @@
 /* Screen and buttons. The side button selects an entry. The front
  * button types the password of the entry. Both buttons together start
- * the Wi-Fi setup mode. */
+ * the Wi-Fi setup mode or the pairing of a keypad. A keypad key types
+ * the entry that has this key. */
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -12,6 +13,7 @@
 #include "qrcode.h"
 #include "buttons.h"
 #include "display.h"
+#include "keypad.h"
 #include "usbdev.h"
 #include "vault.h"
 #include "web.h"
@@ -21,7 +23,11 @@
 #define IDLE_OFF_MS     60000   /* Backlight off after this idle time. */
 #define DONE_MS         600
 #define ERROR_MS        1500
-#define BOTH_MS         2000    /* Hold both buttons: Wi-Fi setup mode. */
+#define INFO_MS         1500    /* Message after a pairing or a key change */
+#define BOTH_MS         2000    /* Hold both buttons, then release: Wi-Fi setup mode. */
+#define PAIR_MS         5000    /* Hold both buttons longer: pair a keypad. */
+#define BIND_MS         2000    /* Hold a keypad key: it gets the selected entry. */
+#define HINT_MS         300     /* Keypad hold time before the progress bar shows */
 #define HOLD_STEP_MS    100     /* Redraw interval of the hold progress bar */
 
 /* Wi-Fi setup screen: QR code in a square at the left, text at the right. */
@@ -43,6 +49,7 @@
 #define C_ACCENT        DISPLAY_RGB(255, 176, 0)
 #define C_OK            DISPLAY_RGB(0, 200, 80)
 #define C_ERROR         DISPLAY_RGB(230, 40, 40)
+#define C_BT            DISPLAY_RGB(60, 140, 255)
 
 static const char *TAG = "ui";
 static volatile bool s_flip_request;
@@ -52,6 +59,10 @@ static volatile bool s_web_stop;
 static bool s_flip;
 static int s_sel;
 static uint32_t s_hold_ms;      /* Both buttons are down: progress bar */
+static uint8_t s_kp_key;        /* The keypad key that is down, or 0 */
+static uint32_t s_kp_ms;        /* Time of its push */
+static bool s_kp_used;          /* Its hold gave it the selected entry. */
+static uint32_t s_kp_held;      /* Hold time of the progress bar */
 static web_info_t s_web;
 
 void ui_flip(void)
@@ -97,6 +108,11 @@ static void save_flip(void)
     }
 }
 
+static uint32_t now_ms(void)
+{
+    return pdTICKS_TO_MS(xTaskGetTickCount());
+}
+
 static void flip(void)
 {
     s_flip_request = false;
@@ -117,21 +133,41 @@ static void draw_frame(void)
     char count[24];
     int n = vault_count();
     int x = DISPLAY_W - 4 - 3 * font_8x16.w;
+    keypad_state_t kp = keypad_state();
 
     display_fill(0, 0, DISPLAY_W, DISPLAY_H, C_BG);
     display_text(4, HEADER_Y, "hw-pass", &font_8x16, C_DIM, C_BG);
+    display_text(x, HEADER_Y, "USB", &font_8x16, usbdev_ready() ? C_OK : C_ERROR, C_BG);
+    if (kp != KEYPAD_NONE) {
+        x -= 3 * font_8x16.w;
+        display_text(x, HEADER_Y, "BT", &font_8x16, kp == KEYPAD_CONNECTED ? C_OK : C_DIM, C_BG);
+    }
     if (n > 0) {
         snprintf(count, sizeof(count), "%d/%d", s_sel + 1, n);
         display_text(x - (2 + (int)strlen(count)) * font_8x16.w, HEADER_Y, count, &font_8x16, C_TEXT, C_BG);
     }
-    display_text(x, HEADER_Y, "USB", &font_8x16, usbdev_ready() ? C_OK : C_ERROR, C_BG);
     display_fill(0, LIST_Y - 3, DISPLAY_W, 1, C_LINE);
     display_fill(0, FOOTER_Y - 2, DISPLAY_W, 1, C_LINE);
 }
 
+/* The footer during a hold of both buttons: 2 s, then 3 s more. */
+static void draw_both_hold(void)
+{
+    if (s_hold_ms < BOTH_MS) {
+        display_fill(0, FOOTER_Y - 3, DISPLAY_W * s_hold_ms / BOTH_MS, 2, C_ACCENT);
+        display_text(4, FOOTER_Y, "Hold for Wi-Fi setup", &font_8x16, C_ACCENT, C_BG);
+    } else if (s_hold_ms < PAIR_MS) {
+        display_fill(0, FOOTER_Y - 3, DISPLAY_W * (s_hold_ms - BOTH_MS) / (PAIR_MS - BOTH_MS), 2, C_BT);
+        display_text(4, FOOTER_Y, "Release: Wi-Fi. Hold: keypad", &font_8x16, C_ACCENT, C_BG);
+    } else {
+        display_fill(0, FOOTER_Y - 3, DISPLAY_W, 2, C_BT);
+        display_text(4, FOOTER_Y, "Release: pair keypad", &font_8x16, C_BT, C_BG);
+    }
+}
+
 static void draw_list(void)
 {
-    char label[VAULT_LABEL_MAX + 1];
+    char label[VAULT_LABEL_MAX + 1], name[KEYPAD_KEY_NAME], text[32];
     int n = vault_count();
     int first = s_sel - 1;  /* One entry of context above the selection. */
 
@@ -150,15 +186,31 @@ static void draw_list(void)
     for (int r = 0; r < ROWS && first + r < n; r++) {
         int i = first + r, y = LIST_Y + r * ROW_H;
         uint16_t fg = i == s_sel ? C_BG : C_TEXT, bg = i == s_sel ? C_ACCENT : C_BG;
+        uint8_t key = vault_key(i);
+        int right = DISPLAY_W;  /* The label ends before the key name. */
 
         display_fill(0, y, DISPLAY_W, ROW_H, bg);
+        if (key != 0) {
+            keypad_key_name(key, name);
+            right = DISPLAY_W - 4 - (int)strlen(name) * font_8x16.w;
+            display_text(right, y + 4, name, &font_8x16, i == s_sel ? C_BG : C_DIM, bg);
+        }
         if (vault_label(i, label, sizeof(label)) == ESP_OK) {
+            int max = (right - 6 - 4) / font_12x24.w;
+
+            if ((int)strlen(label) > max) {
+                label[max] = '\0';
+            }
             display_text(6, y, label, &font_12x24, fg, bg);
         }
     }
     if (s_hold_ms > 0) {
-        display_fill(0, FOOTER_Y - 3, DISPLAY_W * s_hold_ms / BOTH_MS, 2, C_ACCENT);
-        display_text(4, FOOTER_Y, "Hold for Wi-Fi setup", &font_8x16, C_ACCENT, C_BG);
+        draw_both_hold();
+    } else if (s_kp_held >= HINT_MS) {
+        keypad_key_name(s_kp_key, name);
+        snprintf(text, sizeof(text), "Hold to bind key %s", name);
+        display_fill(0, FOOTER_Y - 3, DISPLAY_W * s_kp_held / BIND_MS, 2, C_BT);
+        display_text(4, FOOTER_Y, text, &font_8x16, C_BT, C_BG);
     } else if (n > 0) {
         display_text(4, FOOTER_Y, "Side: next  Front: type", &font_8x16, C_DIM, C_BG);
     }
@@ -242,12 +294,12 @@ static void show_message(const char *title, const char *detail, uint16_t color)
 
 /* ---- Actions ---- */
 
-static void type_selected(bool enter)
+static void type_entry(int i, bool enter)
 {
     char label[VAULT_LABEL_MAX + 1], secret[VAULT_SECRET_MAX + 1];
     esp_err_t err;
 
-    if (vault_label(s_sel, label, sizeof(label)) != ESP_OK) {
+    if (vault_label(i, label, sizeof(label)) != ESP_OK) {
         return;
     }
     if (!usbdev_ready()) {
@@ -256,7 +308,7 @@ static void type_selected(bool enter)
         return;
     }
     show_message(enter ? "Typing + Enter" : "Typing", label, C_ACCENT);
-    err = vault_secret(s_sel, secret, sizeof(secret));
+    err = vault_secret(i, secret, sizeof(secret));
     if (err == ESP_OK) {
         err = usbdev_type(secret, enter);
     }
@@ -271,6 +323,174 @@ static void type_selected(bool enter)
         show_message("Typing failed", label, C_ERROR);
         vTaskDelay(pdMS_TO_TICKS(ERROR_MS));
     }
+}
+
+/* A tap of a keypad key types the entry that has this key. */
+static void type_key(uint8_t key)
+{
+    char name[KEYPAD_KEY_NAME], title[32];
+    int i = vault_find_key(key);
+
+    if (i >= 0) {
+        type_entry(i, false);
+        return;
+    }
+    keypad_key_name(key, name);
+    snprintf(title, sizeof(title), "Key %s: no entry", name);
+    show_message(title, "Hold 2 s: bind", C_ACCENT);
+    vTaskDelay(pdMS_TO_TICKS(ERROR_MS));
+}
+
+/* A hold of a keypad key gives it the selected entry. If the entry has
+ * this key already, the key loses the entry. */
+static void bind_key(uint8_t key)
+{
+    char label[VAULT_LABEL_MAX + 1], name[KEYPAD_KEY_NAME], title[32];
+    bool remove;
+    esp_err_t err;
+
+    if (vault_label(s_sel, label, sizeof(label)) != ESP_OK) {
+        show_message("No entries", NULL, C_ERROR);
+        vTaskDelay(pdMS_TO_TICKS(ERROR_MS));
+        return;
+    }
+    keypad_key_name(key, name);
+    remove = vault_key(s_sel) == key;
+    err = vault_set_key(s_sel, remove ? 0 : key);
+    if (err != ESP_OK) {
+        show_message("Write error", esp_err_to_name(err), C_ERROR);
+        vTaskDelay(pdMS_TO_TICKS(ERROR_MS));
+        return;
+    }
+    snprintf(title, sizeof(title), remove ? "Key %s removed" : "Key %s types", name);
+    show_message(title, label, C_OK);
+    vTaskDelay(pdMS_TO_TICKS(INFO_MS));
+}
+
+/* Read the keypad keys. A tap types, a hold binds. The times come from
+ * the events: a slow loop does not change a tap into a hold. */
+static bool poll_keypad(void)
+{
+    keypad_event_t ev;
+    uint32_t held;
+    bool dirty = false;
+
+    while (keypad_event(&ev)) {
+        dirty = true;
+        if (ev.key == 0) {
+            s_kp_key = 0;
+            s_kp_held = 0;
+        } else if (ev.down && s_kp_key == 0) {
+            s_kp_key = ev.key;
+            s_kp_ms = ev.ms;
+            s_kp_used = false;
+        } else if (!ev.down && ev.key == s_kp_key) {
+            s_kp_key = 0;
+            s_kp_held = 0;
+            if (!s_kp_used) {
+                display_backlight(BRIGHTNESS);
+                if (ev.ms - s_kp_ms >= BIND_MS) {
+                    bind_key(ev.key);
+                } else {
+                    type_key(ev.key);
+                }
+            }
+            break;  /* Read the next events in the next cycle. */
+        }
+    }
+    if (s_kp_key != 0 && !s_kp_used && now_ms() - s_kp_ms >= BIND_MS) {
+        display_backlight(BRIGHTNESS);
+        bind_key(s_kp_key);
+        s_kp_used = true;
+        dirty = true;
+    }
+    held = s_kp_key != 0 && !s_kp_used ? now_ms() - s_kp_ms : 0;
+    if (held / HOLD_STEP_MS != s_kp_held / HOLD_STEP_MS) {
+        s_kp_held = held;
+        dirty = true;
+    }
+    return dirty;
+}
+
+static void draw_pair(const keypad_pair_t *p)
+{
+    char text[16];
+
+    display_fill(0, 0, DISPLAY_W, DISPLAY_H, C_BG);
+    display_text(4, HEADER_Y, "Pair keypad", &font_8x16, C_BT, C_BG);
+    switch (p->step) {
+    case KEYPAD_PAIR_SEARCHING:
+        text_center(LIST_Y + 4, "Searching", &font_12x24, C_ACCENT);
+        text_center(LIST_Y + 40, "Turn on pairing mode", &font_8x16, C_TEXT);
+        text_center(LIST_Y + 58, "on the keypad", &font_8x16, C_TEXT);
+        break;
+    case KEYPAD_PAIR_CONNECTING:
+        text_center(LIST_Y + 4, "Connecting", &font_12x24, C_ACCENT);
+        text_center(LIST_Y + 40, p->name, &font_8x16, C_TEXT);
+        break;
+    case KEYPAD_PAIR_PASSKEY:
+        snprintf(text, sizeof(text), "%06lu", (unsigned long)p->passkey);
+        text_center(LIST_Y, "Type on the keypad:", &font_8x16, C_TEXT);
+        text_center(LIST_Y + 22, text, &font_12x24, C_ACCENT);
+        text_center(LIST_Y + 54, "then Enter", &font_8x16, C_TEXT);
+        break;
+    case KEYPAD_PAIR_DONE:
+        text_center(LIST_Y + 4, "Keypad paired", &font_12x24, C_OK);
+        text_center(LIST_Y + 40, p->name, &font_8x16, C_TEXT);
+        break;
+    case KEYPAD_PAIR_FAILED:
+        text_center(LIST_Y + 4, "Pairing failed", &font_12x24, C_ERROR);
+        text_center(LIST_Y + 40, p->error ? p->error : "", &font_8x16, C_TEXT);
+        break;
+    }
+    if (p->step != KEYPAD_PAIR_DONE && p->step != KEYPAD_PAIR_FAILED) {
+        display_text(4, FOOTER_Y, "Button: stop", &font_8x16, C_DIM, C_BG);
+    }
+    display_flush();
+}
+
+/* Pairing of a keypad. Return when it is done, when it fails, or when a
+ * button stops it. */
+static void pair_mode(void)
+{
+    keypad_pair_t pair, shown = { 0 };
+    bool armed = false;     /* Both buttons were up after the start. */
+    bool first = true;
+    esp_err_t err;
+
+    display_backlight(BRIGHTNESS);
+    err = keypad_pair_start();
+    if (err != ESP_OK) {
+        show_message("Bluetooth error", err == ESP_ERR_NOT_SUPPORTED ? "Not in this build" : esp_err_to_name(err), C_ERROR);
+        vTaskDelay(pdMS_TO_TICKS(ERROR_MS));
+        return;
+    }
+    for (;;) {
+        press_t side = buttons_poll(BUTTON_SIDE);
+        press_t front = buttons_poll(BUTTON_FRONT);
+        uint32_t both = buttons_both_ms();
+
+        armed |= both == 0;
+        keypad_pair_status(&pair);
+        if (first || s_flip_request || pair.step != shown.step || pair.passkey != shown.passkey ||
+            strcmp(pair.name, shown.name) != 0) {
+            if (s_flip_request) {
+                flip();
+            }
+            draw_pair(&pair);
+            shown = pair;
+            first = false;
+        }
+        if (pair.step == KEYPAD_PAIR_DONE || pair.step == KEYPAD_PAIR_FAILED) {
+            vTaskDelay(pdMS_TO_TICKS(pair.step == KEYPAD_PAIR_DONE ? INFO_MS : ERROR_MS));
+            break;
+        }
+        if (side != PRESS_NONE || front != PRESS_NONE || (armed && both > 0) || s_dfu_request) {
+            break;
+        }
+        vTaskDelay(pdMS_TO_TICKS(BUTTONS_POLL_MS));
+    }
+    keypad_pair_stop();
 }
 
 /* Wi-Fi setup mode. Return when a button push, the page, the command
@@ -330,6 +550,7 @@ void ui_run(void)
 {
     uint32_t generation = vault_generation();
     bool usb = usbdev_ready();
+    keypad_state_t kp = keypad_state();
     bool screen_on = true;
     bool both_used = false;     /* The current push of both buttons did its action. */
     uint32_t idle_ms = 0;
@@ -347,6 +568,7 @@ void ui_run(void)
         press_t front = buttons_poll(BUTTON_FRONT);
         uint32_t both = buttons_both_ms();
         uint32_t hold = 0;
+        bool web = false, pair = false;
         bool dirty = false;
         int n;
 
@@ -359,24 +581,35 @@ void ui_run(void)
             flip();
             dirty = true;
         }
+        /* Hold both buttons, then release them. The last hold time on the
+         * screen selects the mode. */
         if (both == 0) {
+            web = !both_used && s_hold_ms >= BOTH_MS && s_hold_ms < PAIR_MS;
+            pair = !both_used && s_hold_ms >= PAIR_MS;
             both_used = false;
         } else if (!both_used) {
             hold = both;
         }
         s_web_stop = false;     /* The mode is off. */
-        if (s_web_start || hold >= BOTH_MS) {
+        if (s_web_start || web || pair) {
             /* A request from the command line counts first: the USB host
              * gets the Wi-Fi password. */
-            bool buttons = !s_web_start;
+            bool cli = s_web_start;
 
             s_web_start = false;
             s_hold_ms = hold = 0;
-            web_mode(buttons);
-            /* The buttons were not sampled during the start, the stop and
-             * the messages. A push in this time must not type. Both buttons
-             * can still be down: this push is used. */
+            if (cli || web) {
+                web_mode(!cli);
+            } else {
+                pair_mode();
+            }
+            /* The buttons and the keypad were not read during the mode and
+             * the messages. A push in this time must not type. Both
+             * buttons can still be down: this push is used. */
             buttons_consume();
+            keypad_flush();
+            s_kp_key = 0;
+            s_kp_held = 0;
             both_used = true;
             side = front = PRESS_NONE;
             screen_on = true;
@@ -402,6 +635,10 @@ void ui_run(void)
             usb = !usb;
             dirty = true;
         }
+        if (kp != keypad_state()) {
+            kp = keypad_state();
+            dirty = true;
+        }
 
         if (side != PRESS_NONE || front != PRESS_NONE || both > 0) {
             idle_ms = 0;
@@ -416,7 +653,12 @@ void ui_run(void)
             dirty = true;
         }
         if (n > 0 && front != PRESS_NONE) {
-            type_selected(front == PRESS_LONG);
+            type_entry(s_sel, front == PRESS_LONG);
+            dirty = true;
+        }
+        /* A keypad key works also when the screen is off. */
+        if (poll_keypad()) {
+            idle_ms = 0;
             dirty = true;
         }
 

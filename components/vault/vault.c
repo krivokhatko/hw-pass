@@ -1,5 +1,7 @@
 /* Password entries. RAM holds a copy. Each change writes all entries
- * as one NVS blob, thus a power loss keeps the old or the new set. */
+ * as one NVS blob, thus a power loss keeps the old or the new set.
+ * Version 1 had no keypad key. The first change after an update writes
+ * version 2. */
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -14,11 +16,13 @@
 #define PARTITION   "vault"
 #define NAMESPACE   "vault"
 #define KEY         "entries"
-#define VERSION     1
+#define VERSION     2
+#define V1_ENTRY    (VAULT_LABEL_MAX + 1 + VAULT_SECRET_MAX + 1)
 
 typedef struct {
     char label[VAULT_LABEL_MAX + 1];
     char secret[VAULT_SECRET_MAX + 1];
+    uint8_t key;    /* Keypad key, 0: none. Version 2. */
 } entry_t;
 
 typedef struct {
@@ -63,6 +67,22 @@ static size_t store_size(int count)
     return offsetof(store_t, entry) + count * sizeof(entry_t);
 }
 
+/* Version 1 entries have no key. Move them to their version 2 positions,
+ * the last first: a version 2 entry is longer. */
+static bool from_v1(size_t size)
+{
+    uint8_t *p = (uint8_t *)s_store.entry;
+
+    if (size != offsetof(store_t, entry) + s_store.count * V1_ENTRY) {
+        return false;
+    }
+    for (int i = s_store.count - 1; i >= 0; i--) {
+        memmove(&s_store.entry[i], p + i * V1_ENTRY, V1_ENTRY);
+        s_store.entry[i].key = 0;
+    }
+    return true;
+}
+
 static esp_err_t load(void)
 {
     size_t size = sizeof(s_store);
@@ -74,6 +94,9 @@ static esp_err_t load(void)
         return ESP_OK;
     }
     ESP_RETURN_ON_ERROR(err, TAG, "read");
+    if (s_store.version == 1 && s_store.count <= VAULT_MAX && from_v1(size)) {
+        return ESP_OK;
+    }
     if (s_store.version != VERSION || s_store.count > VAULT_MAX || size != store_size(s_store.count)) {
         ESP_LOGE(TAG, "unknown data: version %u, %u entries, %u bytes",
                  s_store.version, s_store.count, (unsigned)size);
@@ -201,6 +224,7 @@ esp_err_t vault_add_many(const char *const labels[], const char *const secrets[]
 
         strlcpy(e->label, labels[i], sizeof(e->label));
         strlcpy(e->secret, secrets[i], sizeof(e->secret));
+        e->key = 0;
     }
     /* If the write fails, save() loads the old entries: nothing is added. */
     return unlock(save());
@@ -227,6 +251,47 @@ esp_err_t vault_set_secret(int i, const char *secret)
     }
     vault_zero(s_store.entry[i].secret, sizeof(s_store.entry[i].secret));
     strlcpy(s_store.entry[i].secret, secret, sizeof(s_store.entry[i].secret));
+    return unlock(save());
+}
+
+uint8_t vault_key(int i)
+{
+    uint8_t key = 0;
+
+    lock();
+    if (valid(i)) {
+        key = s_store.entry[i].key;
+    }
+    unlock(ESP_OK);
+    return key;
+}
+
+int vault_find_key(uint8_t key)
+{
+    int found = -1;
+
+    lock();
+    for (int i = 0; key != 0 && i < s_store.count && found < 0; i++) {
+        if (s_store.entry[i].key == key) {
+            found = i;
+        }
+    }
+    unlock(ESP_OK);
+    return found;
+}
+
+esp_err_t vault_set_key(int i, uint8_t key)
+{
+    lock();
+    if (!valid(i)) {
+        return unlock(ESP_ERR_NOT_FOUND);
+    }
+    for (int j = 0; key != 0 && j < s_store.count; j++) {
+        if (s_store.entry[j].key == key) {
+            s_store.entry[j].key = 0;
+        }
+    }
+    s_store.entry[i].key = key;
     return unlock(save());
 }
 

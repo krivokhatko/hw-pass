@@ -48,7 +48,22 @@ In PowerShell, run:
 usbipd attach --wsl --busid <BUSID> --auto-attach
 ```
 
-Keep the window open. Each chip reset disconnects the device from WSL. Without `--auto-attach`, the device does not come back.
+Keep the window open. Without `--auto-attach`, a disconnected device does not come back.
+
+These events disconnect the device:
+
+- A watchdog reset or a power cycle.
+- A change between firmware that uses the built-in USB Serial/JTAG and firmware with its own USB stack (UIFlow2).
+
+A reset through the RTS line does not disconnect the device.
+
+## Reset through DTR and RTS
+
+The USB Serial/JTAG controller uses the DTR and RTS lines to reset the chip.
+
+- When a program opens the port, Linux sets DTR=1 and RTS=1. This does not reset the chip.
+- DTR=0 with RTS=1 resets the chip.
+- `idf.py flash` and `idf.py monitor` use the correct sequence. Use them for normal work.
 
 ## USB identities
 
@@ -64,6 +79,13 @@ UIFlow2 uses a TinyUSB serial port. esptool cannot reset the chip through this p
 1. Open the REPL on `/dev/ttyACM0`.
 2. Push `Ctrl+C` to stop the running program.
 3. Type `import machine; machine.bootloader()`.
+4. Flash the new firmware.
+5. Do a watchdog reset one time:
+   ```
+   esptool.py --chip esp32s3 -p /dev/ttyACM0 --before no_reset --after watchdog_reset --no-stub read_mem 0x60004038
+   ```
+
+Step 5 is necessary. After `machine.bootloader()`, the strap register shows GPIO0 low, and each RTS reset starts download mode again. A watchdog reset starts the application. The command prints the strap register before the reset. `0x00000000` means GPIO0 is low.
 
 ## Restore UIFlow2
 

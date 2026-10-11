@@ -23,7 +23,7 @@ The power button on the other side belongs to the power chip:
 ## Screen
 
 ```
-hw-pass 2/5  Mouse BT 85% USB  <- position, mouse mover, keypad state and battery, USB state (green: ready)
+hw-pass   3/12  MM BT 85% USB  <- position, mouse mover, keypad state and battery, USB state (green: ready)
   GitHub                 1     <- the keypad key of the entry
   Mail                         <- the selected entry has a color bar
   Bank                   2
@@ -33,9 +33,7 @@ Side: next  Front: type
 
 "BT" shows only when a keypad is paired. Green: the keypad is connected. Gray: the device waits for the keypad. The number after "BT" is the battery level of the keypad. See "Battery level".
 
-"Mouse" shows only when the mouse mover is on. Green: the USB host is ready. Gray: the pointer does not move.
-
-The title "hw-pass" shows only when the header has space for it.
+"MM" shows only when the mouse mover is on. Green: the USB host is ready. Gray: the pointer does not move.
 
 ## Wi-Fi setup mode
 

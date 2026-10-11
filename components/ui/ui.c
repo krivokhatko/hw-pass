@@ -52,7 +52,6 @@
 #define ROW_H           24
 #define ROWS            4
 #define FOOTER_Y        (DISPLAY_H - 16)
-#define TITLE           "hw-pass"
 
 #define C_BG            DISPLAY_RGB(0, 0, 0)
 #define C_TEXT          DISPLAY_RGB(255, 255, 255)
@@ -147,7 +146,8 @@ static void text_center(int y, const char *s, const font_t *f, uint16_t fg)
 }
 
 /* The header items from the right: USB, keypad and its battery level,
- * mouse mover, position. The title shows if the header has space. */
+ * mouse mover, position. With all items, the title just fits:
+ * "hw-pass 32/32  MM BT 100% USB". */
 static void draw_frame(void)
 {
     char text[24];
@@ -157,6 +157,7 @@ static void draw_frame(void)
     int battery = keypad_battery();
 
     display_fill(0, 0, DISPLAY_W, DISPLAY_H, C_BG);
+    display_text(4, HEADER_Y, "hw-pass", &font_8x16, C_DIM, C_BG);
     display_text(x, HEADER_Y, "USB", &font_8x16, usbdev_ready() ? C_OK : C_ERROR, C_BG);
     if (kp != KEYPAD_NONE) {
         uint16_t color = kp == KEYPAD_CONNECTED ? C_OK : C_DIM;
@@ -171,16 +172,12 @@ static void draw_frame(void)
         display_text(x, HEADER_Y, "BT", &font_8x16, color, C_BG);
     }
     if (usbdev_mouse_mover_on()) {
-        x -= 6 * font_8x16.w;
-        display_text(x, HEADER_Y, "Mouse", &font_8x16, usbdev_ready() ? C_OK : C_DIM, C_BG);
+        x -= 3 * font_8x16.w;
+        display_text(x, HEADER_Y, "MM", &font_8x16, usbdev_ready() ? C_OK : C_DIM, C_BG);
     }
     if (n > 0) {
         snprintf(text, sizeof(text), "%d/%d", s_sel + 1, n);
-        x -= (2 + (int)strlen(text)) * font_8x16.w;
-        display_text(x, HEADER_Y, text, &font_8x16, C_TEXT, C_BG);
-    }
-    if (x >= 4 + ((int)strlen(TITLE) + 1) * font_8x16.w) {
-        display_text(4, HEADER_Y, TITLE, &font_8x16, C_DIM, C_BG);
+        display_text(x - (2 + (int)strlen(text)) * font_8x16.w, HEADER_Y, text, &font_8x16, C_TEXT, C_BG);
     }
     display_fill(0, LIST_Y - 3, DISPLAY_W, 1, C_LINE);
     display_fill(0, FOOTER_Y - 2, DISPLAY_W, 1, C_LINE);

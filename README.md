@@ -48,7 +48,7 @@ tools/                Host scripts.
 | `cli` | Command line on the USB serial port. |
 | `web` | Wi-Fi setup mode: access point, captive DNS, web server, and the page (`www/index.html`). |
 | `backup` | Encrypted backup of the entries. The file format is the same as `openssl enc`. |
-| `keypad` | Bluetooth LE keypad: NimBLE central, pairing, HID over GATT client, and key changes for `ui`. `hidmap.c` reads the HID report map. |
+| `keypad` | Bluetooth LE keypad: NimBLE central, pairing, HID over GATT client, battery level, and key changes for `ui`. `hidmap.c` reads the HID report map. |
 | `ui` | Screen content and button actions. |
 | `sysinfo` | Chip information in the log. |
 

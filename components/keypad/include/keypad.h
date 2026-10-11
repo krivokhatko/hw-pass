@@ -55,6 +55,11 @@ keypad_state_t keypad_state(void);
 /* Copy the name of the paired keypad. Empty if there is none. */
 void keypad_name(char *buf, size_t size);
 
+/* Battery level of the keypad in %, 0 to 100. The keypad reports it with
+ * the Bluetooth Battery service. After a disconnect, the last level stays.
+ * -1: the keypad does not report it, or it did not connect yet. */
+int keypad_battery(void);
+
 /* Look for a keypad in pairing mode, connect, and pair. When the pairing
  * is done, the new keypad replaces the old one. Starts Bluetooth if it
  * does not run. Only a push of the buttons may start a pairing. */

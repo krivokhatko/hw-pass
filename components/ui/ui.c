@@ -30,6 +30,7 @@
 #define BIND_MS         2000    /* Hold a keypad key: it gets the selected entry. */
 #define HINT_MS         300     /* Keypad hold time before the progress bar shows */
 #define HOLD_STEP_MS    100     /* Redraw interval of the hold progress bar */
+#define BATTERY_LOW     20      /* Keypad battery level in %: red at this level and below */
 
 /* Keypad keys that go to the USB host: HID usage IDs */
 #define KEY_ENTER       0x28
@@ -51,6 +52,7 @@
 #define ROW_H           24
 #define ROWS            4
 #define FOOTER_Y        (DISPLAY_H - 16)
+#define TITLE           "hw-pass"
 
 #define C_BG            DISPLAY_RGB(0, 0, 0)
 #define C_TEXT          DISPLAY_RGB(255, 255, 255)
@@ -144,27 +146,41 @@ static void text_center(int y, const char *s, const font_t *f, uint16_t fg)
     display_text((DISPLAY_W - (int)strlen(s) * f->w) / 2, y, s, f, fg, C_BG);
 }
 
+/* The header items from the right: USB, keypad and its battery level,
+ * mouse mover, position. The title shows if the header has space. */
 static void draw_frame(void)
 {
-    char count[24];
+    char text[24];
     int n = vault_count();
     int x = DISPLAY_W - 4 - 3 * font_8x16.w;
     keypad_state_t kp = keypad_state();
+    int battery = keypad_battery();
 
     display_fill(0, 0, DISPLAY_W, DISPLAY_H, C_BG);
-    display_text(4, HEADER_Y, "hw-pass", &font_8x16, C_DIM, C_BG);
     display_text(x, HEADER_Y, "USB", &font_8x16, usbdev_ready() ? C_OK : C_ERROR, C_BG);
     if (kp != KEYPAD_NONE) {
+        uint16_t color = kp == KEYPAD_CONNECTED ? C_OK : C_DIM;
+
+        /* Gray: the level at the last connection. */
+        if (battery >= 0) {
+            snprintf(text, sizeof(text), "%d%%", battery);
+            x -= (1 + (int)strlen(text)) * font_8x16.w;
+            display_text(x, HEADER_Y, text, &font_8x16, battery <= BATTERY_LOW ? C_ERROR : color, C_BG);
+        }
         x -= 3 * font_8x16.w;
-        display_text(x, HEADER_Y, "BT", &font_8x16, kp == KEYPAD_CONNECTED ? C_OK : C_DIM, C_BG);
+        display_text(x, HEADER_Y, "BT", &font_8x16, color, C_BG);
     }
     if (usbdev_mouse_mover_on()) {
         x -= 6 * font_8x16.w;
         display_text(x, HEADER_Y, "Mouse", &font_8x16, usbdev_ready() ? C_OK : C_DIM, C_BG);
     }
     if (n > 0) {
-        snprintf(count, sizeof(count), "%d/%d", s_sel + 1, n);
-        display_text(x - (2 + (int)strlen(count)) * font_8x16.w, HEADER_Y, count, &font_8x16, C_TEXT, C_BG);
+        snprintf(text, sizeof(text), "%d/%d", s_sel + 1, n);
+        x -= (2 + (int)strlen(text)) * font_8x16.w;
+        display_text(x, HEADER_Y, text, &font_8x16, C_TEXT, C_BG);
+    }
+    if (x >= 4 + ((int)strlen(TITLE) + 1) * font_8x16.w) {
+        display_text(4, HEADER_Y, TITLE, &font_8x16, C_DIM, C_BG);
     }
     display_fill(0, LIST_Y - 3, DISPLAY_W, 1, C_LINE);
     display_fill(0, FOOTER_Y - 2, DISPLAY_W, 1, C_LINE);
@@ -612,6 +628,7 @@ void ui_run(void)
     uint32_t generation = vault_generation();
     bool usb = usbdev_ready();
     keypad_state_t kp = keypad_state();
+    int battery = keypad_battery();
     bool mouse;
     bool screen_on = true;
     bool both_used = false;     /* The current push of both buttons did its action. */
@@ -702,6 +719,10 @@ void ui_run(void)
         }
         if (kp != keypad_state()) {
             kp = keypad_state();
+            dirty = true;
+        }
+        if (battery != keypad_battery()) {
+            battery = keypad_battery();
             dirty = true;
         }
         if (mouse != usbdev_mouse_mover_on()) {

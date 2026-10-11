@@ -23,17 +23,19 @@ The power button on the other side belongs to the power chip:
 ## Screen
 
 ```
-hw-pass  3/12  Mouse BT  USB  <- position, mouse mover, keypad state, USB state (green: ready)
-  GitHub                 1    <- the keypad key of the entry
-  Mail                        <- the selected entry has a color bar
+hw-pass 2/5  Mouse BT 85% USB  <- position, mouse mover, keypad state and battery, USB state (green: ready)
+  GitHub                 1     <- the keypad key of the entry
+  Mail                         <- the selected entry has a color bar
   Bank                   2
-------------------------------
+-------------------------------
 Side: next  Front: type
 ```
 
-"BT" shows only when a keypad is paired. Green: the keypad is connected. Gray: the device waits for the keypad.
+"BT" shows only when a keypad is paired. Green: the keypad is connected. Gray: the device waits for the keypad. The number after "BT" is the battery level of the keypad. See "Battery level".
 
 "Mouse" shows only when the mouse mover is on. Green: the USB host is ready. Gray: the pointer does not move.
+
+The title "hw-pass" shows only when the header has space for it.
 
 ## Wi-Fi setup mode
 
@@ -171,6 +173,18 @@ Push `*` and release it in less than 2 s. A longer hold does nothing: the FBK21C
 
 These keys type no entry, and you cannot give them to an entry. If an entry got one of these keys with an older firmware, the key does not type the entry. Give the entry a different key.
 
+### Battery level
+
+If the keypad reports its battery level (Bluetooth Battery service), the header shows it after "BT", for example "BT 85%".
+
+- The device reads the level when the keypad connects. While the keypad is connected, the keypad also sends each change.
+- While the keypad sleeps, the screen shows the level of the last connection in gray.
+- At 20 % or less, the level is red. Charge or replace the battery of the keypad.
+- After a restart, the level shows when the keypad connects again. Push a key to wake the keypad.
+- If the keypad does not report the level, the header shows only "BT".
+
+The `info` command also shows the level.
+
 ### Remove the keypad
 
 Type `unpair` on the serial port. The entries keep their keys: a new keypad types the same entries with the same keys.
@@ -211,7 +225,7 @@ The baud rate has no effect. Push Enter to get the prompt.
 | `unpair` | Remove the Bluetooth keypad. The entries keep their keys. |
 | `mouse` | Turn the mouse mover on or off. The device keeps the setting. See "Mouse mover". |
 | `rotate` | Turn the screen 180 degrees. The device keeps the setting. |
-| `info` | Show the firmware version and the device state, also the keypad and the mouse mover. |
+| `info` | Show the firmware version and the device state, also the keypad, its battery level, and the mouse mover. |
 | `dfu` | Restart into ROM download mode for flashing. |
 
 Limits:

@@ -402,7 +402,8 @@ static void cmd_info(char *arg)
 {
     const esp_app_desc_t *app = esp_app_get_description();
     nvs_stats_t stats = { 0 };
-    char name[KEYPAD_NAME_MAX + 1];
+    char name[KEYPAD_NAME_MAX + 1], battery[24] = "";
+    int level = keypad_battery();
 
     nvs_get_stats("vault", &stats);
     out("Firmware:  %s %s (ESP-IDF %s)\n", app->project_name, app->version, app->idf_ver);
@@ -413,15 +414,18 @@ static void cmd_info(char *arg)
     out("Mouse:     mover %s\n", usbdev_mouse_mover_on() ? "on" : "off");
     out("Wi-Fi:     %s\n", !web_active() ? "off" : web_connected() ? "on, 1 device" : "on, no device");
     keypad_name(name, sizeof(name));
+    if (level >= 0) {
+        snprintf(battery, sizeof(battery), ", battery %d%%", level);
+    }
     switch (keypad_state()) {
     case KEYPAD_NONE:
         out("Keypad:    none\n");
         break;
     case KEYPAD_WAITING:
-        out("Keypad:    %s, not connected\n", name);
+        out("Keypad:    %s, not connected%s\n", name, battery);
         break;
     case KEYPAD_CONNECTED:
-        out("Keypad:    %s, connected\n", name);
+        out("Keypad:    %s, connected%s\n", name, battery);
         break;
     }
     out("Heap:      %u bytes free, %u minimum\n", (unsigned)esp_get_free_heap_size(),

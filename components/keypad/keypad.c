@@ -1,15 +1,15 @@
 /* Bluetooth LE keypad: a HID keyboard (HID over GATT) paired with the
  * device. The NimBLE host runs the central role. The keypad task does
  * the steps of a connection one after the other. The host task gives it
- * the results, and gives the key changes to the UI.
+ * the results, and gives the key changes and the battery level to the UI.
  *
  * Protection:
  * - Only the buttons start a pairing (ui.c).
  * - The device connects only to the paired keypad, and only if it has
- *   the bonding keys. It uses the keys of the keypad only on a link that
- *   these keys encrypt. Outside a pairing, it refuses a passkey request
- *   and a new pairing, and the host does not pair again by itself
- *   (CMakeLists.txt): a connection cannot make new keys.
+ *   the bonding keys. It uses the keys and the battery level of the keypad
+ *   only on a link that these keys encrypt. Outside a pairing, it refuses
+ *   a passkey request and a new pairing, and the host does not pair again
+ *   by itself (CMakeLists.txt): a connection cannot make new keys.
  * - In a pairing, the screen shows a random passkey, and the user types
  *   it on the keypad. This stops a man in the middle. A keypad without
  *   passkey entry pairs without this protection ("Just Works").
@@ -52,7 +52,10 @@ void keypad_key_name(uint8_t key, char buf[KEYPAD_KEY_NAME])
 #define UUID_REPORT         0x2A4D
 #define UUID_CCCD           0x2902
 #define UUID_REPORT_REF     0x2908
+#define UUID_BATTERY        0x180F
+#define UUID_BATTERY_LEVEL  0x2A19
 #define REPORT_INPUT        1
+#define BATTERY_MAX         100     /* Battery levels above 100 % are reserved. */
 #define APPEARANCE_MASK     0xFFC0
 #define APPEARANCE_HID      0x03C0  /* Category 15: keyboard, mouse, and others */
 
@@ -135,6 +138,11 @@ static volatile bool s_keys_ok;
 static uint16_t s_report;
 static hid_keys_t s_keys;
 static hid_set_t s_down;            /* Host task only */
+
+/* Battery level in %, or -1. The keypad task sets s_battery_value on a
+ * link, then the host task accepts the notifications of this handle. */
+static volatile int s_battery = -1;
+static volatile uint16_t s_battery_value;
 
 /* Results of the scan and the GATT procedures */
 static ble_addr_t s_found;
@@ -289,6 +297,7 @@ static void forget(void)
     }
     save_peer(&none);
     s_state = KEYPAD_NONE;
+    s_battery = -1;
     ESP_LOGI(TAG, "no keypad");
 }
 
@@ -338,6 +347,23 @@ static void on_report(struct os_mbuf *om)
     ESP_LOG_BUFFER_HEX_LEVEL(TAG, buf, len, ESP_LOG_DEBUG);
     if (hid_keys_down(&s_keys, buf, len, &down)) {
         set_keys(&down);
+    }
+}
+
+static void set_battery(uint8_t level)
+{
+    if (level <= BATTERY_MAX && level != s_battery) {
+        s_battery = level;
+        ESP_LOGI(TAG, "battery: %u %%", level);
+    }
+}
+
+static void on_battery(struct os_mbuf *om)
+{
+    uint8_t level;
+
+    if (OS_MBUF_PKTLEN(om) >= 1 && os_mbuf_copydata(om, 0, 1, &level) == 0) {
+        set_battery(level);
     }
 }
 
@@ -416,6 +442,7 @@ static int gap_event(struct ble_gap_event *event, void *arg)
     case BLE_GAP_EVENT_DISCONNECT:
         ESP_LOGI(TAG, "disconnected: reason 0x%X", event->disconnect.reason);
         s_keys_ok = false;
+        s_battery_value = 0;
         /* All keys up, but not as a push: a lost link must not type. */
         memset(&s_down, 0, sizeof(s_down));
         post_key(0, false);
@@ -442,6 +469,9 @@ static int gap_event(struct ble_gap_event *event, void *arg)
     case BLE_GAP_EVENT_NOTIFY_RX:
         if (s_keys_ok && event->notify_rx.attr_handle == s_report && trusted(event->notify_rx.conn_handle)) {
             on_report(event->notify_rx.om);
+        } else if (s_battery_value != 0 && event->notify_rx.attr_handle == s_battery_value &&
+                   trusted(event->notify_rx.conn_handle)) {
+            on_battery(event->notify_rx.om);
         }
         return 0;
     default:
@@ -581,6 +611,20 @@ static int find_chr(uint16_t uuid)
     return -1;
 }
 
+/* Last handle of characteristic i: its descriptors end here. */
+static uint16_t chr_end(int i)
+{
+    return i + 1 < s_chr_count ? s_chr[i + 1].def - 1 : s_svc_end;
+}
+
+/* Write the client configuration descriptor: notifications on. */
+static int subscribe(uint16_t cccd)
+{
+    static const uint8_t notify[2] = { 1, 0 };
+
+    return gatt_wait(ble_gattc_write_flat(s_conn, cccd, notify, sizeof(notify), on_write, NULL));
+}
+
 /* Find the keyboard input report: its value handle, its client
  * configuration descriptor, and the position of the keys. */
 static esp_err_t discover(peer_t *p)
@@ -611,14 +655,13 @@ static esp_err_t discover(peer_t *p)
              keys.count, keys.offset);
 
     for (int i = 0; i < s_chr_count && p->report == 0; i++) {
-        uint16_t end = i + 1 < s_chr_count ? s_chr[i + 1].def - 1 : s_svc_end;
         uint8_t id = 0, type = REPORT_INPUT;   /* Without a reference: the only report */
 
         if (s_chr[i].uuid != UUID_REPORT || !(s_chr[i].props & BLE_GATT_CHR_PROP_NOTIFY)) {
             continue;
         }
         s_dsc_cccd = s_dsc_ref = 0;
-        if (gatt_wait(ble_gattc_disc_all_dscs(s_conn, s_chr[i].value, end, on_dsc, NULL)) != 0 ||
+        if (gatt_wait(ble_gattc_disc_all_dscs(s_conn, s_chr[i].value, chr_end(i), on_dsc, NULL)) != 0 ||
             s_dsc_cccd == 0) {
             continue;
         }
@@ -714,14 +757,13 @@ static bool bonded(const ble_addr_t *addr)
  * bonding data: it can send a key before the write. */
 static int use_keys(const peer_t *p)
 {
-    static const uint8_t notify[2] = { 1, 0 };
     int rc;
 
     s_report = p->report;
     s_keys = p->keys;
     __sync_synchronize();   /* The host task sees the keys before s_keys_ok. */
     s_keys_ok = true;
-    rc = gatt_wait(ble_gattc_write_flat(s_conn, p->cccd, notify, sizeof(notify), on_write, NULL));
+    rc = subscribe(p->cccd);
     if (rc != 0) {
         s_keys_ok = false;
         return rc;
@@ -729,6 +771,42 @@ static int use_keys(const peer_t *p)
     s_state = KEYPAD_CONNECTED;
     ESP_LOGI(TAG, "connected: %s", p->name);
     return 0;
+}
+
+/* Read the battery level and get its changes. Do this after use_keys:
+ * the keys work during these steps. A keypad without the Battery service
+ * or without notifications of the level also works. */
+static void use_battery(void)
+{
+    int i, rc;
+
+    s_battery_value = 0;
+    s_svc_start = s_svc_end = 0;
+    rc = gatt_wait(ble_gattc_disc_svc_by_uuid(s_conn, BLE_UUID16_DECLARE(UUID_BATTERY), on_svc, NULL));
+    if (rc != 0 || s_svc_start == 0) {
+        ESP_LOGI(TAG, "no battery service: %d", rc);
+        return;
+    }
+    s_chr_count = 0;
+    rc = gatt_wait(ble_gattc_disc_all_chrs(s_conn, s_svc_start, s_svc_end, on_chr, NULL));
+    i = find_chr(UUID_BATTERY_LEVEL);
+    if (rc != 0 || i < 0 || (rc = read_value(s_chr[i].value)) != 0 || s_data_len < 1) {
+        ESP_LOGW(TAG, "no battery level: %d", rc);
+        return;
+    }
+    set_battery(s_data[0]);
+    if (!(s_chr[i].props & BLE_GATT_CHR_PROP_NOTIFY)) {
+        return;
+    }
+    s_dsc_cccd = 0;
+    if (gatt_wait(ble_gattc_disc_all_dscs(s_conn, s_chr[i].value, chr_end(i), on_dsc, NULL)) != 0 ||
+        s_dsc_cccd == 0) {
+        return;
+    }
+    s_battery_value = s_chr[i].value;
+    if (subscribe(s_dsc_cccd) != 0) {
+        s_battery_value = 0;
+    }
 }
 
 /* Wait until the link ends or a command comes. */
@@ -785,6 +863,7 @@ static void serve(void)
         wait(EV_CMD, RETRY_MS);
         return;
     }
+    use_battery();
     hold_link();
 }
 
@@ -880,7 +959,9 @@ static void pair(void)
     unlock();
     keep_only(&p.addr);
     save_peer(&p);
+    s_battery = -1;     /* The level of the old keypad */
     set_pair(KEYPAD_PAIR_DONE, p.name, NULL);
+    use_battery();
     hold_link();
     return;
 
@@ -987,6 +1068,11 @@ void keypad_name(char *buf, size_t size)
     unlock();
 }
 
+int keypad_battery(void)
+{
+    return s_battery;
+}
+
 esp_err_t keypad_pair_start(void)
 {
     if (!s_events) {
@@ -1061,6 +1147,11 @@ void keypad_name(char *buf, size_t size)
     if (size > 0) {
         buf[0] = '\0';
     }
+}
+
+int keypad_battery(void)
+{
+    return -1;
 }
 
 esp_err_t keypad_pair_start(void)

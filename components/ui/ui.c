@@ -1,7 +1,8 @@
 /* Screen and buttons. The side button selects an entry. The front
  * button types the password of the entry. Both buttons together start
  * the Wi-Fi setup mode or the pairing of a keypad. A keypad key types
- * the entry that has this key. */
+ * the entry that has this key. The keypad keys - and + select an entry,
+ * and * turns the mouse mover on or off. */
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -34,6 +35,10 @@
 #define KEY_ENTER       0x28
 #define KEY_BACKSPACE   0x2A
 #define KEY_PAD_ENTER   0x58
+/* Keypad keys with a function in the UI */
+#define KEY_PAD_STAR    0x55    /* Mouse mover on or off */
+#define KEY_PAD_MINUS   0x56    /* Select the previous entry. */
+#define KEY_PAD_PLUS    0x57    /* Select the next entry. */
 
 /* Wi-Fi setup screen: QR code in a square at the left, text at the right. */
 #define QR_BOX          DISPLAY_H
@@ -310,6 +315,17 @@ static void show_message(const char *title, const char *detail, uint16_t color)
 
 /* ---- Actions ---- */
 
+/* Select the next (1) or the previous (-1) entry. After the last entry
+ * comes the first. */
+static void select_step(int step)
+{
+    int n = vault_count();
+
+    if (n > 0) {
+        s_sel = (s_sel + step + n) % n;
+    }
+}
+
 static void type_entry(int i, bool enter)
 {
     char label[VAULT_LABEL_MAX + 1], secret[VAULT_SECRET_MAX + 1];
@@ -383,6 +399,16 @@ static void bind_key(uint8_t key)
     vTaskDelay(pdMS_TO_TICKS(INFO_MS));
 }
 
+/* A tap of * turns the mouse mover on or off. It has no entry. */
+static void toggle_mouse(void)
+{
+    bool on = !usbdev_mouse_mover_on();
+
+    ui_mouse(on);
+    show_message(on ? "Mouse mover on" : "Mouse mover off", on ? "PC stays awake" : "PC can sleep", C_OK);
+    vTaskDelay(pdMS_TO_TICKS(INFO_MS));
+}
+
 /* Enter and Backspace go to the USB host as they are: after a password,
  * or to correct text. They have no entry. */
 static bool passthru(uint8_t key)
@@ -395,7 +421,8 @@ static bool passthru(uint8_t key)
  * release binds: after a lost link, the cancel comes some seconds late,
  * and a tap must not become a hold. Before an action, the host gets the
  * release of all keys: else it repeats a held key while the UI does not
- * read the keypad. */
+ * read the keypad. A hold of * does nothing: the FBK21C uses a hold of
+ * Enter and * for its pairing mode. */
 static bool poll_keypad(void)
 {
     keypad_event_t ev;
@@ -410,6 +437,10 @@ static bool poll_keypad(void)
             s_kp_held = 0;
         } else if (passthru(ev.key)) {
             usbdev_key(ev.key, ev.down);
+        } else if (ev.key == KEY_PAD_MINUS || ev.key == KEY_PAD_PLUS) {
+            if (ev.down) {
+                select_step(ev.key == KEY_PAD_PLUS ? 1 : -1);
+            }
         } else if (ev.down && s_kp_key == 0) {
             s_kp_key = ev.key;
             s_kp_ms = ev.ms;
@@ -418,7 +449,11 @@ static bool poll_keypad(void)
             s_kp_held = 0;
             usbdev_key(0, false);
             display_backlight(BRIGHTNESS);
-            if (ev.ms - s_kp_ms >= BIND_MS) {
+            if (ev.key == KEY_PAD_STAR) {
+                if (ev.ms - s_kp_ms < BIND_MS) {
+                    toggle_mouse();
+                }
+            } else if (ev.ms - s_kp_ms >= BIND_MS) {
                 bind_key(ev.key);
             } else {
                 type_key(ev.key);
@@ -426,7 +461,8 @@ static bool poll_keypad(void)
             break;  /* Read the next events in the next cycle. */
         }
     }
-    held = s_kp_key != 0 ? now_ms() - s_kp_ms : 0;
+    /* * cannot bind: no progress bar. */
+    held = s_kp_key != 0 && s_kp_key != KEY_PAD_STAR ? now_ms() - s_kp_ms : 0;
     if (held > BIND_MS) {
         held = BIND_MS;     /* The bar is full: no more redraws. */
     }
@@ -682,7 +718,7 @@ void ui_run(void)
             }
         }
         if (n > 0 && side != PRESS_NONE) {
-            s_sel = (s_sel + (side == PRESS_SHORT ? 1 : n - 1)) % n;
+            select_step(side == PRESS_SHORT ? 1 : -1);
             dirty = true;
         }
         if (n > 0 && front != PRESS_NONE) {

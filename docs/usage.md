@@ -149,13 +149,27 @@ A key without an entry types nothing. The screen shows "Key 5: no entry".
 
 The keypad disconnects when it sleeps. A key push wakes it, and it connects again in about 1 s. Some keypads do not send the key that wakes them. Then push the key again.
 
-The keypad does not type in the Wi-Fi setup mode and during a pairing. Enter and Backspace also do not go to the computer then.
+The keypad does not type in the Wi-Fi setup mode and during a pairing. The other keys also do nothing then.
 
 ### Enter and Backspace
 
 Enter and Backspace on the keypad go to the computer, as on a keyboard. For example, type a password with a key, then push Enter. Hold Backspace to delete more characters. These two keys type no entry, and you cannot give them to an entry.
 
 If you push a different key while you hold Enter or Backspace, the computer gets the release at once: a held key does not repeat while the device types or shows a message.
+
+### Keys for the device
+
+| Key | Function |
+|---|---|
+| `-` | Select the previous entry, like a long push of the side button. |
+| `+` | Select the next entry, like a short push of the side button. |
+| `*` | Turn the mouse mover on or off. The screen shows "Mouse mover on" or "Mouse mover off". |
+
+`-` and `+` move the selection one entry for each push. They also work when the screen is dark: the screen comes on and shows the new selection.
+
+Push `*` and release it in less than 2 s. A longer hold does nothing: the FBK21C uses a hold of Enter and `*` for its pairing mode.
+
+These keys type no entry, and you cannot give them to an entry. If an entry got one of these keys with an older firmware, the key does not type the entry. Give the entry a different key.
 
 ### Remove the keypad
 
@@ -165,7 +179,7 @@ Type `unpair` on the serial port. The entries keep their keys: a new keypad type
 
 The mouse mover keeps the computer awake. The device is also a USB mouse. When the mouse mover is on, the device moves the pointer 1 pixel each 30 s: to the right, and 30 s later back to the left. The computer sees user activity. It does not lock the screen, turn off the display, or go to sleep.
 
-Type `mouse` on the serial port to turn the mouse mover on or off. The device keeps the setting after a restart. The default is off.
+To turn the mouse mover on or off, push `*` on the Bluetooth keypad, or type `mouse` on the serial port. The device keeps the setting after a restart. The default is off.
 
 - The device does not move the pointer while it types. The next move comes 30 s later.
 - The device does not know if you use the computer. It also moves the pointer while you work. A move of 1 pixel is too small to see.
@@ -255,7 +269,7 @@ Wi-Fi:
 Bluetooth keypad:
 
 - Bluetooth is off until you start a pairing. With a paired keypad, Bluetooth is on and the device waits for the keypad. After `unpair` or a pairing that did not complete, Bluetooth stays on until the next restart, but it does not send or receive.
-- A person with the paired keypad can type all passwords that have a key, and push Enter and Backspace on the computer, also when the screen is dark. Keep the keypad as safe as the device.
+- A person with the paired keypad can type all passwords that have a key, push Enter and Backspace on the computer, and turn on the mouse mover, also when the screen is dark. Keep the keypad as safe as the device.
 - Only the buttons can start a pairing. At other times, the device refuses a new pairing. It connects only to the paired keypad, and uses its keys only on a link that the bonding keys encrypt. If the keypad loses its bonding keys, for example after a pairing with a different computer on the same channel, pair it again with the buttons.
 - With a passkey, a different device cannot get into the pairing. A keypad without a passkey pairs with "Just Works": a person near you with special equipment can get into such a pairing. Pair such a keypad where no unknown persons are near.
 - The bonding keys are in the `nvs` partition. Flash encryption is off: a person with the device can read the bonding keys and make a false keypad. This person can also read the passwords.

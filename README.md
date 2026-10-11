@@ -2,7 +2,7 @@
 
 Hardware password typer. Firmware for the M5Stack StickS3 (ESP32-S3).
 
-The device is a USB keyboard. The side button selects a stored entry. The front button types its password. A paired Bluetooth LE keypad can also type: each key types one entry, and Enter and Backspace go to the computer. On the keypad, `-` and `+` select an entry, and `*` turns the mouse mover on or off. Two ways add and change entries: a command line on a USB serial port, and a web page in the Wi-Fi setup mode. The device is also a USB mouse: the mouse mover keeps the computer awake.
+The device is a USB keyboard. The side button selects a stored entry. The front button types its password. A paired Bluetooth LE keypad can also type: each key types one entry, and Enter and Backspace go to the computer. On the keypad, `-` and `+` select an entry, and `*` turns the mouse mover on or off. Two ways add and change entries: a command line on a USB serial port, and a web page in the Wi-Fi setup mode. The device is also a USB mouse: the mouse mover keeps the computer awake. A short sound on the speaker tells the result of each action.
 
 For the buttons, the commands, and the security limits, refer to [docs/usage.md](docs/usage.md).
 
@@ -39,8 +39,9 @@ tools/                Host scripts.
 
 | Module | Function |
 |---|---|
-| `pm1` | M5PM1 power chip: watchdog off, LCD power on, speaker off. |
+| `pm1` | M5PM1 power chip: watchdog off, LCD power on, speaker amplifier on and off. It owns the internal I2C bus. |
 | `display` | ST7789 LCD, backlight, frame buffer, and text. |
+| `sound` | ES8311 audio codec on I2S, and the AW8737 speaker amplifier: short tones for `ui`. |
 | `buttons` | Front and side buttons: debounce, short and long push, push of both. |
 | `vault` | Password entries in the `vault` NVS partition. |
 | `rng` | Random passwords. Selects the entropy source: ADC noise or radio. |
@@ -52,7 +53,7 @@ tools/                Host scripts.
 | `ui` | Screen content and button actions. |
 | `sysinfo` | Chip information in the log. |
 
-Threads: `ui_run` runs in the main task. `cli` has its own task. TinyUSB has its own task. In the Wi-Fi setup mode, the web server, the DNS server, and the Wi-Fi driver have their own tasks. `ui_run` starts and stops this mode. `keypad` has its own task, and the NimBLE host has a task after the first Bluetooth start. The mouse mover runs in the `esp_timer` task. `vault`, `rng`, and the keyboard and mouse functions in `usbdev` have locks.
+Threads: `ui_run` runs in the main task. `cli` has its own task. TinyUSB has its own task. In the Wi-Fi setup mode, the web server, the DNS server, and the Wi-Fi driver have their own tasks. `ui_run` starts and stops this mode. `keypad` has its own task, and the NimBLE host has a task after the first Bluetooth start. `sound` has its own task. The mouse mover runs in the `esp_timer` task. `vault`, `rng`, and the keyboard and mouse functions in `usbdev` have locks.
 
 ## USB
 

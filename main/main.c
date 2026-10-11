@@ -6,6 +6,7 @@
 #include "keypad.h"
 #include "pm1.h"
 #include "rng.h"
+#include "sound.h"
 #include "sysinfo.h"
 #include "ui.h"
 #include "usbdev.h"
@@ -36,6 +37,7 @@ void app_main(void)
     check(err, "nvs");
     check(pm1_init(), "pm1");
     check(display_init(), "display");
+    check(sound_init(), "sound");
     check(vault_init(), "vault");
     check(rng_init(), "rng");
     check(usbdev_init(), "usb");

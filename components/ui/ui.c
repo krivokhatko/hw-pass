@@ -1,8 +1,9 @@
-/* Screen and buttons. The side button selects an entry. The front
- * button types the password of the entry. Both buttons together start
- * the Wi-Fi setup mode or the pairing of a keypad. A keypad key types
- * the entry that has this key. The keypad keys - and + select an entry,
- * and * turns the mouse mover on or off. */
+/* Screen, buttons, and sounds. The side button selects an entry. The
+ * front button types the password of the entry. Both buttons together
+ * start the Wi-Fi setup mode or the pairing of a keypad. A keypad key
+ * types the entry that has this key. The keypad keys - and + select an
+ * entry, and * turns the mouse mover on or off. A sound tells the result
+ * of each action: the user does not have to look at the screen. */
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -15,6 +16,7 @@
 #include "buttons.h"
 #include "display.h"
 #include "keypad.h"
+#include "sound.h"
 #include "usbdev.h"
 #include "vault.h"
 #include "web.h"
@@ -94,7 +96,8 @@ void ui_web(bool on)
     }
 }
 
-/* Settings: "flip" (screen) and "mouse" (mouse mover). Default 0. */
+/* Settings: "flip" (screen), "mouse" (mouse mover), and "mute" (sounds).
+ * Default 0. */
 static uint8_t load_setting(const char *key)
 {
     nvs_handle_t h;
@@ -123,6 +126,14 @@ void ui_mouse(bool on)
 {
     usbdev_mouse_mover(on);
     save_setting("mouse", on);
+}
+
+/* When the sounds go on, a sound tells it. */
+void ui_sound(bool on)
+{
+    sound_enable(on);
+    save_setting("mute", !on);
+    sound_play(SOUND_ON);
 }
 
 static uint32_t now_ms(void)
@@ -326,6 +337,13 @@ static void show_message(const char *title, const char *detail, uint16_t color)
     display_flush();
 }
 
+static void show_error(const char *title, const char *detail)
+{
+    show_message(title, detail, C_ERROR);
+    sound_play(SOUND_ERROR);
+    vTaskDelay(pdMS_TO_TICKS(ERROR_MS));
+}
+
 /* ---- Actions ---- */
 
 /* Select the next (1) or the previous (-1) entry. After the last entry
@@ -336,6 +354,7 @@ static void select_step(int step)
 
     if (n > 0) {
         s_sel = (s_sel + step + n) % n;
+        sound_play(SOUND_CLICK);
     }
 }
 
@@ -348,8 +367,7 @@ static void type_entry(int i, bool enter)
         return;
     }
     if (!usbdev_ready()) {
-        show_message("No USB host", "Connect to a PC", C_ERROR);
-        vTaskDelay(pdMS_TO_TICKS(ERROR_MS));
+        show_error("No USB host", "Connect to a PC");
         return;
     }
     show_message(enter ? "Typing + Enter" : "Typing", label, C_ACCENT);
@@ -360,13 +378,12 @@ static void type_entry(int i, bool enter)
     vault_zero(secret, sizeof(secret));
     if (err == ESP_OK) {
         show_message("Done", label, C_OK);
+        sound_play(SOUND_DONE);
         vTaskDelay(pdMS_TO_TICKS(DONE_MS));
     } else if (err == ESP_ERR_INVALID_RESPONSE) {
-        show_message("Caps Lock error", "Turn it off", C_ERROR);
-        vTaskDelay(pdMS_TO_TICKS(ERROR_MS));
+        show_error("Caps Lock error", "Turn it off");
     } else {
-        show_message("Typing failed", label, C_ERROR);
-        vTaskDelay(pdMS_TO_TICKS(ERROR_MS));
+        show_error("Typing failed", label);
     }
 }
 
@@ -383,6 +400,7 @@ static void type_key(uint8_t key)
     keypad_key_name(key, name);
     snprintf(title, sizeof(title), "Key %s: no entry", name);
     show_message(title, "Hold 2 s: bind", C_ACCENT);
+    sound_play(SOUND_ERROR);
     vTaskDelay(pdMS_TO_TICKS(ERROR_MS));
 }
 
@@ -395,20 +413,19 @@ static void bind_key(uint8_t key)
     esp_err_t err;
 
     if (vault_label(s_sel, label, sizeof(label)) != ESP_OK) {
-        show_message("No entries", NULL, C_ERROR);
-        vTaskDelay(pdMS_TO_TICKS(ERROR_MS));
+        show_error("No entries", NULL);
         return;
     }
     keypad_key_name(key, name);
     remove = vault_key(s_sel) == key;
     err = vault_set_key(s_sel, remove ? 0 : key);
     if (err != ESP_OK) {
-        show_message("Write error", esp_err_to_name(err), C_ERROR);
-        vTaskDelay(pdMS_TO_TICKS(ERROR_MS));
+        show_error("Write error", esp_err_to_name(err));
         return;
     }
     snprintf(title, sizeof(title), remove ? "Key %s removed" : "Key %s types", name);
     show_message(title, label, C_OK);
+    sound_play(remove ? SOUND_OFF : SOUND_OK);
     vTaskDelay(pdMS_TO_TICKS(INFO_MS));
 }
 
@@ -419,6 +436,7 @@ static void toggle_mouse(void)
 
     ui_mouse(on);
     show_message(on ? "Mouse mover on" : "Mouse mover off", on ? "PC stays awake" : "PC can sleep", C_OK);
+    sound_play(on ? SOUND_ON : SOUND_OFF);
     vTaskDelay(pdMS_TO_TICKS(INFO_MS));
 }
 
@@ -480,6 +498,9 @@ static bool poll_keypad(void)
         held = BIND_MS;     /* The bar is full: no more redraws. */
     }
     if (held / HOLD_STEP_MS != s_kp_held / HOLD_STEP_MS) {
+        if (held >= BIND_MS) {
+            sound_play(SOUND_STEP);     /* Release now: the key gets the entry. */
+        }
         s_kp_held = held;
         dirty = true;
     }
@@ -535,8 +556,7 @@ static void pair_mode(void)
     display_backlight(BRIGHTNESS);
     err = keypad_pair_start();
     if (err != ESP_OK) {
-        show_message("Bluetooth error", err == ESP_ERR_NOT_SUPPORTED ? "Not in this build" : esp_err_to_name(err), C_ERROR);
-        vTaskDelay(pdMS_TO_TICKS(ERROR_MS));
+        show_error("Bluetooth error", err == ESP_ERR_NOT_SUPPORTED ? "Not in this build" : esp_err_to_name(err));
         return;
     }
     for (;;) {
@@ -551,15 +571,20 @@ static void pair_mode(void)
             if (s_flip_request) {
                 flip();
             }
+            if (pair.step == KEYPAD_PAIR_PASSKEY && shown.step != pair.step) {
+                sound_play(SOUND_STEP);     /* Type the passkey now. */
+            }
             draw_pair(&pair);
             shown = pair;
             first = false;
         }
         if (pair.step == KEYPAD_PAIR_DONE || pair.step == KEYPAD_PAIR_FAILED) {
+            sound_play(pair.step == KEYPAD_PAIR_DONE ? SOUND_OK : SOUND_ERROR);
             vTaskDelay(pdMS_TO_TICKS(pair.step == KEYPAD_PAIR_DONE ? INFO_MS : ERROR_MS));
             break;
         }
         if (side != PRESS_NONE || front != PRESS_NONE || (armed && both > 0) || s_dfu_request) {
+            sound_play(SOUND_OFF);
             break;
         }
         vTaskDelay(pdMS_TO_TICKS(BUTTONS_POLL_MS));
@@ -581,11 +606,11 @@ static void web_mode(bool buttons)
     err = web_start(&s_web, buttons);
     if (err != ESP_OK) {
         vault_zero(&s_web, sizeof(s_web));
-        show_message("Wi-Fi error", err == ESP_ERR_NOT_SUPPORTED ? "Not in this build" : esp_err_to_name(err), C_ERROR);
-        vTaskDelay(pdMS_TO_TICKS(ERROR_MS));
+        show_error("Wi-Fi error", err == ESP_ERR_NOT_SUPPORTED ? "Not in this build" : esp_err_to_name(err));
         return;
     }
     draw_web();
+    sound_play(SOUND_ON);
     for (;;) {
         press_t side = buttons_poll(BUTTON_SIDE);
         press_t front = buttons_poll(BUTTON_FRONT);
@@ -602,9 +627,15 @@ static void web_mode(bool buttons)
             flip();
             dirty = true;
         }
-        if (left != web_left_s() || connected != web_connected()) {
+        if (connected != web_connected()) {
+            connected = !connected;
+            if (connected) {
+                sound_play(SOUND_OK);   /* A phone or a laptop is on the network. */
+            }
+            dirty = true;
+        }
+        if (left != web_left_s()) {
             left = web_left_s();
-            connected = web_connected();
             dirty = true;
         }
         if (dirty) {
@@ -614,6 +645,7 @@ static void web_mode(bool buttons)
     }
     s_web_stop = false;
     show_message("Wi-Fi setup", "Stopping", C_ACCENT);
+    sound_play(SOUND_OFF);
     web_stop();
     vault_zero(&s_web, sizeof(s_web));
     show_message("Wi-Fi off", NULL, C_OK);
@@ -638,6 +670,7 @@ void ui_run(void)
     display_set_flip(s_flip);
     usbdev_mouse_mover(load_setting("mouse") != 0);
     mouse = usbdev_mouse_mover_on();
+    sound_enable(load_setting("mute") == 0);
     draw_list();
     display_backlight(BRIGHTNESS);
 
@@ -696,6 +729,11 @@ void ui_run(void)
             dirty = true;
         }
         if (hold / HOLD_STEP_MS != s_hold_ms / HOLD_STEP_MS) {
+            /* A beep at 2 s and at 5 s: the user can hold without a look
+             * at the screen. */
+            if ((s_hold_ms < BOTH_MS && hold >= BOTH_MS) || (s_hold_ms < PAIR_MS && hold >= PAIR_MS)) {
+                sound_play(SOUND_STEP);
+            }
             s_hold_ms = hold;
             dirty = true;
         }

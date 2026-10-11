@@ -10,7 +10,7 @@ hw-pass is a USB keyboard that types stored passwords. Select an entry with the 
 | Front (KEY1, below the screen) | Type the password | Type the password, then push Enter |
 | Both together | - | Hold 2 s, then release: start the Wi-Fi setup mode. Hold 5 s, then release: pair a Bluetooth keypad. |
 
-Push the two buttons at the same time. If you hold the front button alone for 0.6 s, the device types the password. The footer shows what occurs when you release the two buttons.
+Push the two buttons at the same time. If you hold the front button alone for 0.6 s, the device types the password. The footer shows what occurs when you release the two buttons. A beep sounds after 2 s and after 5 s.
 
 The screen goes dark after 60 s without activity. The first push turns it on again and does nothing else.
 
@@ -34,6 +34,22 @@ Side: next  Front: type
 "BT" shows only when a keypad is paired. Green: the keypad is connected. Gray: the device waits for the keypad. The number after "BT" is the battery level of the keypad. See "Battery level".
 
 "MM" shows only when the mouse mover is on. Green: the USB host is ready. Gray: the pointer does not move.
+
+## Sounds
+
+The device makes a short sound after each action. Thus you do not have to look at the screen, for example when you type with the keypad.
+
+| Sound | Meaning |
+|---|---|
+| Click | The selection changed. |
+| One beep | A hold reached the next step: release now. Or you must do the next step: type the passkey. |
+| Two quick notes, up | The device typed the password. |
+| Three notes, up | An action is complete: a key got an entry, a keypad is paired, or a phone or laptop connected to the Wi-Fi network. |
+| Two notes, up | A function is on: the mouse mover, the Wi-Fi setup mode, or the sounds. |
+| Two notes, down | A function is off, a pairing stopped, or a key lost its entry. |
+| Two low beeps | Error. The screen shows the cause. A keypad key without an entry also makes this sound. |
+
+To turn the sounds on or off, type `sound` on the serial port. The device keeps the setting. The default is on.
 
 ## Wi-Fi setup mode
 
@@ -132,7 +148,7 @@ If the device finds no keypad in 60 s, the screen shows "No keypad found". A but
 ### Give a key to an entry
 
 1. Select the entry with the side button.
-2. Hold a key on the keypad for 2 s, then release it. The footer shows "Hold to bind key" and a bar. After 2 s, it shows "Release: bind key".
+2. Hold a key on the keypad for 2 s, then release it. The footer shows "Hold to bind key" and a bar. After 2 s, it shows "Release: bind key", and a beep sounds.
 3. The screen shows "Key 5 types" and the label of the entry.
 
 An entry has one key, and a key has one entry. A new key of the entry replaces its old key. A key that had a different entry moves to the selected entry. To remove the key, hold it again on the same entry: the screen shows "Key 5 removed".
@@ -222,8 +238,9 @@ The baud rate has no effect. Push Enter to get the prompt.
 | `web` | Start the Wi-Fi setup mode and show the network name and the Wi-Fi password. If the mode is on, stop it. |
 | `unpair` | Remove the Bluetooth keypad. The entries keep their keys. |
 | `mouse` | Turn the mouse mover on or off. The device keeps the setting. See "Mouse mover". |
+| `sound` | Turn the sounds on or off. The device keeps the setting. See "Sounds". |
 | `rotate` | Turn the screen 180 degrees. The device keeps the setting. |
-| `info` | Show the firmware version and the device state, also the keypad, its battery level, and the mouse mover. |
+| `info` | Show the firmware version and the device state, also the keypad, its battery level, the mouse mover, and the sounds. |
 | `dfu` | Restart into ROM download mode for flashing. |
 
 Limits:

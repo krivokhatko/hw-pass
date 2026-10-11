@@ -15,6 +15,7 @@
 #include "display.h"
 #include "keypad.h"
 #include "rng.h"
+#include "sound.h"
 #include "ui.h"
 #include "usbdev.h"
 #include "vault.h"
@@ -392,6 +393,17 @@ static void cmd_mouse(char *arg)
     }
 }
 
+static void cmd_sound(char *arg)
+{
+    bool on = !sound_enabled();
+
+    ui_sound(on);
+    out("Sounds %s.\n", on ? "on" : "off");
+    if (on && !sound_ready()) {
+        out("The speaker does not work: the audio codec did not start.\n");
+    }
+}
+
 static void cmd_rotate(char *arg)
 {
     ui_flip();
@@ -412,6 +424,7 @@ static void cmd_info(char *arg)
     out("USB host:  %s, Caps Lock %s\n", usbdev_ready() ? "ready" : "not ready",
         usbdev_caps_lock() ? "on" : "off");
     out("Mouse:     mover %s\n", usbdev_mouse_mover_on() ? "on" : "off");
+    out("Sound:     %s%s\n", sound_enabled() ? "on" : "off", sound_ready() ? "" : ", audio codec error");
     out("Wi-Fi:     %s\n", !web_active() ? "off" : web_connected() ? "on, 1 device" : "on, no device");
     keypad_name(name, sizeof(name));
     if (level >= 0) {
@@ -485,6 +498,7 @@ static const struct {
     { "web", "", "Start or stop the Wi-Fi setup mode.", cmd_web },
     { "unpair", "", "Remove the Bluetooth keypad.", cmd_unpair },
     { "mouse", "", "Turn the mouse mover on or off.", cmd_mouse },
+    { "sound", "", "Turn the sounds on or off.", cmd_sound },
     { "rotate", "", "Turn the screen 180 degrees.", cmd_rotate },
     { "info", "", "Show the device status.", cmd_info },
     { "dfu", "", "Restart into download mode for flashing.", cmd_dfu },

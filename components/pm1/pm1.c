@@ -26,6 +26,7 @@
 #define PIN_SPEAKER     (1 << 3)    /* PM1 G3: speaker amplifier enable */
 
 static const char *TAG = "pm1";
+static i2c_master_bus_handle_t s_bus;
 static i2c_master_dev_handle_t s_dev;
 
 static esp_err_t pm1_read(uint8_t reg, uint8_t *val)
@@ -70,12 +71,11 @@ esp_err_t pm1_init(void)
         .device_address = PM1_ADDR,
         .scl_speed_hz = PM1_HZ,
     };
-    i2c_master_bus_handle_t bus;
     uint8_t id = 0;
     esp_err_t err;
 
-    ESP_RETURN_ON_ERROR(i2c_new_master_bus(&bus_cfg, &bus), TAG, "bus");
-    ESP_RETURN_ON_ERROR(i2c_master_bus_add_device(bus, &dev_cfg, &s_dev), TAG, "device");
+    ESP_RETURN_ON_ERROR(i2c_new_master_bus(&bus_cfg, &s_bus), TAG, "bus");
+    ESP_RETURN_ON_ERROR(i2c_master_bus_add_device(s_bus, &dev_cfg, &s_dev), TAG, "device");
 
     /* The chip can sleep on the bus. The first access wakes it. */
     for (int i = 0; i < 5; i++) {
@@ -95,4 +95,14 @@ esp_err_t pm1_init(void)
     vTaskDelay(pdMS_TO_TICKS(100));
     ESP_LOGI(TAG, "id 0x%02x, LCD power on", id);
     return ESP_OK;
+}
+
+i2c_master_bus_handle_t pm1_bus(void)
+{
+    return s_bus;
+}
+
+esp_err_t pm1_speaker(bool on)
+{
+    return pm1_update(REG_GPIO_OUT, PIN_SPEAKER, on ? PIN_SPEAKER : 0);
 }

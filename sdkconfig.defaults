@@ -9,9 +9,9 @@ CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
 # 1 ms tick for key timing and button sampling.
 CONFIG_FREERTOS_HZ=1000
 CONFIG_ESP_MAIN_TASK_STACK_SIZE=6144
-# USB device: HID keyboard and CDC-ACM serial port.
+# USB device: HID keyboard, CDC-ACM serial port, and HID mouse.
 CONFIG_TINYUSB_CDC_ENABLED=y
-CONFIG_TINYUSB_HID_COUNT=1
+CONFIG_TINYUSB_HID_COUNT=2
 CONFIG_TINYUSB_DEBUG_LEVEL=0
 # Wi-Fi setup mode. Each start makes a new password: keep no Wi-Fi data in NVS.
 CONFIG_ESP_WIFI_NVS_ENABLED=n

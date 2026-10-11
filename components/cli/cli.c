@@ -380,6 +380,18 @@ static void cmd_unpair(char *arg)
     }
 }
 
+static void cmd_mouse(char *arg)
+{
+    bool on = !usbdev_mouse_mover_on();
+
+    ui_mouse(on);
+    if (on) {
+        out("Mouse mover on: the pointer moves 1 pixel each %d s.\n", USBDEV_MOUSE_PERIOD_S);
+    } else {
+        out("Mouse mover off.\n");
+    }
+}
+
 static void cmd_rotate(char *arg)
 {
     ui_flip();
@@ -398,6 +410,7 @@ static void cmd_info(char *arg)
     out("NVS:       %u of %u slots used\n", (unsigned)stats.used_entries, (unsigned)stats.total_entries);
     out("USB host:  %s, Caps Lock %s\n", usbdev_ready() ? "ready" : "not ready",
         usbdev_caps_lock() ? "on" : "off");
+    out("Mouse:     mover %s\n", usbdev_mouse_mover_on() ? "on" : "off");
     out("Wi-Fi:     %s\n", !web_active() ? "off" : web_connected() ? "on, 1 device" : "on, no device");
     keypad_name(name, sizeof(name));
     switch (keypad_state()) {
@@ -467,6 +480,7 @@ static const struct {
     { "kbtest", "", "Type all ASCII characters. Checks the key layout.", cmd_kbtest },
     { "web", "", "Start or stop the Wi-Fi setup mode.", cmd_web },
     { "unpair", "", "Remove the Bluetooth keypad.", cmd_unpair },
+    { "mouse", "", "Turn the mouse mover on or off.", cmd_mouse },
     { "rotate", "", "Turn the screen 180 degrees.", cmd_rotate },
     { "info", "", "Show the device status.", cmd_info },
     { "dfu", "", "Restart into download mode for flashing.", cmd_dfu },

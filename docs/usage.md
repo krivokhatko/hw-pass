@@ -23,7 +23,7 @@ The power button on the other side belongs to the power chip:
 ## Screen
 
 ```
-hw-pass     3/12  BT  USB     <- position, keypad state, USB state (green: ready)
+hw-pass  3/12  Mouse BT  USB  <- position, mouse mover, keypad state, USB state (green: ready)
   GitHub                 1    <- the keypad key of the entry
   Mail                        <- the selected entry has a color bar
   Bank                   2
@@ -32,6 +32,8 @@ Side: next  Front: type
 ```
 
 "BT" shows only when a keypad is paired. Green: the keypad is connected. Gray: the device waits for the keypad.
+
+"Mouse" shows only when the mouse mover is on. Green: the USB host is ready. Gray: the pointer does not move.
 
 ## Wi-Fi setup mode
 
@@ -159,6 +161,17 @@ If you push a different key while you hold Enter or Backspace, the computer gets
 
 Type `unpair` on the serial port. The entries keep their keys: a new keypad types the same entries with the same keys.
 
+## Mouse mover
+
+The mouse mover keeps the computer awake. The device is also a USB mouse. When the mouse mover is on, the device moves the pointer 1 pixel each 30 s: to the right, and 30 s later back to the left. The computer sees user activity. It does not lock the screen, turn off the display, or go to sleep.
+
+Type `mouse` on the serial port to turn the mouse mover on or off. The device keeps the setting after a restart. The default is off.
+
+- The device does not move the pointer while it types. The next move comes 30 s later.
+- The device does not know if you use the computer. It also moves the pointer while you work. A move of 1 pixel is too small to see.
+- A computer that sleeps does not wake up. The mouse mover only prevents the sleep.
+- The computer must read the mouse. Windows, macOS, and Linux desktops do this. A Linux text console without a desktop does not read it: the pointer does not move.
+
 ## Serial command line
 
 The device is also a USB serial port (CDC-ACM). Use it to add and change entries. Open the port with any terminal program, for example:
@@ -182,8 +195,9 @@ The baud rate has no effect. Push Enter to get the prompt.
 | `kbtest` | Type all printable ASCII characters. Checks the key layout of the host. |
 | `web` | Start the Wi-Fi setup mode and show the network name and the Wi-Fi password. If the mode is on, stop it. |
 | `unpair` | Remove the Bluetooth keypad. The entries keep their keys. |
+| `mouse` | Turn the mouse mover on or off. The device keeps the setting. See "Mouse mover". |
 | `rotate` | Turn the screen 180 degrees. The device keeps the setting. |
-| `info` | Show the firmware version and the device state, also the keypad. |
+| `info` | Show the firmware version and the device state, also the keypad and the mouse mover. |
 | `dfu` | Restart into ROM download mode for flashing. |
 
 Limits:
@@ -245,3 +259,7 @@ Bluetooth keypad:
 - Only the buttons can start a pairing. At other times, the device refuses a new pairing. It connects only to the paired keypad, and uses its keys only on a link that the bonding keys encrypt. If the keypad loses its bonding keys, for example after a pairing with a different computer on the same channel, pair it again with the buttons.
 - With a passkey, a different device cannot get into the pairing. A keypad without a passkey pairs with "Just Works": a person near you with special equipment can get into such a pairing. Pair such a keypad where no unknown persons are near.
 - The bonding keys are in the `nvs` partition. Flash encryption is off: a person with the device can read the bonding keys and make a false keypad. This person can also read the passwords.
+
+Mouse mover:
+
+- When the mouse mover is on, the computer does not lock itself. A person at the computer can use it while you are away. Lock the computer before you go (Windows: Win+L, macOS: Ctrl+Cmd+Q).

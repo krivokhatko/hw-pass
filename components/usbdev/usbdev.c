@@ -1,4 +1,5 @@
-/* TinyUSB composite device: HID boot keyboard and CDC-ACM serial port. */
+/* TinyUSB composite device: HID boot keyboard, CDC-ACM serial port, and
+ * HID boot mouse. */
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -12,6 +13,7 @@
 #include "esp_log.h"
 #include "esp_mac.h"
 #include "esp_system.h"
+#include "esp_timer.h"
 #include "hal/usb_serial_jtag_ll.h"
 #include "soc/rtc_cntl_reg.h"
 #include "tinyusb.h"
@@ -19,15 +21,19 @@
 #include "tinyusb_default_config.h"
 #include "usbdev.h"
 
-/* 0x4005 is the TinyUSB example PID for CDC + HID. */
+/* 0x4005 is the TinyUSB example PID for CDC + HID. Change the version
+ * when the descriptors change: Windows keeps data for each VID, PID, and
+ * version. */
 #define USB_VID         TINYUSB_ESPRESSIF_VID
 #define USB_PID         0x4005
-#define USB_BCD         0x0100
+#define USB_BCD         0x0101
 
+/* The ESP32-S3 has 5 IN endpoints, EP0 included. All are in use. */
 #define EP_HID_IN       0x81
 #define EP_CDC_NOTIF    0x82
 #define EP_CDC_OUT      0x03
 #define EP_CDC_IN       0x83
+#define EP_MOUSE_IN     0x84
 
 #define KEY_DELAY_MS    10      /* After each report. RDP and slow hosts lose fast keys. */
 #define CAPS_HOLD_MS    200     /* macOS ignores short Caps Lock pushes. */
@@ -35,19 +41,26 @@
 #define TX_WAIT_MS      100
 #define DFU_DETACH_MS   500     /* Time for the host to see the detach. */
 #define RX_BUF          256
+#define MOUSE_PERIOD_US (USBDEV_MOUSE_PERIOD_S * 1000000LL)
 
-/* The keyboard is interface 0 for simple BIOS and UEFI drivers. */
-enum { ITF_HID, ITF_CDC, ITF_CDC_DATA, ITF_COUNT };
-enum { STR_LANG, STR_MANUFACTURER, STR_PRODUCT, STR_SERIAL, STR_CDC, STR_HID, STR_COUNT };
+/* The keyboard is interface 0 for simple BIOS and UEFI drivers. The
+ * mouse is the last interface: the serial port keeps its interface
+ * number, and Windows keeps its COM port number. */
+enum { ITF_HID, ITF_CDC, ITF_CDC_DATA, ITF_MOUSE, ITF_COUNT };
+enum { STR_LANG, STR_MANUFACTURER, STR_PRODUCT, STR_SERIAL, STR_CDC, STR_HID, STR_MOUSE, STR_COUNT };
+/* TinyUSB numbers the HID instances in the order of the interfaces. */
+enum { HID_KEYBOARD, HID_MOUSE };
 
-static const uint8_t s_hid_report[] = { TUD_HID_REPORT_DESC_KEYBOARD() };
+static const uint8_t s_keyboard_report[] = { TUD_HID_REPORT_DESC_KEYBOARD() };
+static const uint8_t s_mouse_report[] = { TUD_HID_REPORT_DESC_MOUSE() };
 
-#define CONFIG_LEN (TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN + TUD_CDC_DESC_LEN)
+#define CONFIG_LEN (TUD_CONFIG_DESC_LEN + 2 * TUD_HID_DESC_LEN + TUD_CDC_DESC_LEN)
 
 static const uint8_t s_config[] = {
     TUD_CONFIG_DESCRIPTOR(1, ITF_COUNT, 0, CONFIG_LEN, 0, 100),
-    TUD_HID_DESCRIPTOR(ITF_HID, STR_HID, HID_ITF_PROTOCOL_KEYBOARD, sizeof(s_hid_report), EP_HID_IN, 8, 1),
+    TUD_HID_DESCRIPTOR(ITF_HID, STR_HID, HID_ITF_PROTOCOL_KEYBOARD, sizeof(s_keyboard_report), EP_HID_IN, 8, 1),
     TUD_CDC_DESCRIPTOR(ITF_CDC, STR_CDC, EP_CDC_NOTIF, 8, EP_CDC_OUT, EP_CDC_IN, 64),
+    TUD_HID_DESCRIPTOR(ITF_MOUSE, STR_MOUSE, HID_ITF_PROTOCOL_MOUSE, sizeof(s_mouse_report), EP_MOUSE_IN, 8, 10),
 };
 
 static const tusb_desc_device_t s_device = {
@@ -76,21 +89,24 @@ static const char *s_strings[STR_COUNT] = {
     [STR_SERIAL] = s_serial,
     [STR_CDC] = "hw-pass console",
     [STR_HID] = "hw-pass keyboard",
+    [STR_MOUSE] = "hw-pass mouse",
 };
 
 static const char *TAG = "usbdev";
 static StreamBufferHandle_t s_rx;
 static SemaphoreHandle_t s_tx_lock;
-static SemaphoreHandle_t s_type_lock;   /* Typing and s_held */
+static SemaphoreHandle_t s_type_lock;   /* Typing, s_held, and mouse moves */
 static uint8_t s_held[6];               /* Keys that usbdev_key holds down */
 static bool s_held_lost;                /* The host did not get s_held. */
 static volatile uint8_t s_leds;
+static volatile bool s_mouse_on;
+static int8_t s_mouse_dx = 1;           /* Next move: right, then back to the left */
 
 /* ---- HID callbacks (TinyUSB task) ---- */
 
 uint8_t const *tud_hid_descriptor_report_cb(uint8_t instance)
 {
-    return s_hid_report;
+    return instance == HID_MOUSE ? s_mouse_report : s_keyboard_report;
 }
 
 uint16_t tud_hid_get_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_t type,
@@ -103,7 +119,7 @@ uint16_t tud_hid_get_report_cb(uint8_t instance, uint8_t report_id, hid_report_t
 void tud_hid_set_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_t type,
                            uint8_t const *buf, uint16_t len)
 {
-    if (type == HID_REPORT_TYPE_OUTPUT && len >= 1) {
+    if (instance == HID_KEYBOARD && type == HID_REPORT_TYPE_OUTPUT && len >= 1) {
         s_leds = buf[0];
     }
 }
@@ -238,6 +254,32 @@ esp_err_t usbdev_key(uint8_t key, bool down)
     return ok ? ESP_OK : ESP_FAIL;
 }
 
+/* ---- Mouse mover ---- */
+
+/* esp_timer task: do not wait. If a move cannot go now, it goes in the
+ * next period. No move while the device types: with "focus follows
+ * mouse", a move can change the window that gets the keys. */
+static void mouse_tick(void *arg)
+{
+    if (!s_mouse_on || !usbdev_ready() || xSemaphoreTake(s_type_lock, 0) != pdTRUE) {
+        return;
+    }
+    if (tud_hid_n_ready(HID_MOUSE) && tud_hid_n_mouse_report(HID_MOUSE, 0, 0, s_mouse_dx, 0, 0, 0)) {
+        s_mouse_dx = -s_mouse_dx;
+    }
+    xSemaphoreGive(s_type_lock);
+}
+
+void usbdev_mouse_mover(bool on)
+{
+    s_mouse_on = on;
+}
+
+bool usbdev_mouse_mover_on(void)
+{
+    return s_mouse_on;
+}
+
 /* ---- Serial port ---- */
 
 static void on_rx(int itf, cdcacm_event_t *event)
@@ -326,6 +368,11 @@ esp_err_t usbdev_init(void)
         .cdc_port = TINYUSB_CDC_ACM_0,
         .callback_rx = on_rx,
     };
+    const esp_timer_create_args_t timer_args = {
+        .callback = mouse_tick,
+        .name = "mouse",
+    };
+    esp_timer_handle_t timer;
     uint8_t mac[6];
 
     s_rx = xStreamBufferCreate(RX_BUF, 1);
@@ -346,6 +393,10 @@ esp_err_t usbdev_init(void)
 
     esp_log_set_vprintf(log_vprintf);
     ESP_LOGI(TAG, "%04x:%04x serial %s", USB_VID, USB_PID, s_serial);
+
+    /* After the USB start: the serial port must work also without the timer. */
+    ESP_RETURN_ON_ERROR(esp_timer_create(&timer_args, &timer), TAG, "timer");
+    ESP_RETURN_ON_ERROR(esp_timer_start_periodic(timer, MOUSE_PERIOD_US), TAG, "timer start");
     return ESP_OK;
 }
 

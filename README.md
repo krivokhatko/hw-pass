@@ -2,7 +2,7 @@
 
 Hardware password typer. Firmware for the M5Stack StickS3 (ESP32-S3).
 
-The device is a USB keyboard. The side button selects a stored entry. The front button types its password. A paired Bluetooth LE keypad can also type: each key types one entry, and Enter and Backspace go to the computer. Two ways add and change entries: a command line on a USB serial port, and a web page in the Wi-Fi setup mode.
+The device is a USB keyboard. The side button selects a stored entry. The front button types its password. A paired Bluetooth LE keypad can also type: each key types one entry, and Enter and Backspace go to the computer. Two ways add and change entries: a command line on a USB serial port, and a web page in the Wi-Fi setup mode. The device is also a USB mouse: the mouse mover keeps the computer awake.
 
 For the buttons, the commands, and the security limits, refer to [docs/usage.md](docs/usage.md).
 
@@ -44,7 +44,7 @@ tools/                Host scripts.
 | `buttons` | Front and side buttons: debounce, short and long push, push of both. |
 | `vault` | Password entries in the `vault` NVS partition. |
 | `rng` | Random passwords. Selects the entropy source: ADC noise or radio. |
-| `usbdev` | TinyUSB device: HID boot keyboard and CDC-ACM serial port. |
+| `usbdev` | TinyUSB device: HID boot keyboard, CDC-ACM serial port, and HID boot mouse. The mouse mover. |
 | `cli` | Command line on the USB serial port. |
 | `web` | Wi-Fi setup mode: access point, captive DNS, web server, and the page (`www/index.html`). |
 | `backup` | Encrypted backup of the entries. The file format is the same as `openssl enc`. |
@@ -52,11 +52,19 @@ tools/                Host scripts.
 | `ui` | Screen content and button actions. |
 | `sysinfo` | Chip information in the log. |
 
-Threads: `ui_run` runs in the main task. `cli` has its own task. TinyUSB has its own task. In the Wi-Fi setup mode, the web server, the DNS server, and the Wi-Fi driver have their own tasks. `ui_run` starts and stops this mode. `keypad` has its own task, and the NimBLE host has a task after the first Bluetooth start. `vault`, `rng`, and the keyboard functions in `usbdev` have locks.
+Threads: `ui_run` runs in the main task. `cli` has its own task. TinyUSB has its own task. In the Wi-Fi setup mode, the web server, the DNS server, and the Wi-Fi driver have their own tasks. `ui_run` starts and stops this mode. `keypad` has its own task, and the NimBLE host has a task after the first Bluetooth start. The mouse mover runs in the `esp_timer` task. `vault`, `rng`, and the keyboard and mouse functions in `usbdev` have locks.
 
 ## USB
 
-The ROM and the first part of the start-up use the built-in USB Serial/JTAG (`303a:1001`). Then `usbdev` gives the USB PHY to TinyUSB, and the device connects again as `303a:4005` (HID + CDC). Log output goes to the CDC serial port.
+The ROM and the first part of the start-up use the built-in USB Serial/JTAG (`303a:1001`). Then `usbdev` gives the USB PHY to TinyUSB, and the device connects again as `303a:4005`. Log output goes to the CDC serial port.
+
+| Interface | Function | IN endpoint |
+|---|---|---|
+| 0 | HID boot keyboard | `0x81` |
+| 1, 2 | CDC-ACM serial port | `0x82`, `0x83` |
+| 3 | HID boot mouse | `0x84` |
+
+The ESP32-S3 has 5 IN endpoints, EP0 included. All are in use: a new USB function needs a free IN endpoint. Add a new interface after the last one: then Windows keeps the COM port number. When the descriptors change, change `USB_BCD`.
 
 `idf.py flash` cannot reset the chip through the TinyUSB serial port. Use the `dfu` command or `tools/flash.sh`.
 

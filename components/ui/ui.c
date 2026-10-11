@@ -88,28 +88,35 @@ void ui_web(bool on)
     }
 }
 
-static void load_flip(void)
+/* Settings: "flip" (screen) and "mouse" (mouse mover). Default 0. */
+static uint8_t load_setting(const char *key)
 {
     nvs_handle_t h;
     uint8_t v = 0;
 
     if (nvs_open("ui", NVS_READONLY, &h) == ESP_OK) {
-        nvs_get_u8(h, "flip", &v);
+        nvs_get_u8(h, key, &v);
         nvs_close(h);
     }
-    s_flip = v != 0;
+    return v;
 }
 
-static void save_flip(void)
+static void save_setting(const char *key, uint8_t v)
 {
     nvs_handle_t h;
 
     if (nvs_open("ui", NVS_READWRITE, &h) == ESP_OK) {
-        if (nvs_set_u8(h, "flip", s_flip) != ESP_OK || nvs_commit(h) != ESP_OK) {
-            ESP_LOGW(TAG, "cannot save the screen setting");
+        if (nvs_set_u8(h, key, v) != ESP_OK || nvs_commit(h) != ESP_OK) {
+            ESP_LOGW(TAG, "cannot save the setting %s", key);
         }
         nvs_close(h);
     }
+}
+
+void ui_mouse(bool on)
+{
+    usbdev_mouse_mover(on);
+    save_setting("mouse", on);
 }
 
 static uint32_t now_ms(void)
@@ -121,7 +128,7 @@ static void flip(void)
 {
     s_flip_request = false;
     s_flip = !s_flip;
-    save_flip();
+    save_setting("flip", s_flip);
     display_set_flip(s_flip);
 }
 
@@ -145,6 +152,10 @@ static void draw_frame(void)
     if (kp != KEYPAD_NONE) {
         x -= 3 * font_8x16.w;
         display_text(x, HEADER_Y, "BT", &font_8x16, kp == KEYPAD_CONNECTED ? C_OK : C_DIM, C_BG);
+    }
+    if (usbdev_mouse_mover_on()) {
+        x -= 6 * font_8x16.w;
+        display_text(x, HEADER_Y, "Mouse", &font_8x16, usbdev_ready() ? C_OK : C_DIM, C_BG);
     }
     if (n > 0) {
         snprintf(count, sizeof(count), "%d/%d", s_sel + 1, n);
@@ -565,6 +576,7 @@ void ui_run(void)
     uint32_t generation = vault_generation();
     bool usb = usbdev_ready();
     keypad_state_t kp = keypad_state();
+    bool mouse;
     bool screen_on = true;
     bool both_used = false;     /* The current push of both buttons did its action. */
     uint32_t idle_ms = 0;
@@ -572,8 +584,10 @@ void ui_run(void)
     /* The QR code library logs the text: it contains the Wi-Fi password. */
     esp_log_level_set("QRCODE", ESP_LOG_WARN);
     buttons_init();
-    load_flip();
+    s_flip = load_setting("flip") != 0;
     display_set_flip(s_flip);
+    usbdev_mouse_mover(load_setting("mouse") != 0);
+    mouse = usbdev_mouse_mover_on();
     draw_list();
     display_backlight(BRIGHTNESS);
 
@@ -652,6 +666,10 @@ void ui_run(void)
         }
         if (kp != keypad_state()) {
             kp = keypad_state();
+            dirty = true;
+        }
+        if (mouse != usbdev_mouse_mover_on()) {
+            mouse = !mouse;
             dirty = true;
         }
 

@@ -13,7 +13,7 @@ extern "C" {
 typedef enum {
     SOUND_CLICK,    /* The selection changed. */
     SOUND_STEP,     /* A hold reached the next step, or the user must act. */
-    SOUND_DONE,     /* The password is typed. */
+    SOUND_TYPE,     /* Typing starts: the device got the command. */
     SOUND_OK,       /* An action is complete: a key has an entry, a keypad is paired. */
     SOUND_ON,       /* A function is on. */
     SOUND_OFF,      /* A function is off, or a key lost its entry. */
@@ -28,6 +28,11 @@ esp_err_t sound_init(void);
 /* Play a sound after the sounds that wait. Does nothing when the sounds
  * are off. If too many sounds wait, the new sound is lost. */
 void sound_play(sound_t s);
+
+/* A sound can come soon, for example at the release of a button: turn on
+ * the speaker now. The start takes about 90 ms. After this time, a sound
+ * starts in 20 ms. Without this call, it starts in 80 ms. */
+void sound_prepare(void);
 
 void sound_enable(bool on);
 bool sound_enabled(void);

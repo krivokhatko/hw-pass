@@ -16,6 +16,7 @@ static struct {
     uint32_t held_ms;
 } s_btn[BUTTON_COUNT];
 static uint32_t s_both_ms;
+static bool s_pushed;
 
 esp_err_t buttons_init(void)
 {
@@ -39,6 +40,7 @@ press_t buttons_poll(button_t b)
         if (raw) {
             s_btn[b].held_ms = 0;
             s_btn[b].long_sent = false;
+            s_pushed = true;
         } else if (!s_btn[b].long_sent) {
             return PRESS_SHORT;
         }
@@ -69,6 +71,14 @@ uint32_t buttons_both_ms(void)
     return s_both_ms;
 }
 
+bool buttons_pushed(void)
+{
+    bool pushed = s_pushed;
+
+    s_pushed = false;
+    return pushed;
+}
+
 void buttons_consume(void)
 {
     for (int b = 0; b < BUTTON_COUNT; b++) {
@@ -77,4 +87,5 @@ void buttons_consume(void)
         s_btn[b].changes = 0;
     }
     s_both_ms = 0;
+    s_pushed = false;
 }

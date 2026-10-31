@@ -32,10 +32,12 @@
 #define LEVEL           2000    /* Peak sample value of a tone, max. 32767. Higher is louder. */
 #define RAMP_MS         2       /* Fade in and out: no click at the start and end of a note. */
 #define WARMUP_MS       50      /* Analog power-up of the codec */
-#define AMP_START_MS    40      /* Turn-on time of the amplifier */
-#define IDLE_MS         500     /* The amplifier stays on for the next sound. */
+#define AMP_START_MS    40      /* Start-up time of the AW8737A: 40 ms typ. (datasheet) */
+#define PAD_MS          (FRAMES * 1000 / SAMPLE_HZ)
+#define IDLE_MS         1000    /* The speaker stays on for the next sound, also for a long push (0.6 s). */
 #define WRITE_MS        100
-#define QUEUE_LEN       4
+#define QUEUE_LEN       8
+#define PREPARE         SOUND_COUNT     /* Queue item: turn on the speaker, no sound */
 
 /* Notes in Hz. The small speaker is weak below about 700 Hz. */
 #define G5  784
@@ -53,7 +55,7 @@ typedef struct {
 
 static const note_t s_click[] = { { E7, 6 }, { 0, 0 } };
 static const note_t s_step[] = { { A6, 50 }, { 0, 0 } };
-static const note_t s_done[] = { { G6, 30 }, { C7, 90 }, { 0, 0 } };
+static const note_t s_type[] = { { G6, 30 }, { C7, 90 }, { 0, 0 } };
 static const note_t s_ok[] = { { E6, 60 }, { G6, 60 }, { C7, 120 }, { 0, 0 } };
 static const note_t s_on[] = { { C6, 70 }, { 0, 20 }, { G6, 100 }, { 0, 0 } };
 static const note_t s_off[] = { { G6, 70 }, { 0, 20 }, { C6, 100 }, { 0, 0 } };
@@ -62,7 +64,7 @@ static const note_t s_error[] = { { G5, 100 }, { 0, 60 }, { G5, 180 }, { 0, 0 } 
 static const note_t *const s_sounds[SOUND_COUNT] = {
     [SOUND_CLICK] = s_click,
     [SOUND_STEP] = s_step,
-    [SOUND_DONE] = s_done,
+    [SOUND_TYPE] = s_type,
     [SOUND_OK] = s_ok,
     [SOUND_ON] = s_on,
     [SOUND_OFF] = s_off,
@@ -133,8 +135,11 @@ static esp_err_t tone(uint32_t hz, uint32_t ms)
     return ESP_OK;
 }
 
-static void play(sound_t s)
+static void play(uint8_t s)
 {
+    if (s >= SOUND_COUNT) {
+        return;     /* PREPARE */
+    }
     for (const note_t *n = s_sounds[s]; n->ms > 0; n++) {
         if (tone(n->hz, n->ms) != ESP_OK) {
             return;
@@ -169,9 +174,13 @@ static esp_err_t start(void)
     return err;
 }
 
-/* Play the sounds of the queue. The amplifier stays on while the next
- * sound comes in less than IDLE_MS. Then all samples have left the DMA
- * buffers, and the amplifier can go off. */
+/* Play the sounds of the queue. The speaker stays on while the next
+ * sound or PREPARE comes in less than IDLE_MS. Then all samples have left
+ * the DMA buffers, and the amplifier can go off. While the speaker is on
+ * without a sound, the DMA sends the same buffers of zeros again. The
+ * first write after this time can go into the buffer that the DMA sends
+ * at this time: the DMA does not send the start of the data. Thus one
+ * buffer of silence comes first. */
 static void sound_task(void *arg)
 {
     uint8_t s;
@@ -181,9 +190,12 @@ static void sound_task(void *arg)
         if (start() != ESP_OK) {
             continue;
         }
-        do {
-            play(s);
-        } while (xQueueReceive(s_queue, &s, pdMS_TO_TICKS(IDLE_MS)) == pdTRUE);
+        play(s);
+        while (xQueueReceive(s_queue, &s, pdMS_TO_TICKS(IDLE_MS)) == pdTRUE) {
+            if (s != PREPARE && tone(0, PAD_MS) == ESP_OK) {
+                play(s);
+            }
+        }
         stop();
     }
 }
@@ -241,13 +253,23 @@ esp_err_t sound_init(void)
     return ESP_OK;
 }
 
-void sound_play(sound_t s)
+static void send(uint8_t v)
 {
-    uint8_t v = s;
-
-    if (s_ready && s_enabled && s < SOUND_COUNT) {
+    if (s_ready && s_enabled) {
         xQueueSend(s_queue, &v, 0);
     }
+}
+
+void sound_play(sound_t s)
+{
+    if (s < SOUND_COUNT) {
+        send(s);
+    }
+}
+
+void sound_prepare(void)
+{
+    send(PREPARE);
 }
 
 void sound_enable(bool on)

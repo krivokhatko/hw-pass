@@ -43,7 +43,7 @@ The device makes a short sound after each action. Thus you do not have to look a
 |---|---|
 | Click | The selection changed. |
 | One beep | A hold reached the next step: release now. Or you must do the next step: type the passkey. |
-| Two quick notes, up | The device typed the password. |
+| Two quick notes, up | The device starts to type the password. The sound comes at once, while the device types. |
 | Three notes, up | An action is complete: a key got an entry, a keypad is paired, or a phone or laptop connected to the Wi-Fi network. |
 | Two notes, up | A function is on: the mouse mover, the Wi-Fi setup mode, or the sounds. |
 | Two notes, down | A function is off, a pairing stopped, or a key lost its entry. |

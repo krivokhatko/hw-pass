@@ -370,6 +370,8 @@ static void type_entry(int i, bool enter)
         show_error("No USB host", "Connect to a PC");
         return;
     }
+    /* At once: the sound plays while the device types. */
+    sound_play(SOUND_TYPE);
     show_message(enter ? "Typing + Enter" : "Typing", label, C_ACCENT);
     err = vault_secret(i, secret, sizeof(secret));
     if (err == ESP_OK) {
@@ -378,7 +380,6 @@ static void type_entry(int i, bool enter)
     vault_zero(secret, sizeof(secret));
     if (err == ESP_OK) {
         show_message("Done", label, C_OK);
-        sound_play(SOUND_DONE);
         vTaskDelay(pdMS_TO_TICKS(DONE_MS));
     } else if (err == ESP_ERR_INVALID_RESPONSE) {
         show_error("Caps Lock error", "Turn it off");
@@ -475,6 +476,7 @@ static bool poll_keypad(void)
         } else if (ev.down && s_kp_key == 0) {
             s_kp_key = ev.key;
             s_kp_ms = ev.ms;
+            sound_prepare();    /* A tap types at the release. */
         } else if (!ev.down && ev.key == s_kp_key) {
             s_kp_key = 0;
             s_kp_held = 0;
@@ -683,6 +685,10 @@ void ui_run(void)
         bool dirty = false;
         int n;
 
+        /* The action of a push comes at its release: the speaker is on then. */
+        if (buttons_pushed()) {
+            sound_prepare();
+        }
         if (s_dfu_request) {
             show_message("Download mode", "Flash with idf.py", C_ACCENT);
             display_backlight(BRIGHTNESS);

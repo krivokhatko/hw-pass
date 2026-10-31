@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdbool.h>
+#include <stdint.h>
 #include "esp_err.h"
 
 #ifdef __cplusplus
@@ -32,6 +34,10 @@ press_t buttons_poll(button_t b);
  * A push of both buttons gives no single events, also not at release.
  * Call one time in each poll cycle, after buttons_poll for both buttons. */
 uint32_t buttons_both_ms(void);
+
+/* Return true if a button went down since the last call. Its action comes
+ * later: at the release or after a hold time. */
+bool buttons_pushed(void);
 
 /* Ignore the pushes that are in progress: a button that is down gives no
  * event, also not at release. Call after a long time without buttons_poll. */

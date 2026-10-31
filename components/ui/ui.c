@@ -4,18 +4,23 @@
  * types the entry that has this key. The keypad keys - and + select an
  * entry, and * turns the mouse mover on or off. A sound tells the result
  * of each action: the user does not have to look at the screen. */
+#include <ctype.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
 #include "nvs.h"
 #include "qrcode.h"
 #include "buttons.h"
+#include "clock.h"
 #include "display.h"
 #include "keypad.h"
+#include "mover.h"
+#include "ntp.h"
 #include "sound.h"
 #include "usbdev.h"
 #include "vault.h"
@@ -96,8 +101,7 @@ void ui_web(bool on)
     }
 }
 
-/* Settings: "flip" (screen), "mouse" (mouse mover), and "mute" (sounds).
- * Default 0. */
+/* Settings: "flip" (screen) and "mute" (sounds). Default 0. */
 static uint8_t load_setting(const char *key)
 {
     nvs_handle_t h;
@@ -122,12 +126,6 @@ static void save_setting(const char *key, uint8_t v)
     }
 }
 
-void ui_mouse(bool on)
-{
-    usbdev_mouse_mover(on);
-    save_setting("mouse", on);
-}
-
 /* When the sounds go on, a sound tells it. */
 void ui_sound(bool on)
 {
@@ -139,6 +137,14 @@ void ui_sound(bool on)
 static uint32_t now_ms(void)
 {
     return pdTICKS_TO_MS(xTaskGetTickCount());
+}
+
+/* Minute of the day, or -1 when the time is not set. */
+static int clock_minute(void)
+{
+    struct tm t;
+
+    return clock_get(&t) ? t.tm_hour * 60 + t.tm_min : -1;
 }
 
 static void flip(void)
@@ -182,7 +188,7 @@ static void draw_frame(void)
         x -= 3 * font_8x16.w;
         display_text(x, HEADER_Y, "BT", &font_8x16, color, C_BG);
     }
-    if (usbdev_mouse_mover_on()) {
+    if (mover_on()) {
         x -= 3 * font_8x16.w;
         display_text(x, HEADER_Y, "MM", &font_8x16, usbdev_ready() ? C_OK : C_DIM, C_BG);
     }
@@ -206,6 +212,26 @@ static void draw_both_hold(void)
     } else {
         display_fill(0, FOOTER_Y - 3, DISPLAY_W, 2, C_BT);
         display_text(4, FOOTER_Y, "Release: pair keypad", &font_8x16, C_BT, C_BG);
+    }
+}
+
+/* The time at the right of the footer. Without the time, the schedule of
+ * the mouse mover cannot run: then "--:--" asks for the time. */
+static void draw_clock(void)
+{
+    mover_sched_t sched;
+    struct tm t;
+    char text[8];
+    int x = DISPLAY_W - 4 - 5 * font_8x16.w;
+
+    if (clock_get(&t)) {
+        snprintf(text, sizeof(text), "%02d:%02d", t.tm_hour, t.tm_min);
+        display_text(x, FOOTER_Y, text, &font_8x16, C_DIM, C_BG);
+        return;
+    }
+    mover_get_sched(&sched);
+    if (sched.enabled) {
+        display_text(x, FOOTER_Y, "--:--", &font_8x16, C_ACCENT, C_BG);
     }
 }
 
@@ -256,8 +282,11 @@ static void draw_list(void)
                  name);
         display_fill(0, FOOTER_Y - 3, DISPLAY_W * s_kp_held / BIND_MS, 2, C_BT);
         display_text(4, FOOTER_Y, text, &font_8x16, C_BT, C_BG);
-    } else if (n > 0) {
-        display_text(4, FOOTER_Y, "Side: next  Front: type", &font_8x16, C_DIM, C_BG);
+    } else {
+        if (n > 0) {
+            display_text(4, FOOTER_Y, "Side: next  Front: type", &font_8x16, C_DIM, C_BG);
+        }
+        draw_clock();
     }
     display_flush();
 }
@@ -430,13 +459,18 @@ static void bind_key(uint8_t key)
     vTaskDelay(pdMS_TO_TICKS(INFO_MS));
 }
 
-/* A tap of * turns the mouse mover on or off. It has no entry. */
+/* A tap of * turns the mouse mover on or off. It has no entry. The
+ * detail shows the next change by the schedule: "Off at 21:00". */
 static void toggle_mouse(void)
 {
-    bool on = !usbdev_mouse_mover_on();
+    char next[MOVER_NEXT_TEXT];
+    bool on = !mover_on();
 
-    ui_mouse(on);
-    show_message(on ? "Mouse mover on" : "Mouse mover off", on ? "PC stays awake" : "PC can sleep", C_OK);
+    mover_set(on);
+    mover_next_text(next, sizeof(next));
+    next[0] = toupper((unsigned char)next[0]);
+    show_message(on ? "Mouse mover on" : "Mouse mover off",
+                 next[0] ? next : on ? "PC stays awake" : "PC can sleep", C_OK);
     sound_play(on ? SOUND_ON : SOUND_OFF);
     vTaskDelay(pdMS_TO_TICKS(INFO_MS));
 }
@@ -605,8 +639,10 @@ static void web_mode(bool buttons)
 
     display_backlight(BRIGHTNESS);
     show_message("Wi-Fi setup", "Starting", C_ACCENT);
+    ntp_hold(true);     /* A time sync that runs stops: the mode needs the radio. */
     err = web_start(&s_web, buttons);
     if (err != ESP_OK) {
+        ntp_hold(false);
         vault_zero(&s_web, sizeof(s_web));
         show_error("Wi-Fi error", err == ESP_ERR_NOT_SUPPORTED ? "Not in this build" : esp_err_to_name(err));
         return;
@@ -649,6 +685,7 @@ static void web_mode(bool buttons)
     show_message("Wi-Fi setup", "Stopping", C_ACCENT);
     sound_play(SOUND_OFF);
     web_stop();
+    ntp_hold(false);
     vault_zero(&s_web, sizeof(s_web));
     show_message("Wi-Fi off", NULL, C_OK);
     vTaskDelay(pdMS_TO_TICKS(DONE_MS));
@@ -660,7 +697,8 @@ void ui_run(void)
     bool usb = usbdev_ready();
     keypad_state_t kp = keypad_state();
     int battery = keypad_battery();
-    bool mouse;
+    int minute = clock_minute();
+    bool mouse = mover_on();
     bool screen_on = true;
     bool both_used = false;     /* The current push of both buttons did its action. */
     uint32_t idle_ms = 0;
@@ -670,8 +708,6 @@ void ui_run(void)
     buttons_init();
     s_flip = load_setting("flip") != 0;
     display_set_flip(s_flip);
-    usbdev_mouse_mover(load_setting("mouse") != 0);
-    mouse = usbdev_mouse_mover_on();
     sound_enable(load_setting("mute") == 0);
     draw_list();
     display_backlight(BRIGHTNESS);
@@ -766,8 +802,12 @@ void ui_run(void)
             battery = keypad_battery();
             dirty = true;
         }
-        if (mouse != usbdev_mouse_mover_on()) {
+        if (mouse != mover_on()) {
             mouse = !mouse;
+            dirty = true;
+        }
+        if (minute != clock_minute()) {
+            minute = clock_minute();
             dirty = true;
         }
 

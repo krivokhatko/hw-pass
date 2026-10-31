@@ -14,9 +14,8 @@ void ui_flip(void);     /* Turn the screen 180 degrees and keep the setting. */
 void ui_dfu(void);      /* Show a message, then restart into download mode. */
 void ui_web(bool on);   /* Start (true) or stop (false) the Wi-Fi setup mode. */
 
-/* Turn the mouse mover or the sounds on or off and keep the setting.
- * Works at once, from any task. */
-void ui_mouse(bool on);
+/* Turn the sounds on or off and keep the setting. Works at once, from
+ * any task. */
 void ui_sound(bool on);
 
 #ifdef __cplusplus

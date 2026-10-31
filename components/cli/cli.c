@@ -7,13 +7,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_app_desc.h"
 #include "esp_system.h"
 #include "nvs.h"
+#include "clock.h"
 #include "display.h"
 #include "keypad.h"
+#include "mover.h"
+#include "ntp.h"
 #include "rng.h"
 #include "sound.h"
 #include "ui.h"
@@ -26,6 +30,7 @@
 #define FOREVER         UINT32_MAX
 #define KBTEST_DELAY_MS 3000
 #define WEB_WAIT_MS     5000
+#define NTP_WAIT_MS     45000
 
 static const char s_kbtest[] = " !\"#$%&'()*+,-./0123456789:;<=>?@"
                                "ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`"
@@ -383,13 +388,316 @@ static void cmd_unpair(char *arg)
 
 static void cmd_mouse(char *arg)
 {
-    bool on = !usbdev_mouse_mover_on();
+    char next[MOVER_NEXT_TEXT];
+    bool on = !mover_on();
 
-    ui_mouse(on);
+    mover_set(on);
     if (on) {
-        out("Mouse mover on: the pointer moves 1 pixel each %d s.\n", USBDEV_MOUSE_PERIOD_S);
+        out("Mouse mover on: the pointer moves 1 pixel each %d s.", USBDEV_MOUSE_PERIOD_S);
     } else {
-        out("Mouse mover off.\n");
+        out("Mouse mover off.");
+    }
+    mover_next_text(next, sizeof(next));
+    if (next[0]) {
+        out(" Next: %s.", next);
+    }
+    out("\n");
+}
+
+/* "on at 09:00 Mon-Fri, off at 21:00 Mon-Thu". Without days: "never on". */
+static void sched_times(const mover_sched_t *s, char *buf, size_t size)
+{
+    char days[MOVER_DAYS_TEXT];
+    size_t n;
+
+    if (s->on_days == 0) {
+        n = snprintf(buf, size, "never on");
+    } else {
+        mover_days_text(s->on_days, days, sizeof(days));
+        n = snprintf(buf, size, "on at %02d:%02d %s", s->on_min / 60, s->on_min % 60, days);
+    }
+    if (s->off_days == 0) {
+        snprintf(buf + n, size - n, ", never off");
+    } else {
+        mover_days_text(s->off_days, days, sizeof(days));
+        snprintf(buf + n, size - n, ", off at %02d:%02d %s", s->off_min / 60, s->off_min % 60, days);
+    }
+}
+
+static void show_sched(void)
+{
+    mover_sched_t s;
+    char times[80], next[MOVER_NEXT_TEXT];
+
+    mover_get_sched(&s);
+    sched_times(&s, times, sizeof(times));
+    out("The schedule is %s. Times: %s.", s.enabled ? "on" : "off", times);
+    if (!s.enabled) {
+        out("\n");
+    } else if (!clock_valid()) {
+        out(" The time is not set: the schedule waits. Use \"time\".\n");
+    } else {
+        mover_next_text(next, sizeof(next));
+        if (next[0]) {
+            out(" Next: %s.\n", next);
+        } else {
+            out(" No change comes.\n");
+        }
+    }
+}
+
+static void auto_usage(void)
+{
+    out("Use \"auto\" to turn the schedule on or off.\n"
+        "Use \"auto on|off [HH:MM] [days]\" to set the time or the days of the auto-on or the auto-off,\n"
+        "for example \"auto off 21:00 mon-thu\". Days: all, none, mon,wed, mon-fri, fri-mon.\n");
+}
+
+/* "auto" turns the schedule on or off. "auto on 09:00 mon-fri" and
+ * "auto off 21:00 mon-thu" set a time, days, or both. */
+static void cmd_auto(char *arg)
+{
+    mover_sched_t s;
+    char *tok, *save;
+    uint16_t *min;
+    uint8_t *days, acc = 0;
+    bool got_time = false, got_days = false;
+
+    mover_get_sched(&s);
+    if (*arg == '\0') {
+        s.enabled = !s.enabled;
+    } else {
+        tok = strtok_r(arg, " ", &save);
+        if (strcmp(tok, "on") == 0) {
+            min = &s.on_min;
+            days = &s.on_days;
+        } else if (strcmp(tok, "off") == 0) {
+            min = &s.off_min;
+            days = &s.off_days;
+        } else {
+            auto_usage();
+            return;
+        }
+        while ((tok = strtok_r(NULL, " ", &save)) != NULL) {
+            int h, m, n = 0;
+            uint8_t d;
+
+            if (sscanf(tok, "%2d:%2d%n", &h, &m, &n) == 2 && tok[n] == '\0' &&
+                h >= 0 && h < 24 && m >= 0 && m < 60) {
+                *min = h * 60 + m;
+                got_time = true;
+            } else if (mover_parse_days(tok, &d)) {
+                acc |= d;
+                got_days = true;
+            } else {
+                out("\"%s\" is not a time (HH:MM) or days.\n", tok);
+                auto_usage();
+                return;
+            }
+        }
+        if (!got_time && !got_days) {
+            auto_usage();
+            return;
+        }
+        if (got_days) {
+            *days = acc;
+        }
+    }
+    if (mover_set_sched(&s) != ESP_OK) {
+        out("The schedule is not valid. Nothing changed.\n");
+        return;
+    }
+    show_sched();
+}
+
+/* "2026-10-31 14:30:02 Sat EET", or "" if the time is not set. */
+static void time_text(char *buf, size_t size)
+{
+    struct tm t;
+
+    if (clock_get(&t)) {
+        strftime(buf, size, "%Y-%m-%d %H:%M:%S %a %Z", &t);
+    } else {
+        buf[0] = '\0';
+    }
+}
+
+static void show_time(void)
+{
+    char text[40];
+
+    time_text(text, sizeof(text));
+    if (text[0]) {
+        out("%s\n", text);
+    } else {
+        out("The time is not set. Use \"time YYYY-MM-DD HH:MM\", or \"ntp\" with a network.\n");
+    }
+}
+
+static void cmd_time(char *arg)
+{
+    struct tm t;
+
+    if (*arg != '\0' && (clock_parse(arg, &t) != ESP_OK || clock_set(&t) != ESP_OK)) {
+        out("Give the date and the time as YYYY-MM-DD HH:MM, for example \"time 2026-10-31 14:30\".\n");
+        return;
+    }
+    show_time();
+}
+
+static void cmd_tz(char *arg)
+{
+    char tz[CLOCK_TZ_MAX + 1];
+    size_t len = strlen(arg);
+
+    while (len > 0 && arg[len - 1] == ' ') {
+        arg[--len] = '\0';
+    }
+    if (len > 0 && clock_set_tz(arg) != ESP_OK) {
+        out("Give a POSIX time zone, for example \"tz EET-2EEST,M3.5.0/3,M10.5.0/4\" or \"tz UTC0\".\n"
+            "See \"Time zone\" in docs/usage.md.\n");
+        return;
+    }
+    clock_get_tz(tz, sizeof(tz));
+    out("Time zone: %s\n", tz);
+    show_time();
+}
+
+/* Print the error of a time sync function. Return true if there is none. */
+static bool ntp_report(esp_err_t err)
+{
+    switch (err) {
+    case ESP_OK:
+        return true;
+    case ESP_ERR_NOT_SUPPORTED:
+        out("The time sync is not in this build (CONFIG_HWPASS_NTP).\n");
+        break;
+    case ESP_ERR_NOT_FOUND:
+        out("No network. Use \"wifi <name>\" first.\n");
+        break;
+    case ESP_ERR_INVALID_STATE:
+        out("The Wi-Fi setup mode is on. Stop it first.\n");
+        break;
+    default:
+        out("Error: %s.\n", esp_err_to_name(err));
+        break;
+    }
+    return false;
+}
+
+/* The Wi-Fi password of the time sync is not a vault secret, but it
+ * does not echo, and the device never shows it. */
+static void cmd_wifi(char *arg)
+{
+    char ssid[NTP_SSID_MAX + 1], pass[LINE_SIZE];
+    size_t len = strlen(arg);
+    esp_err_t err;
+
+    while (len > 0 && arg[len - 1] == ' ') {
+        arg[--len] = '\0';
+    }
+    ntp_get_ssid(ssid, sizeof(ssid));
+    if (len == 0) {
+        if (ssid[0]) {
+            out("Network of the time sync: \"%s\". Use \"wifi <name>\" to change it, or \"wifi off\" to remove it.\n", ssid);
+        } else {
+            out("No network for the time sync. Use \"wifi <name>\".\n");
+        }
+        return;
+    }
+    if (strcmp(arg, "off") == 0) {
+        ntp_clear_wifi();
+        out(ssid[0] ? "The network is removed. The device does not sync the time.\n" : "No network is set.\n");
+        return;
+    }
+    if (len > NTP_SSID_MAX) {
+        out("The network name must have 1 to %d characters.\n", NTP_SSID_MAX);
+        return;
+    }
+    out("Wi-Fi password: ");
+    if (read_line(pass, sizeof(pass), false, FOREVER) < 0) {
+        vault_zero(pass, sizeof(pass));
+        return;
+    }
+    err = ntp_set_wifi(arg, pass);
+    vault_zero(pass, sizeof(pass));
+    if (err == ESP_ERR_INVALID_SIZE) {
+        out("The password must have %d to %d characters: the network must use WPA2 or WPA3. Nothing changed.\n",
+            NTP_PASS_MIN, NTP_PASS_MAX);
+    } else if (err == ESP_ERR_INVALID_ARG) {
+        out("The name and the password must contain only printable ASCII characters. Nothing changed.\n");
+    } else if (ntp_report(err)) {
+        out("The network \"%s\" is saved. Type \"ntp\" to sync the time now.\n", arg);
+    }
+}
+
+static bool valid_host(const char *s)
+{
+    if (*s == '\0' || strlen(s) > NTP_SERVER_MAX) {
+        return false;
+    }
+    for (; *s; s++) {
+        if (!isalnum((unsigned char)*s) && *s != '.' && *s != '-') {
+            return false;
+        }
+    }
+    return true;
+}
+
+static void ntp_usage(void)
+{
+    out("Use \"ntp\" to sync the time now, \"ntp on\" or \"ntp off\" for the automatic sync,\n"
+        "or \"ntp server <name or IP>\" to set the NTP server (\"ntp server router\": the router).\n");
+}
+
+static void cmd_ntp(char *arg)
+{
+    char text[NTP_RESULT_TEXT], *tok, *save;
+    uint32_t count = ntp_count();
+
+    if (*arg == '\0') {
+        if (!ntp_report(ntp_request())) {
+            return;
+        }
+        out("The time sync runs. It takes some seconds.\n");
+        for (int i = 0; i < NTP_WAIT_MS / 100 && ntp_count() == count; i++) {
+            vTaskDelay(pdMS_TO_TICKS(100));
+        }
+        if (ntp_count() == count) {
+            out("The sync did not end. Look at \"info\" later.\n");
+            return;
+        }
+        ntp_result_text(text, sizeof(text));
+        out("Sync %s.\n", text);
+        if (strncmp(text, "OK", 2) == 0) {
+            show_time();
+        }
+        return;
+    }
+    tok = strtok_r(arg, " ", &save);
+    if (strcmp(tok, "on") == 0 || strcmp(tok, "off") == 0) {
+        bool on = strcmp(tok, "on") == 0;
+
+        if (ntp_report(ntp_set_auto(on))) {
+            out("Automatic time sync %s.\n", on ? "on: after each start, then each 24 h" : "off");
+        }
+    } else if (strcmp(tok, "server") == 0) {
+        tok = strtok_r(NULL, " ", &save);
+        if (tok == NULL || strtok_r(NULL, " ", &save) != NULL) {
+            ntp_usage();
+            return;
+        }
+        if (strcmp(tok, "router") == 0) {
+            tok = "";
+        } else if (!valid_host(tok)) {
+            out("Give a host name or an IP address, for example \"ntp server 192.168.1.1\".\n");
+            return;
+        }
+        if (ntp_report(ntp_set_server(tok))) {
+            out("NTP server: %s.\n", tok[0] ? tok : "the router");
+        }
+    } else {
+        ntp_usage();
     }
 }
 
@@ -414,7 +722,9 @@ static void cmd_info(char *arg)
 {
     const esp_app_desc_t *app = esp_app_get_description();
     nvs_stats_t stats = { 0 };
-    char name[KEYPAD_NAME_MAX + 1], battery[24] = "";
+    mover_sched_t sched;
+    char name[KEYPAD_NAME_MAX + 1], battery[24] = "", next[MOVER_NEXT_TEXT], times[80], text[40];
+    char tz[CLOCK_TZ_MAX + 1], ssid[NTP_SSID_MAX + 1], server[NTP_SERVER_MAX + 1], result[NTP_RESULT_TEXT];
     int level = keypad_battery();
 
     nvs_get_stats("vault", &stats);
@@ -423,9 +733,40 @@ static void cmd_info(char *arg)
     out("NVS:       %u of %u slots used\n", (unsigned)stats.used_entries, (unsigned)stats.total_entries);
     out("USB host:  %s, Caps Lock %s\n", usbdev_ready() ? "ready" : "not ready",
         usbdev_caps_lock() ? "on" : "off");
-    out("Mouse:     mover %s\n", usbdev_mouse_mover_on() ? "on" : "off");
+    mover_next_text(next, sizeof(next));
+    out("Mouse:     mover %s%s%s\n", mover_on() ? "on" : "off", next[0] ? ", next: " : "", next);
+    mover_get_sched(&sched);
+    sched_times(&sched, times, sizeof(times));
+    if (!sched.enabled) {
+        out("Schedule:  off (%s)\n", times);
+    } else {
+        out("Schedule:  %s%s\n", times, clock_valid() ? "" : "; waits for the time");
+    }
+    time_text(text, sizeof(text));
+    if (text[0]) {
+        out("Time:      %s\n", text);
+    } else {
+        out("Time:      not set. Use \"time YYYY-MM-DD HH:MM\", or \"ntp\" with a network.\n");
+    }
+    clock_get_tz(tz, sizeof(tz));
+    out("Zone:      %s\n", tz);
+    ntp_get_ssid(ssid, sizeof(ssid));
+    if (ssid[0]) {
+        ntp_get_server(server, sizeof(server));
+        out("Sync:      network \"%s\", server %s, auto %s\n", ssid, server[0] ? server : "router",
+            ntp_auto() ? "on" : "off");
+    } else {
+        out("Sync:      no network. Use \"wifi <name>\".\n");
+    }
+    ntp_result_text(result, sizeof(result));
+    if (ntp_busy()) {
+        out("Last sync: runs now\n");
+    } else if (result[0]) {
+        out("Last sync: %s\n", result);
+    }
     out("Sound:     %s%s\n", sound_enabled() ? "on" : "off", sound_ready() ? "" : ", audio codec error");
-    out("Wi-Fi:     %s\n", !web_active() ? "off" : web_connected() ? "on, 1 device" : "on, no device");
+    out("Wi-Fi:     %s\n", ntp_busy() ? "on, time sync" : !web_active() ? "off" :
+        web_connected() ? "on, 1 device" : "on, no device");
     keypad_name(name, sizeof(name));
     if (level >= 0) {
         snprintf(battery, sizeof(battery), ", battery %d%%", level);
@@ -498,6 +839,11 @@ static const struct {
     { "web", "", "Start or stop the Wi-Fi setup mode.", cmd_web },
     { "unpair", "", "Remove the Bluetooth keypad.", cmd_unpair },
     { "mouse", "", "Turn the mouse mover on or off.", cmd_mouse },
+    { "auto", "[on|off HH:MM days]", "Schedule of the mouse mover: toggle, or set.", cmd_auto },
+    { "time", "[YYYY-MM-DD HH:MM]", "Show or set the time.", cmd_time },
+    { "tz", "[zone]", "Show or set the time zone (POSIX TZ).", cmd_tz },
+    { "wifi", "[<name>|off]", "Network of the time sync. Asks for the password.", cmd_wifi },
+    { "ntp", "[on|off|server x]", "Sync the time now, or set the automatic sync.", cmd_ntp },
     { "sound", "", "Turn the sounds on or off.", cmd_sound },
     { "rotate", "", "Turn the screen 180 degrees.", cmd_rotate },
     { "info", "", "Show the device status.", cmd_info },
@@ -512,7 +858,7 @@ static void cmd_help(char *arg)
 
     for (size_t i = 0; i < CMD_COUNT; i++) {
         snprintf(usage, sizeof(usage), "%s %s", s_cmds[i].name, s_cmds[i].args);
-        out("  %-20s %s\n", usage, s_cmds[i].help);
+        out("  %-24s %s\n", usage, s_cmds[i].help);
     }
     out("The device never shows a password. Push the front button to type it.\n");
 }

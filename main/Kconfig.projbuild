@@ -1,0 +1,18 @@
+menu "hw-pass"
+
+    config HWPASS_WEB
+        bool "Wi-Fi setup mode with a web page"
+        default y
+        help
+            Both buttons start a Wi-Fi access point with a web page that
+            changes the entries. Turn this off for a build without the page.
+
+    config HWPASS_NTP
+        bool "Time sync with the NTP server of the Wi-Fi router"
+        default y
+        help
+            The device joins the Wi-Fi network for some seconds, gets the
+            time from the router, and turns the radio off again. Turn this
+            and HWPASS_WEB off for a build without Wi-Fi.
+
+endmenu

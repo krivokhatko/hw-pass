@@ -9,6 +9,9 @@ CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
 # 1 ms tick for key timing and button sampling.
 CONFIG_FREERTOS_HZ=1000
 CONFIG_ESP_MAIN_TASK_STACK_SIZE=6144
+# The schedule of the mouse mover runs in the esp_timer task and saves
+# the state to NVS there.
+CONFIG_ESP_TIMER_TASK_STACK_SIZE=4096
 # USB device: HID keyboard, CDC-ACM serial port, and HID mouse.
 CONFIG_TINYUSB_CDC_ENABLED=y
 CONFIG_TINYUSB_HID_COUNT=2

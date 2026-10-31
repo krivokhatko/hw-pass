@@ -2,8 +2,11 @@
 #include "esp_log.h"
 #include "nvs_flash.h"
 #include "cli.h"
+#include "clock.h"
 #include "display.h"
 #include "keypad.h"
+#include "mover.h"
+#include "ntp.h"
 #include "pm1.h"
 #include "rng.h"
 #include "sound.h"
@@ -40,8 +43,11 @@ void app_main(void)
     check(sound_init(), "sound");
     check(vault_init(), "vault");
     check(rng_init(), "rng");
+    check(clock_init(), "clock");
     check(usbdev_init(), "usb");
+    check(mover_init(), "mover");
     check(keypad_init(), "keypad");
+    check(ntp_init(), "ntp");
     check(cli_start(), "cli");
     ui_run();
 }

@@ -28,12 +28,14 @@ hw-pass   3/12  MM BT 85% USB  <- position, mouse mover, keypad state and batter
   Mail                         <- the selected entry has a color bar
   Bank                   2
 -------------------------------
-Side: next  Front: type
+Side: next  Front: type  21:45 <- the time
 ```
 
 "BT" shows only when a keypad is paired. Green: the keypad is connected. Gray: the device waits for the keypad. The number after "BT" is the battery level of the keypad. See "Battery level".
 
 "MM" shows only when the mouse mover is on. Green: the USB host is ready. Gray: the pointer does not move.
+
+The footer shows the time when it is set. "--:--" means: the schedule of the mouse mover is on, but the time is not set. See "Time".
 
 ## Sounds
 
@@ -45,8 +47,8 @@ The device makes a short sound after each action. Thus you do not have to look a
 | One beep | A hold reached the next step: release now. Or you must do the next step: type the passkey. |
 | Two quick notes, up | The device starts to type the password. The sound comes at once, while the device types. |
 | Three notes, up | An action is complete: a key got an entry, a keypad is paired, or a phone or laptop connected to the Wi-Fi network. |
-| Two notes, up | A function is on: the mouse mover, the Wi-Fi setup mode, or the sounds. |
-| Two notes, down | A function is off, a pairing stopped, or a key lost its entry. |
+| Two notes, up | A function is on: the mouse mover (also by its schedule), the Wi-Fi setup mode, or the sounds. |
+| Two notes, down | A function is off (also the mouse mover by its schedule), a pairing stopped, or a key lost its entry. |
 | Two low beeps | Error. The screen shows the cause. A keypad key without an entry also makes this sound. |
 
 To turn the sounds on or off, type `sound` on the serial port. The device keeps the setting. The default is on.
@@ -179,7 +181,7 @@ If you push a different key while you hold Enter or Backspace, the computer gets
 |---|---|
 | `-` | Select the previous entry, like a long push of the side button. |
 | `+` | Select the next entry, like a short push of the side button. |
-| `*` | Turn the mouse mover on or off. The screen shows "Mouse mover on" or "Mouse mover off". |
+| `*` | Turn the mouse mover on or off. The screen shows "Mouse mover on" or "Mouse mover off", and the next change by the schedule, for example "Off at 21:00". |
 
 `-` and `+` move the selection one entry for each push. They also work when the screen is dark: the screen comes on and shows the new selection.
 
@@ -214,6 +216,111 @@ To turn the mouse mover on or off, push `*` on the Bluetooth keypad, or type `mo
 - A computer that sleeps does not wake up. The mouse mover only prevents the sleep.
 - The computer must read the mouse. Windows, macOS, and Linux desktops do this. A Linux text console without a desktop does not read it: the pointer does not move.
 
+### Schedule
+
+The schedule turns the mouse mover on and off at set times. The default: on at 09:00 and off at 21:00, every day. The schedule is on by default, but it needs the time. See "Time".
+
+| Command | Action |
+|---|---|
+| `auto` | Turn the schedule on or off. Shows the schedule and the next change. |
+| `auto on 09:00 mon-fri` | The mouse mover goes on at 09:00 from Monday to Friday. |
+| `auto off 21:00 mon-thu` | The mouse mover goes off at 21:00 from Monday to Thursday. |
+| `auto off none` | The mouse mover never goes off by itself. |
+
+Give the time, the days, or both. Days: `all`, `none`, or names of 3 letters: `mon,wed,fri`, `mon-fri`, `fri-mon`.
+
+Rules:
+
+- The schedule changes the mouse mover only at the set times. Between the times, `*` and `mouse` work as always, and the state stays until the next set time. For example, turn the mouse mover on at night: it stays on until the next auto-off.
+- A change by the schedule makes the "on" or "off" sound, and the header shows or hides "MM". The device keeps the new state after a restart.
+- When you set the time after a power loss, or the first time, the mouse mover gets the state of the last auto-on or auto-off before this time. For example, set the time to 10:00 with the default schedule: the mouse mover goes on, because the auto-on at 09:00 is the last change before 10:00. See "Time".
+- A change of the schedule with `auto` has an effect at the next set time. To change the state now, use `*` or `mouse`.
+- With an auto-on and an auto-off at the same time, the mouse mover goes off.
+- A change can come up to 5 s after the set time.
+
+Example: a work computer that must stay awake over the weekend.
+
+```
+auto off 21:00 mon-thu
+```
+
+With the default auto-on, the mouse mover is on from 09:00 to 21:00 from Monday to Thursday. On Friday, it goes on at 09:00 and stays on: the next auto-off is on Monday at 21:00. The auto-on on Saturday, Sunday, and Monday changes nothing, because the mouse mover is already on.
+
+`auto`, `mouse`, and `info` show the next change, for example "next: off at 21:00" or "next: on Mon 09:00".
+
+### Time
+
+The schedule needs the local time. The device keeps the time in UTC and shows it in your time zone. Set the zone one time. Then set the time by hand, or let the device get it from an NTP server over Wi-Fi.
+
+#### Time zone
+
+```
+tz EET-2EEST,M3.5.0/3,M10.5.0/4
+```
+
+The value is a POSIX time zone: the name and the offset of the standard time, then the name of the daylight saving time and the rules for its start and its end. With the rules, the device changes to and from daylight saving time by itself. Without a zone, the device shows UTC. `tz` without a value shows the zone and the time.
+
+| Zone | Value |
+|---|---|
+| UTC | `UTC0` |
+| United Kingdom | `GMT0BST,M3.5.0/1,M10.5.0` |
+| Central Europe | `CET-1CEST,M3.5.0,M10.5.0/3` |
+| Eastern Europe, Ukraine | `EET-2EEST,M3.5.0/3,M10.5.0/4` |
+| US Eastern | `EST5EDT,M3.2.0,M11.1.0` |
+| US Pacific | `PST8PDT,M3.2.0,M11.1.0` |
+
+On Linux, the last line of a zone file has the value, for example `tail -n 1 /usr/share/zoneinfo/Europe/Kyiv`.
+
+After a change of the zone, the local time moves. The schedule treats this like a correction of the time (see the end of this section).
+
+#### Set the time by hand
+
+```
+time 2026-10-31 14:30
+```
+
+Give the local time of your zone. `time` without a value shows the time. `info` and the footer of the screen also show it.
+
+The device keeps the time across a restart, but it has no clock chip: a power loss loses the time. This occurs when the computer turns the USB power off and the battery of the device becomes empty. Then the footer shows "--:--", and the schedule waits until the time is set again. When it is set, by you or by the time sync, the mouse mover gets the state of the schedule for this time (see "Schedule").
+
+A program on the computer can set the time at each logon. Then the schedule works without your help. Linux:
+
+```
+stty -F /dev/ttyACM0 raw; printf 'time %s\r' "$(date '+%F %R')" > /dev/ttyACM0
+```
+
+Windows, in PowerShell, with the COM port of "USB Serial Device":
+
+```
+$p = New-Object System.IO.Ports.SerialPort COM5; $p.Open(); $p.Write("time $(Get-Date -Format 'yyyy-MM-dd HH:mm')`r"); $p.Close()
+```
+
+#### Time sync over Wi-Fi
+
+The device can get the time from an NTP server: the Wi-Fi router, a computer in your network, or a public server. It joins your Wi-Fi network as a client for some seconds, sends one request, sets the time, and turns Wi-Fi off again.
+
+1. Set the time zone (see above).
+2. Type `wifi <network name>`. The device asks for the Wi-Fi password. The password does not echo. The network must use WPA2 or WPA3.
+3. Type `ntp`. The device syncs and shows the result, for example `Sync OK: set from 192.168.0.1, correction +0.4 s`.
+
+Then the device syncs by itself: 20 s after each start, and then each 24 hours. After a power loss, it gets the time at the start, and the schedule sets the mouse mover. If a sync fails, the device tries again after 10 minutes, then after 20, 40, and 80 minutes, and then each 4 hours. `info` shows the last result.
+
+| Command | Action |
+|---|---|
+| `wifi` | Show the network. |
+| `wifi <name>` | Set the network. Asks for the password. |
+| `wifi off` | Remove the network and the password. Then the device does not sync. |
+| `ntp` | Sync now and show the result. |
+| `ntp on`, `ntp off` | Turn the automatic sync on or off. The default is on. |
+| `ntp server 192.168.0.1` | Use this NTP server: an IP address or a name. |
+| `ntp server router` | Use the router: the default gateway of the network. This is the default. |
+
+Not all routers have an NTP server for the devices in the network. On many home routers, the "NTP" setting only sets the clock of the router. If `ntp` shows "no reply from" the router, look for an NTP server option in the router, use a computer in the network with an NTP server (Linux: chrony or ntpd; Windows: the Windows Time service with its `NtpServer` provider enabled), or use a public server: `ntp server pool.ntp.org`. A public server needs internet access from the Wi-Fi network. See "Security".
+
+The device does not sync while the Wi-Fi setup mode is on. A sync that runs stops when the mode starts.
+
+A correction of a known time by less than 12 hours does not lose a change: a correction forward does the changes that it skips, and a correction back does no change two times. A move of 12 hours or more counts as a new time.
+
 ## Serial command line
 
 The device is also a USB serial port (CDC-ACM). Use it to add and change entries. Open the port with any terminal program, for example:
@@ -238,9 +345,14 @@ The baud rate has no effect. Push Enter to get the prompt.
 | `web` | Start the Wi-Fi setup mode and show the network name and the Wi-Fi password. If the mode is on, stop it. |
 | `unpair` | Remove the Bluetooth keypad. The entries keep their keys. |
 | `mouse` | Turn the mouse mover on or off. The device keeps the setting. See "Mouse mover". |
+| `auto [on\|off HH:MM days]` | Turn the schedule of the mouse mover on or off, or set its times and days. See "Schedule". |
+| `time [YYYY-MM-DD HH:MM]` | Show or set the time. See "Time". |
+| `tz [zone]` | Show or set the time zone. See "Time". |
+| `wifi [<name>\|off]` | Show, set, or remove the Wi-Fi network of the time sync. Asks for the password. See "Time". |
+| `ntp [on\|off\|server x]` | Sync the time now, turn the automatic sync on or off, or set the NTP server. See "Time". |
 | `sound` | Turn the sounds on or off. The device keeps the setting. See "Sounds". |
 | `rotate` | Turn the screen 180 degrees. The device keeps the setting. |
-| `info` | Show the firmware version and the device state, also the keypad, its battery level, the mouse mover, and the sounds. |
+| `info` | Show the firmware version and the device state, also the keypad, its battery level, the mouse mover, its schedule, the time, the time zone, the time sync, and the sounds. |
 | `dfu` | Restart into ROM download mode for flashing. |
 
 Limits:
@@ -286,14 +398,22 @@ Read these limits before you store important passwords:
 
 Wi-Fi:
 
-- Wi-Fi is off, except in the Wi-Fi setup mode. A build with `CONFIG_HWPASS_WEB=n` has no Wi-Fi code.
-- Each start makes a new network name and a new random Wi-Fi password of 16 characters (about 79 bits). The network uses WPA2/WPA3 and accepts one device. The transmit power is low (11 dBm).
-- The device keeps no Wi-Fi data in flash.
+- Wi-Fi is off, except in the Wi-Fi setup mode and during a time sync (some seconds). A build with `CONFIG_HWPASS_WEB=n` and `CONFIG_HWPASS_NTP=n` has no Wi-Fi code.
+- Each start of the setup mode makes a new network name and a new random Wi-Fi password of 16 characters (about 79 bits). The network uses WPA2/WPA3 and accepts one device. The transmit power is low (11 dBm).
+- The setup mode keeps no Wi-Fi data in flash.
 - The page uses HTTP inside the encrypted Wi-Fi link. A person who has the Wi-Fi password while the mode is on can change and erase entries.
 - The page can make a backup only if the buttons started the mode. Then only the screen shows the Wi-Fi password. A person who sees the screen while the mode is on can make a backup with their own passphrase, and read all passwords. Such a person can also type all passwords with the front button.
 - The `web` command sends the Wi-Fi password to the USB host. A program on the host could join the network and make a backup. Thus after a start with `web`, the page cannot make a backup.
 - The page accepts changes only with the session token and the host name `192.168.4.1`. Other web sites in the same browser cannot send changes.
 - The firmware sets its copies of a password to zero after use. The Wi-Fi driver and the TCP/IP stack also keep the received bytes in their buffers until other data overwrites them. These buffers are in RAM only. A restart removes them.
+
+Time sync:
+
+- The device keeps the name and the password of your Wi-Fi network in the `nvs` partition. Flash encryption is off: a person with the device can read them with esptool, like the passwords of the entries. `wifi off` removes them.
+- The device joins only a network with WPA2 or WPA3. It does not join an open or a WEP network with the same name.
+- During a sync, the device is a client in your network for some seconds, with the name `hw-pass`. It opens no port: nothing can connect to it. It sends one UDP request to the NTP server and accepts only a reply from the address and the port of the server. The reply must return the random 64-bit value of the request: a false reply must guess it.
+- The device does not check the time of the server. A wrong server gives a wrong time, and the schedule of the mouse mover follows it. With the router as the server, only your network can give the time. A public server answers over the internet, without a signature.
+- The sync comes at most one time each 24 hours, or after 10 minutes to 4 hours when it fails. The radio is off between the syncs.
 
 Bluetooth keypad:
 
@@ -306,3 +426,4 @@ Bluetooth keypad:
 Mouse mover:
 
 - When the mouse mover is on, the computer does not lock itself. A person at the computer can use it while you are away. Lock the computer before you go (Windows: Win+L, macOS: Ctrl+Cmd+Q).
+- The schedule can turn the mouse mover on while you are away, for example at 09:00 before you arrive. A computer that is not locked then stays open for everyone.

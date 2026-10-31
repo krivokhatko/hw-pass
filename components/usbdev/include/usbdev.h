@@ -24,10 +24,21 @@ bool usbdev_ready(void);
 bool usbdev_caps_lock(void);
 
 /* Type printable ASCII text with the US key layout. Caps Lock does not
- * change the result. If enter is true, push Enter at the end.
+ * change the result. If enter is true, push Enter at the end. Before the
+ * text, the device pushes the layout key, if one is set.
  * Returns ESP_ERR_INVALID_RESPONSE and types nothing if the host does
  * not turn Caps Lock off. */
 esp_err_t usbdev_type(const char *s, bool enter);
+
+/* Layout key: a key that the device pushes before it types, for a host
+ * with more than one key layout. The host has a shortcut that selects
+ * the US or English layout, for example F16 or Ctrl+Shift+1. Text: "off",
+ * or modifiers and one key with "+" between: ctrl, shift, alt, win, and
+ * F1 to F24, 0 to 9, a to z, or space. Only modifiers also work. The
+ * setting is kept in NVS. ESP_ERR_INVALID_ARG: unknown text. */
+#define USBDEV_LAYOUT_TEXT  24
+esp_err_t usbdev_set_layout(const char *text);
+void usbdev_layout_text(char *buf, size_t size);
 
 /* Push (down) or release a key: HID usage ID, page 0x07. The key stays
  * down until its release, and the host repeats it. Key 0 releases all

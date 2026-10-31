@@ -12,6 +12,8 @@ hw-pass is a USB keyboard that types stored passwords. Select an entry with the 
 
 Push the two buttons at the same time. If you hold the front button alone for 0.6 s, the device types the password. The footer shows what occurs when you release the two buttons. A beep sounds after 2 s and after 5 s.
 
+On the PIN screen, the side button moves the cursor and the front button picks an item. See "PIN".
+
 The screen goes dark after 60 s without activity. The first push turns it on again and does nothing else.
 
 The power button on the other side belongs to the power chip:
@@ -37,6 +39,8 @@ Side: next  Front: type  21:45 <- the time
 
 The footer shows the time when it is set. "--:--" means: the schedule of the mouse mover is on, but the time is not set. See "Time".
 
+With a PIN, the screen shows "Enter the PIN" and a row of digits until you enter the PIN. See "PIN".
+
 ## Sounds
 
 The device makes a short sound after each action. Thus you do not have to look at the screen, for example when you type with the keypad.
@@ -52,6 +56,58 @@ The device makes a short sound after each action. Thus you do not have to look a
 | Two low beeps | Error. The screen shows the cause. A keypad key without an entry also makes this sound. |
 
 To turn the sounds on or off, type `sound` on the serial port. The device keeps the setting. The default is on.
+
+## PIN
+
+A PIN protects the entries. Without a PIN, a person with the device can type all passwords, and the entries are plain text in flash. With a PIN:
+
+- The entries in flash are encrypted. The key comes from the PIN. See "Security" for the limits.
+- The device asks for the PIN after a start, and each time the USB connection stops: cable out, computer off, or computer asleep.
+- Until you enter the PIN, the device types nothing. The command line and the page cannot show or change the entries. The Wi-Fi setup mode and the pairing of a keypad do not start.
+
+The mouse mover, its schedule, and the time sync work also while the device is locked. The keypad keys `*`, `-`, and `+` do not: the keypad gives only the PIN.
+
+### Set the PIN
+
+1. Open the serial command line and type `pin`.
+2. Type the PIN two times: 4 to 12 digits. The PIN does not echo.
+
+The entries are encrypted at once. `pin` again changes the PIN. `pin off` removes it: the entries become plain text again. Both work only while the device is unlocked. Make a backup before you set a PIN (see "Backup").
+
+Use 6 or more digits. See "Security" for what a longer PIN gives.
+
+### Enter the PIN
+
+The screen shows a row of items: the digits 0 to 9, `<` (delete the last digit), and `OK`. The stars above the row show how many digits you gave.
+
+- Buttons: a short push of the side button moves the cursor to the right, a long push to the left. A short push of the front button picks the item under the cursor. A long push of the front button is `OK`.
+- Keypad: type the digits, then push Enter. Backspace deletes the last digit. While the device is locked, no key goes to the computer.
+- Command line: type `unlock`, then the PIN. The PIN then goes through the USB host (see "Security").
+
+The check takes about 1 s. After 3 wrong PINs in a row, each next try waits two times longer than the last one: 10 s, 20 s, 40 s, and so on, up to 1 h. A restart does not reset the wait. A correct PIN resets the count.
+
+`lock` on the command line locks the device at once, for example before you leave the computer with the cable in it.
+
+### Lost PIN
+
+Nothing can give the entries without the PIN. Type `wipe` on the serial port: it erases the entries and the PIN. Then add the entries again, or import them from a backup on the page.
+
+### Hardware key
+
+The ESP32-S3 can keep a key in eFuse that software cannot read, only the HMAC hardware can use it. With such a key, the PIN key is made from the PIN and this key together: a copy of the flash is useless without the chip. Without it, a copy of the flash is enough to try all PINs on a fast computer (see "Security").
+
+Burn the key one time. This is permanent, and it uses one of the six key blocks of the chip. In the ESP-IDF environment:
+
+1. Type `dfu` on the serial port. The device restarts into download mode.
+2. Make a random key and burn it:
+   ```
+   head -c 32 /dev/urandom > hmac_key.bin
+   espefuse.py --port /dev/ttyACM0 burn_key BLOCK_KEY0 hmac_key.bin HMAC_UP
+   ```
+   If `BLOCK_KEY0` is in use, take `BLOCK_KEY1` to `BLOCK_KEY5`. `espefuse.py --port /dev/ttyACM0 summary` shows the blocks.
+3. Keep `hmac_key.bin` in a safe place, or delete it. With the file, the PIN, and a copy of the flash, a computer can decrypt the entries: this is a way out after a dead device, and a risk if the file gets lost.
+4. Push the power button one time. The device starts. `info` shows "eFuse: HMAC key present".
+5. Type `pin` and set the PIN again. The entries get a key with the eFuse key. `info` shows "PIN: set, key with the eFuse key".
 
 ## Wi-Fi setup mode
 
@@ -340,7 +396,11 @@ The baud rate has no effect. Push Enter to get the prompt.
 | `name <n> <label>` | Change the label of entry n. |
 | `del <n>` | Delete entry n. |
 | `move <n> <pos>` | Move entry n to position pos. |
-| `wipe` | Erase all entries. |
+| `wipe` | Erase all entries and the PIN. Works also while the device is locked. |
+| `pin [off]` | Set or change the PIN, or remove it. Asks for the PIN two times. See "PIN". |
+| `unlock` | Enter the PIN. See "PIN". |
+| `lock` | Lock the device now. |
+| `layout [key\|off]` | Show or set the layout key: the device pushes it before it types. See "Key layout". |
 | `kbtest` | Type all printable ASCII characters. Checks the key layout of the host. |
 | `web` | Start the Wi-Fi setup mode and show the network name and the Wi-Fi password. If the mode is on, stop it. |
 | `unpair` | Remove the Bluetooth keypad. The entries keep their keys. |
@@ -352,7 +412,7 @@ The baud rate has no effect. Push Enter to get the prompt.
 | `ntp [on\|off\|server x]` | Sync the time now, turn the automatic sync on or off, or set the NTP server. See "Time". |
 | `sound` | Turn the sounds on or off. The device keeps the setting. See "Sounds". |
 | `rotate` | Turn the screen 180 degrees. The device keeps the setting. |
-| `info` | Show the firmware version and the device state, also the keypad, its battery level, the mouse mover, its schedule, the time, the time zone, the time sync, and the sounds. |
+| `info` | Show the firmware version and the device state, also the PIN state, the layout key, the keypad, its battery level, the mouse mover, its schedule, the time, the time zone, the time sync, and the sounds. |
 | `dfu` | Restart into ROM download mode for flashing. |
 
 Limits:
@@ -362,7 +422,7 @@ Limits:
 - Password: 1 to 127 characters.
 - Only printable ASCII characters (space to `~`).
 
-The command line cannot show a password. Only the front button can type it.
+The command line cannot show a password. Only the front button can type it. While the device is locked, the commands that show or change the entries say so. See "PIN".
 
 ## Random passwords
 
@@ -386,13 +446,27 @@ The device sends US key codes. On a host with a different key layout, some chara
 
 Caps Lock has no effect on the typed text. The device turns Caps Lock off before it types and turns it on again after. If the host does not turn Caps Lock off in 0.5 s, the device types nothing and shows "Caps Lock error". Turn Caps Lock off and try again.
 
+### Layout key
+
+If the host has more than one key layout, the device can push a key before it types. Give the host a shortcut that selects the US or English layout, and give the device the same shortcut with `layout`:
+
+- `layout F16`: a key that a program on the host maps to the English layout, for example AutoHotkey or PowerToys Keyboard Manager on Windows. The keys F13 to F24 are on no usual keyboard: they have no other effect.
+- `layout ctrl+shift+1`: a shortcut from the Windows settings. Settings > Time & language > Typing > Advanced keyboard settings > Input language hot keys: give the English layout a key sequence.
+- `layout off`: no key. This is the default.
+
+Modifiers: `ctrl`, `shift`, `alt`, `win`. Keys: `F1` to `F24`, `0` to `9`, `a` to `z`, `space`. Only modifiers also work, for example `layout alt+shift`. But Alt+Shift goes to the next layout: it does not select one.
+
+The device pushes the key, waits 0.15 s, then types. `kbtest` also pushes it. The device keeps the setting.
+
 ## Security
 
 Read these limits before you store important passwords:
 
-- Flash encryption is off. A person with the device can read the passwords from the flash with esptool.
-- There is no PIN. A person with the device can type all passwords.
-- `del` and `pass` mark the old data as deleted, but the old bytes stay in flash until NVS reuses the page. `wipe` erases the full vault partition.
+- Flash encryption is off. Without a PIN, a person with the device can read the passwords from the flash with esptool, and can type all passwords.
+- With a PIN, the entries in flash are encrypted with AES-256-GCM. The key comes from PBKDF2-HMAC-SHA512 of the PIN, with 50000 iterations: about 1 s on the device. Without the hardware key, a person with a copy of the flash can try PINs on a fast computer: a graphics card tries all 6-digit PINs in less than a minute, and all 8-digit PINs in about an hour. The PIN then stops a casual reader, not an attacker. With the hardware key (see "PIN"), each try needs the chip and takes about 1 s with its own firmware: all 6-digit PINs take 12 days, all 8-digit PINs 3 years. The wait times after wrong PINs apply to this firmware only.
+- While the device is unlocked, the key and the entries are in RAM. A lock sets them to zero. The device locks when the USB bus stops: cable out, computer off or asleep. Some hosts stop an idle USB device: then the device asks for the PIN again.
+- `unlock` and `pin` on the command line send the PIN through the USB host. A program on the host can read it. The buttons and the keypad do not send the PIN to the host.
+- `del` and `pass` mark the old data as deleted, but the old bytes stay in flash until NVS reuses the page. With a PIN, the old bytes are encrypted, but after a change of the PIN, old copies with the old key can stay for some time. `wipe` erases the full vault partition.
 - `gen` and the random passwords of the page use the hardware random number generator. Its entropy source is the ADC noise when the radio is off, and the radio when Wi-Fi or Bluetooth is on.
 - The backup file is as safe as its passphrase. PBKDF2 with 210000 iterations makes each guess slow, but a short or common passphrase is easy to guess. Use 4 or more random words, or 16 or more random characters.
 
@@ -418,7 +492,7 @@ Time sync:
 Bluetooth keypad:
 
 - Bluetooth is off until you start a pairing. With a paired keypad, Bluetooth is on and the device waits for the keypad. After `unpair` or a pairing that did not complete, Bluetooth stays on until the next restart, but it does not send or receive.
-- A person with the paired keypad can type all passwords that have a key, push Enter and Backspace on the computer, and turn on the mouse mover, also when the screen is dark. Keep the keypad as safe as the device.
+- A person with the paired keypad can type all passwords that have a key, push Enter and Backspace on the computer, and turn on the mouse mover, also when the screen is dark. With a PIN, this needs the PIN first. Keep the keypad as safe as the device.
 - Only the buttons can start a pairing. At other times, the device refuses a new pairing. It connects only to the paired keypad, and uses its keys only on a link that the bonding keys encrypt. If the keypad loses its bonding keys, for example after a pairing with a different computer on the same channel, pair it again with the buttons.
 - With a passkey, a different device cannot get into the pairing. A keypad without a passkey pairs with "Just Works": a person near you with special equipment can get into such a pairing. Pair such a keypad where no unknown persons are near.
 - The bonding keys are in the `nvs` partition. Flash encryption is off: a person with the device can read the bonding keys and make a false keypad. This person can also read the passwords.

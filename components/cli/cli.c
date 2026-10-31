@@ -189,9 +189,22 @@ static bool report(esp_err_t err, const char *what)
     case ESP_ERR_INVALID_RESPONSE:
         out("Caps Lock did not turn off. Nothing was typed. Turn Caps Lock off.\n");
         break;
+    case ESP_ERR_NOT_ALLOWED:
+        out("The device is locked. Enter the PIN on the device, or use \"unlock\".\n");
+        break;
     default:
         out("Error: %s.\n", esp_err_to_name(err));
         break;
+    }
+    return false;
+}
+
+/* Print a message and return true if the entries are not available. */
+static bool locked(void)
+{
+    if (vault_locked()) {
+        report(ESP_ERR_NOT_ALLOWED, "");
+        return true;
     }
     return false;
 }
@@ -221,6 +234,9 @@ static void cmd_list(char *arg)
 {
     char label[VAULT_LABEL_MAX + 1], key[KEYPAD_KEY_NAME];
 
+    if (locked()) {
+        return;
+    }
     if (vault_count() == 0) {
         out("The vault is empty. Use \"add <label>\".\n");
     }
@@ -241,7 +257,7 @@ static void cmd_add(char *arg)
 {
     char secret[LINE_SIZE];
 
-    if (!report(vault_check_text(arg, VAULT_LABEL_MAX), "label")) {
+    if (locked() || !report(vault_check_text(arg, VAULT_LABEL_MAX), "label")) {
         return;
     }
     if (vault_count() >= VAULT_MAX) {
@@ -260,6 +276,9 @@ static void cmd_gen(char *arg)
     char *label;
     long len = strtol(arg, &label, 10);
 
+    if (locked()) {
+        return;
+    }
     if (label == arg || (*label != ' ' && *label != '\0')) {
         len = RNG_PASSWORD_DEFAULT;     /* No length. The label can start with a digit. */
         label = arg;
@@ -284,9 +303,9 @@ static void cmd_gen(char *arg)
 static void cmd_pass(char *arg)
 {
     char secret[LINE_SIZE];
-    int i = parse_index(&arg);
+    int i;
 
-    if (i < 0) {
+    if (locked() || (i = parse_index(&arg)) < 0) {
         return;
     }
     if (read_secret(secret, sizeof(secret)) && report(vault_set_secret(i, secret), "password")) {
@@ -297,8 +316,12 @@ static void cmd_pass(char *arg)
 
 static void cmd_name(char *arg)
 {
-    int i = parse_index(&arg);
+    int i;
 
+    if (locked()) {
+        return;
+    }
+    i = parse_index(&arg);
     if (i >= 0 && report(vault_set_label(i, arg), "label")) {
         out("Changed the label of entry %d.\n", i + 1);
     }
@@ -307,9 +330,9 @@ static void cmd_name(char *arg)
 static void cmd_del(char *arg)
 {
     char label[VAULT_LABEL_MAX + 1], question[64];
-    int i = parse_index(&arg);
+    int i;
 
-    if (i < 0 || vault_label(i, label, sizeof(label)) != ESP_OK) {
+    if (locked() || (i = parse_index(&arg)) < 0 || vault_label(i, label, sizeof(label)) != ESP_OK) {
         return;
     }
     snprintf(question, sizeof(question), "Delete entry %d (%s)?", i + 1, label);
@@ -320,9 +343,13 @@ static void cmd_del(char *arg)
 
 static void cmd_move(char *arg)
 {
-    int from = parse_index(&arg);
-    int to = from < 0 ? -1 : parse_index(&arg);
+    int from, to;
 
+    if (locked()) {
+        return;
+    }
+    from = parse_index(&arg);
+    to = from < 0 ? -1 : parse_index(&arg);
     if (to >= 0 && report(vault_move(from, to), "")) {
         cmd_list(NULL);
     }
@@ -332,13 +359,138 @@ static void cmd_wipe(char *arg)
 {
     char answer[8];
 
-    out("This erases all entries. Type YES to continue: ");
+    out("This erases all entries%s. Type YES to continue: ", vault_has_pin() ? " and the PIN" : "");
     if (read_line(answer, sizeof(answer), true, FOREVER) < 0 || strcmp(answer, "YES") != 0) {
         out("Nothing changed.\n");
         return;
     }
     if (report(vault_wipe(), "")) {
         out("The vault is empty.\n");
+    }
+}
+
+/* Ask for the PIN without echo. Return false after Ctrl+C. */
+static bool read_pin(const char *prompt, char *buf, size_t size)
+{
+    out("%s", prompt);
+    return read_line(buf, size, false, FOREVER) >= 0;
+}
+
+static void pin_hint(void)
+{
+    if (!vault_efuse_key()) {
+        out("The chip has no HMAC key in eFuse: a copy of the flash can be attacked off the device.\n"
+            "See \"PIN\" in docs/usage.md for the eFuse key.\n");
+    }
+}
+
+/* "pin" sets or changes the PIN. "pin off" removes it. */
+static void cmd_pin(char *arg)
+{
+    char pin[LINE_SIZE], again[LINE_SIZE];
+    esp_err_t err;
+
+    if (strcmp(arg, "off") == 0) {
+        if (!vault_has_pin()) {
+            out("No PIN is set.\n");
+        } else if (!locked() && confirm("Remove the PIN? The entries become plain text in flash.")) {
+            if (report(vault_clear_pin(), "")) {
+                out("The PIN is removed.\n");
+            }
+        }
+        return;
+    }
+    if (*arg != '\0') {
+        out("Use \"pin\" to set or change the PIN, or \"pin off\" to remove it.\n");
+        return;
+    }
+    if (locked()) {
+        return;
+    }
+    if (!read_pin(vault_has_pin() ? "New PIN (4 to 12 digits): " : "PIN (4 to 12 digits): ", pin, sizeof(pin))) {
+        return;
+    }
+    err = vault_check_pin(pin);
+    if (err != ESP_OK) {
+        out("The PIN must have %d to %d digits. Nothing changed.\n", VAULT_PIN_MIN, VAULT_PIN_MAX);
+    } else if (read_pin("Again: ", again, sizeof(again))) {
+        if (strcmp(pin, again) != 0) {
+            out("The two PINs are not the same. Nothing changed.\n");
+        } else if (report(vault_set_pin(pin), "")) {
+            out("The PIN is set. The entries are encrypted with a key from the PIN%s.\n",
+                vault_pin_bound() ? " and the eFuse key" : "");
+            out("The device asks for the PIN after a start and after a stop of the USB connection.\n");
+            pin_hint();
+        }
+    }
+    vault_zero(pin, sizeof(pin));
+    vault_zero(again, sizeof(again));
+}
+
+static void cmd_unlock(char *arg)
+{
+    char pin[LINE_SIZE];
+    esp_err_t err;
+
+    if (!vault_has_pin()) {
+        out("No PIN is set. Use \"pin\".\n");
+        return;
+    }
+    if (!vault_locked()) {
+        out("The device is not locked.\n");
+        return;
+    }
+    if (vault_wait_s() > 0) {
+        out("Wait %d s before the next try.\n", vault_wait_s());
+        return;
+    }
+    if (!read_pin("PIN: ", pin, sizeof(pin))) {
+        return;
+    }
+    err = vault_unlock(pin);
+    vault_zero(pin, sizeof(pin));
+    if (err == ESP_OK) {
+        out("Unlocked. %d entries.\n", vault_count());
+    } else if (err == ESP_ERR_INVALID_ARG) {
+        out("Wrong PIN (%d in a row).", vault_fails());
+        if (vault_wait_s() > 0) {
+            out(" Wait %d s before the next try.", vault_wait_s());
+        }
+        out("\n");
+    } else {
+        report(err, "");
+    }
+}
+
+static void cmd_lock(char *arg)
+{
+    if (!vault_has_pin()) {
+        out("No PIN is set. Use \"pin\".\n");
+        return;
+    }
+    vault_lock();
+    out("Locked.\n");
+}
+
+/* "layout" shows the layout key. "layout F16" or "layout off" sets it. */
+static void cmd_layout(char *arg)
+{
+    char text[USBDEV_LAYOUT_TEXT];
+    size_t len = strlen(arg);
+
+    while (len > 0 && arg[len - 1] == ' ') {
+        arg[--len] = '\0';
+    }
+    if (len > 0 && usbdev_set_layout(arg) != ESP_OK) {
+        out("Give a key, with modifiers if needed, or \"off\": for example \"layout F16\" or\n"
+            "\"layout ctrl+shift+1\". Modifiers: ctrl, shift, alt, win. Keys: F1 to F24, 0 to 9, a to z, space.\n");
+        return;
+    }
+    usbdev_layout_text(text, sizeof(text));
+    if (strcmp(text, "off") == 0) {
+        out("Layout key: off. The device types without a layout change.\n");
+    } else {
+        out("Layout key: %s. The device pushes it before it types.\n", text);
     }
 }
 
@@ -729,10 +881,30 @@ static void cmd_info(char *arg)
 
     nvs_get_stats("vault", &stats);
     out("Firmware:  %s %s (ESP-IDF %s)\n", app->project_name, app->version, app->idf_ver);
-    out("Entries:   %d of %d\n", vault_count(), VAULT_MAX);
+    if (vault_locked()) {
+        out("Entries:   locked\n");
+    } else {
+        out("Entries:   %d of %d\n", vault_count(), VAULT_MAX);
+    }
+    if (!vault_has_pin()) {
+        out("PIN:       none. Use \"pin\".\n");
+    } else {
+        out("PIN:       set, key %s the eFuse key, %s", vault_pin_bound() ? "with" : "without",
+            vault_locked() ? "locked" : "unlocked");
+        if (vault_fails() > 0) {
+            out(", %d wrong in a row", vault_fails());
+        }
+        if (vault_wait_s() > 0) {
+            out(", wait %d s", vault_wait_s());
+        }
+        out("\n");
+    }
+    out("eFuse:     %s\n", vault_efuse_key() ? "HMAC key present" : "no HMAC key");
     out("NVS:       %u of %u slots used\n", (unsigned)stats.used_entries, (unsigned)stats.total_entries);
     out("USB host:  %s, Caps Lock %s\n", usbdev_ready() ? "ready" : "not ready",
         usbdev_caps_lock() ? "on" : "off");
+    usbdev_layout_text(text, sizeof(text));
+    out("Layout:    key %s\n", text);
     mover_next_text(next, sizeof(next));
     out("Mouse:     mover %s%s%s\n", mover_on() ? "on" : "off", next[0] ? ", next: " : "", next);
     mover_get_sched(&sched);
@@ -800,6 +972,9 @@ static void cmd_web(char *arg)
         out("Wi-Fi setup mode is %s.\n", web_active() ? "still on" : "off");
         return;
     }
+    if (locked()) {
+        return;
+    }
     ui_web(true);
     for (int i = 0; i < WEB_WAIT_MS / 100 && web_get_info(&info) != ESP_OK; i++) {
         vTaskDelay(pdMS_TO_TICKS(100));
@@ -834,7 +1009,11 @@ static const struct {
     { "name", "<n> <label>", "Change the label of entry n.", cmd_name },
     { "del", "<n>", "Delete entry n.", cmd_del },
     { "move", "<n> <pos>", "Move entry n to position pos.", cmd_move },
-    { "wipe", "", "Erase all entries.", cmd_wipe },
+    { "wipe", "", "Erase all entries and the PIN.", cmd_wipe },
+    { "pin", "[off]", "Set or change the PIN, or remove it.", cmd_pin },
+    { "unlock", "", "Enter the PIN.", cmd_unlock },
+    { "lock", "", "Lock the device now.", cmd_lock },
+    { "layout", "[key|off]", "Key that selects the host key layout before typing.", cmd_layout },
     { "kbtest", "", "Type all ASCII characters. Checks the key layout.", cmd_kbtest },
     { "web", "", "Start or stop the Wi-Fi setup mode.", cmd_web },
     { "unpair", "", "Remove the Bluetooth keypad.", cmd_unpair },

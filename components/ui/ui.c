@@ -3,7 +3,12 @@
  * start the Wi-Fi setup mode or the pairing of a keypad. A keypad key
  * types the entry that has this key. The keypad keys - and + select an
  * entry, and * turns the mouse mover on or off. A sound tells the result
- * of each action: the user does not have to look at the screen. */
+ * of each action: the user does not have to look at the screen.
+ *
+ * With a PIN, the device starts locked and locks again when the USB
+ * connection stops. The PIN screen shows a row of digits: the side
+ * button moves, the front button picks. The keypad digits, Enter, and
+ * Backspace also work. Nothing else works while locked. */
 #include <ctype.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -47,6 +52,19 @@
 #define KEY_PAD_STAR    0x55    /* Mouse mover on or off */
 #define KEY_PAD_MINUS   0x56    /* Select the previous entry. */
 #define KEY_PAD_PLUS    0x57    /* Select the next entry. */
+/* Digits for the PIN: the keypad block and the top row */
+#define KEY_1           0x1E
+#define KEY_9           0x26
+#define KEY_0           0x27
+#define KEY_PAD_1       0x59
+#define KEY_PAD_9       0x61
+#define KEY_PAD_0       0x62
+
+/* PIN screen: the items of the row. 0 to 9, then delete and OK. */
+#define PIN_ITEMS       12
+#define PIN_BACK        10
+#define PIN_OK          11
+#define PIN_GAP         6       /* Pixels between the items */
 
 /* Wi-Fi setup screen: QR code in a square at the left, text at the right. */
 #define QR_BOX          DISPLAY_H
@@ -81,6 +99,9 @@ static uint8_t s_kp_key;        /* The keypad key that is down, or 0 */
 static uint32_t s_kp_ms;        /* Time of its push */
 static uint32_t s_kp_held;      /* Hold time of the progress bar */
 static web_info_t s_web;
+static char s_pin[VAULT_PIN_MAX + 1];   /* The digits so far */
+static int s_pin_len;
+static int s_pin_cur;           /* The item under the cursor */
 
 void ui_flip(void)
 {
@@ -373,6 +394,51 @@ static void show_error(const char *title, const char *detail)
     vTaskDelay(pdMS_TO_TICKS(ERROR_MS));
 }
 
+/* The PIN screen: a line of state, the digits so far as stars, and the
+ * row of items with the cursor. */
+static void draw_pin(void)
+{
+    char text[32];      /* Also the stars: 2 * VAULT_PIN_MAX + 1 */
+    int wait = vault_wait_s();
+    int x = (DISPLAY_W - (10 * (font_12x24.w + PIN_GAP) + font_12x24.w + PIN_GAP + 2 * font_12x24.w)) / 2;
+    int y = LIST_Y + 56;
+
+    draw_frame();
+    if (wait > 0) {
+        snprintf(text, sizeof(text), "Wrong PIN. Wait %d s", wait);
+        text_center(LIST_Y + 2, text, &font_8x16, C_ERROR);
+    } else if (vault_fails() > 0) {
+        text_center(LIST_Y + 2, "Wrong PIN. Try again", &font_8x16, C_ERROR);
+    } else {
+        text_center(LIST_Y + 2, "Enter the PIN", &font_8x16, C_TEXT);
+    }
+    for (int i = 0; i < s_pin_len; i++) {
+        text[2 * i] = '*';
+        text[2 * i + 1] = ' ';
+    }
+    text[s_pin_len > 0 ? 2 * s_pin_len - 1 : 0] = '\0';
+    text_center(LIST_Y + 24, s_pin_len > 0 ? text : "_", &font_12x24, C_ACCENT);
+    for (int i = 0; i < PIN_ITEMS; i++) {
+        const char *item = i == PIN_BACK ? "<" : i == PIN_OK ? "OK" : "0123456789" + i;
+        int w = (i == PIN_OK ? 2 : 1) * font_12x24.w;
+        bool cur = i == s_pin_cur;
+
+        if (cur) {
+            display_fill(x - PIN_GAP / 2, y - 2, w + PIN_GAP, font_12x24.h + 4, C_ACCENT);
+        }
+        if (i == PIN_OK) {
+            display_text(x, y, item, &font_12x24, cur ? C_BG : C_TEXT, cur ? C_ACCENT : C_BG);
+        } else {
+            snprintf(text, sizeof(text), "%c", *item);
+            display_text(x, y, text, &font_12x24, cur ? C_BG : C_TEXT, cur ? C_ACCENT : C_BG);
+        }
+        x += w + PIN_GAP;
+    }
+    display_text(4, FOOTER_Y, "Side: move  Front: pick", &font_8x16, C_DIM, C_BG);
+    draw_clock();
+    display_flush();
+}
+
 /* ---- Actions ---- */
 
 /* Select the next (1) or the previous (-1) entry. After the last entry
@@ -473,6 +539,114 @@ static void toggle_mouse(void)
                  next[0] ? next : on ? "PC stays awake" : "PC can sleep", C_OK);
     sound_play(on ? SOUND_ON : SOUND_OFF);
     vTaskDelay(pdMS_TO_TICKS(INFO_MS));
+}
+
+/* ---- PIN ---- */
+
+static void pin_reset(void)
+{
+    vault_zero(s_pin, sizeof(s_pin));
+    s_pin_len = 0;
+    s_pin_cur = 0;
+}
+
+/* Check the digits so far. On success, the device is unlocked. */
+static void pin_submit(void)
+{
+    char text[24];
+    esp_err_t err;
+    int wait;
+
+    if (s_pin_len < VAULT_PIN_MIN) {
+        snprintf(text, sizeof(text), "%d to %d digits", VAULT_PIN_MIN, VAULT_PIN_MAX);
+        show_error("PIN too short", text);
+        return;
+    }
+    wait = vault_wait_s();
+    if (wait > 0) {
+        snprintf(text, sizeof(text), "Wait %d s", wait);
+        show_error("Too many tries", text);
+        return;
+    }
+    show_message("Checking", NULL, C_ACCENT);
+    err = vault_unlock(s_pin);
+    pin_reset();
+    if (err == ESP_OK) {
+        show_message("Unlocked", NULL, C_OK);
+        sound_play(SOUND_OK);
+        vTaskDelay(pdMS_TO_TICKS(DONE_MS));
+    } else if (err == ESP_ERR_INVALID_ARG) {
+        snprintf(text, sizeof(text), "%d in a row", vault_fails());
+        show_error("Wrong PIN", text);
+    } else {
+        show_error("Unlock error", esp_err_to_name(err));
+    }
+}
+
+/* A digit, Backspace ('\b'), or Enter ('\n') for the PIN. */
+static void pin_char(char c)
+{
+    if (c == '\n') {
+        pin_submit();
+    } else if (c == '\b') {
+        if (s_pin_len > 0) {
+            s_pin[--s_pin_len] = '\0';
+        }
+        sound_play(SOUND_CLICK);
+    } else if (s_pin_len < VAULT_PIN_MAX) {
+        s_pin[s_pin_len++] = c;
+        sound_play(SOUND_CLICK);
+    } else {
+        sound_play(SOUND_ERROR);
+    }
+}
+
+/* The front button picks the item under the cursor. */
+static void pin_pick(void)
+{
+    if (s_pin_cur < 10) {
+        pin_char('0' + s_pin_cur);
+    } else {
+        pin_char(s_pin_cur == PIN_BACK ? '\b' : '\n');
+    }
+}
+
+/* Digit of a keypad key, or 0. */
+static char keypad_digit(uint8_t key)
+{
+    if (key >= KEY_PAD_1 && key <= KEY_PAD_9) {
+        return '1' + key - KEY_PAD_1;
+    }
+    if (key >= KEY_1 && key <= KEY_9) {
+        return '1' + key - KEY_1;
+    }
+    return key == KEY_PAD_0 || key == KEY_0 ? '0' : 0;
+}
+
+/* The keypad while locked: digits, Enter, and Backspace go to the PIN.
+ * Nothing goes to the USB host. */
+static bool poll_pin_keypad(void)
+{
+    keypad_event_t ev;
+    bool dirty = false;
+
+    while (keypad_event(&ev)) {
+        char c = keypad_digit(ev.key);
+
+        dirty = true;
+        if (ev.key == 0 || !ev.down) {
+            continue;
+        }
+        if (c != 0) {
+            pin_char(c);
+        } else if (ev.key == KEY_BACKSPACE) {
+            pin_char('\b');
+        } else if (ev.key == KEY_ENTER || ev.key == KEY_PAD_ENTER) {
+            pin_char('\n');
+            break;  /* After an unlock, the next events are for the list. */
+        }
+    }
+    return dirty;
 }
 
 /* Enter and Backspace go to the USB host as they are: after a password,
@@ -701,6 +875,8 @@ void ui_run(void)
     bool mouse = mover_on();
     bool screen_on = true;
     bool both_used = false;     /* The current push of both buttons did its action. */
+    bool locked = vault_locked();
+    int wait_s = 0;             /* Wait time on the PIN screen */
     uint32_t idle_ms = 0;
 
     /* The QR code library logs the text: it contains the Wi-Fi password. */
@@ -709,7 +885,11 @@ void ui_run(void)
     s_flip = load_setting("flip") != 0;
     display_set_flip(s_flip);
     sound_enable(load_setting("mute") == 0);
-    draw_list();
+    if (locked) {
+        draw_pin();
+    } else {
+        draw_list();
+    }
     display_backlight(BRIGHTNESS);
 
     for (;;) {
@@ -742,6 +922,12 @@ void ui_run(void)
             both_used = false;
         } else if (!both_used) {
             hold = both;
+        }
+        if (locked) {
+            /* No modes while locked: the page and a pairing need the entries. */
+            web = pair = false;
+            hold = 0;
+            s_web_start = false;
         }
         s_web_stop = false;     /* The mode is off. */
         if (s_web_start || web || pair) {
@@ -792,6 +978,15 @@ void ui_run(void)
         }
         if (usb != usbdev_ready()) {
             usb = !usb;
+            if (!usb) {
+                vault_lock();   /* The connection stopped: the next host must give the PIN. */
+            }
+            dirty = true;
+        }
+        if (locked != vault_locked()) {
+            locked = !locked;
+            pin_reset();
+            idle_ms = 0;
             dirty = true;
         }
         if (kp != keypad_state()) {
@@ -819,22 +1014,49 @@ void ui_run(void)
                 dirty = true;
             }
         }
-        if (n > 0 && side != PRESS_NONE) {
-            select_step(side == PRESS_SHORT ? 1 : -1);
-            dirty = true;
-        }
-        if (n > 0 && front != PRESS_NONE) {
-            type_entry(s_sel, front == PRESS_LONG);
-            dirty = true;
-        }
-        /* A keypad key works also when the screen is off. */
-        if (poll_keypad()) {
-            idle_ms = 0;
-            dirty = true;
+        if (locked) {
+            if (side != PRESS_NONE) {
+                s_pin_cur = (s_pin_cur + (side == PRESS_SHORT ? 1 : PIN_ITEMS - 1)) % PIN_ITEMS;
+                sound_play(SOUND_CLICK);
+                dirty = true;
+            }
+            if (front == PRESS_SHORT) {
+                pin_pick();
+                dirty = true;
+            } else if (front == PRESS_LONG) {
+                pin_char('\n');
+                dirty = true;
+            }
+            if (poll_pin_keypad()) {
+                idle_ms = 0;
+                dirty = true;
+            }
+            if (wait_s != vault_wait_s()) {
+                wait_s = vault_wait_s();
+                dirty = true;
+            }
+        } else {
+            if (n > 0 && side != PRESS_NONE) {
+                select_step(side == PRESS_SHORT ? 1 : -1);
+                dirty = true;
+            }
+            if (n > 0 && front != PRESS_NONE) {
+                type_entry(s_sel, front == PRESS_LONG);
+                dirty = true;
+            }
+            /* A keypad key works also when the screen is off. */
+            if (poll_keypad()) {
+                idle_ms = 0;
+                dirty = true;
+            }
         }
 
         if (dirty) {
-            draw_list();
+            if (vault_locked()) {
+                draw_pin();
+            } else {
+                draw_list();
+            }
         }
         if (idle_ms == 0 && !screen_on) {
             screen_on = true;

@@ -184,6 +184,8 @@ static esp_err_t reply(httpd_req_t *req, esp_err_t err, const char *what)
         return send_error(req, ST_CONFLICT, "No entry has this number. Check the list.");
     case ESP_ERR_INVALID_STATE:
         return send_error(req, ST_CONFLICT, "The entries changed. Check the list and try again.");
+    case ESP_ERR_NOT_ALLOWED:
+        return send_error(req, ST_CONFLICT, "The device is locked. Enter the PIN on the device.");
     case ESP_ERR_NO_MEM:
         return send_error(req, ST_BAD, "The vault is full (%d entries).", VAULT_MAX);
     case ESP_ERR_INVALID_SIZE:
@@ -550,6 +552,9 @@ static esp_err_t act_backup(httpd_req_t *req, const char *body)
     }
     if (err == ESP_ERR_INVALID_ARG) {
         return send_error(req, ST_BAD, "The passphrase must contain only printable ASCII characters.");
+    }
+    if (err == ESP_ERR_NOT_ALLOWED) {
+        return send_error(req, ST_CONFLICT, "The device is locked. Enter the PIN on the device.");
     }
     if (err != ESP_OK) {
         return send_error(req, ST_ERROR, "Cannot make the backup: %s.", esp_err_to_name(err));

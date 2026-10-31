@@ -1,10 +1,13 @@
 /* TinyUSB composite device: HID boot keyboard, CDC-ACM serial port, and
  * HID boot mouse. */
+#include <ctype.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/stream_buffer.h"
@@ -15,6 +18,7 @@
 #include "esp_system.h"
 #include "esp_timer.h"
 #include "hal/usb_serial_jtag_ll.h"
+#include "nvs.h"
 #include "soc/rtc_cntl_reg.h"
 #include "tinyusb.h"
 #include "tinyusb_cdc_acm.h"
@@ -38,6 +42,17 @@
 #define KEY_DELAY_MS    10      /* After each report. RDP and slow hosts lose fast keys. */
 #define CAPS_HOLD_MS    200     /* macOS ignores short Caps Lock pushes. */
 #define CAPS_WAIT_MS    500     /* Time for the host to send the new LED state. */
+#define LAYOUT_WAIT_MS  150     /* Time for the host to change the key layout */
+#define NVS_NAMESPACE   "usb"
+#define NVS_LAYOUT      "layout"    /* u16: modifiers in the high byte, key in the low byte */
+
+/* HID usage IDs of the layout key names */
+#define KEY_A           0x04
+#define KEY_1           0x1E
+#define KEY_0           0x27
+#define KEY_SPACE       0x2C
+#define KEY_F1          0x3A
+#define KEY_F13         0x68
 #define TX_WAIT_MS      100
 #define DFU_DETACH_MS   500     /* Time for the host to see the detach. */
 #define RX_BUF          256
@@ -101,6 +116,18 @@ static bool s_held_lost;                /* The host did not get s_held. */
 static volatile uint8_t s_leds;
 static volatile bool s_mouse_on;
 static int8_t s_mouse_dx = 1;           /* Next move: right, then back to the left */
+static uint8_t s_layout_mod;            /* Layout key: modifiers and key, 0: none */
+static uint8_t s_layout_key;
+
+static const struct {
+    const char *name;
+    uint8_t mod;
+} s_mods[] = {
+    { "Ctrl", KEYBOARD_MODIFIER_LEFTCTRL },
+    { "Shift", KEYBOARD_MODIFIER_LEFTSHIFT },
+    { "Alt", KEYBOARD_MODIFIER_LEFTALT },
+    { "Win", KEYBOARD_MODIFIER_LEFTGUI },
+};
 
 /* ---- HID callbacks (TinyUSB task) ---- */
 
@@ -208,6 +235,10 @@ esp_err_t usbdev_type(const char *s, bool enter)
         xSemaphoreGive(s_type_lock);
         return ESP_ERR_INVALID_RESPONSE;
     }
+    if (s_layout_mod || s_layout_key) {
+        ok = push_key(s_layout_mod, s_layout_key, 0);
+        vTaskDelay(pdMS_TO_TICKS(LAYOUT_WAIT_MS));
+    }
     for (; ok && *s; s++) {
         unsigned char c = *s;
         if (c >= 0x20 && c <= 0x7E) {
@@ -252,6 +283,152 @@ esp_err_t usbdev_key(uint8_t key, bool down)
     }
     xSemaphoreGive(s_type_lock);
     return ok ? ESP_OK : ESP_FAIL;
+}
+
+/* ---- Layout key ---- */
+
+/* Key code of a key name, or 0. */
+static uint8_t key_code(const char *name)
+{
+    size_t n = strlen(name);
+    char *end;
+    long f;
+
+    if (n == 1 && name[0] >= '1' && name[0] <= '9') {
+        return KEY_1 + name[0] - '1';
+    }
+    if (n == 1 && name[0] == '0') {
+        return KEY_0;
+    }
+    if (n == 1 && isalpha((unsigned char)name[0])) {
+        return KEY_A + tolower((unsigned char)name[0]) - 'a';
+    }
+    if (strcasecmp(name, "space") == 0) {
+        return KEY_SPACE;
+    }
+    if (tolower((unsigned char)name[0]) == 'f' && isdigit((unsigned char)name[1])) {
+        f = strtol(name + 1, &end, 10);
+        if (*end == '\0' && f >= 1 && f <= 12) {
+            return KEY_F1 + f - 1;
+        }
+        if (*end == '\0' && f >= 13 && f <= 24) {
+            return KEY_F13 + f - 13;
+        }
+    }
+    return 0;
+}
+
+/* Name of a key code of key_code. */
+static void key_name(uint8_t key, char *buf, size_t size)
+{
+    if (key >= KEY_1 && key < KEY_0) {
+        snprintf(buf, size, "%c", '1' + key - KEY_1);
+    } else if (key == KEY_0) {
+        snprintf(buf, size, "0");
+    } else if (key >= KEY_A && key < KEY_A + 26) {
+        snprintf(buf, size, "%c", 'A' + key - KEY_A);
+    } else if (key == KEY_SPACE) {
+        snprintf(buf, size, "Space");
+    } else if (key >= KEY_F1 && key < KEY_F1 + 12) {
+        snprintf(buf, size, "F%d", key - KEY_F1 + 1);
+    } else if (key >= KEY_F13 && key < KEY_F13 + 12) {
+        snprintf(buf, size, "F%d", key - KEY_F13 + 13);
+    } else {
+        snprintf(buf, size, "?");
+    }
+}
+
+/* "off", "F16", or "ctrl+shift+1": modifiers and at most one key. */
+static bool parse_layout(const char *text, uint8_t *mod, uint8_t *key)
+{
+    char buf[USBDEV_LAYOUT_TEXT * 2], *tok, *save;
+
+    *mod = *key = 0;
+    if (strcasecmp(text, "off") == 0) {
+        return true;
+    }
+    if (strlcpy(buf, text, sizeof(buf)) >= sizeof(buf)) {
+        return false;
+    }
+    for (tok = strtok_r(buf, "+", &save); tok; tok = strtok_r(NULL, "+", &save)) {
+        size_t i;
+
+        for (i = 0; i < sizeof(s_mods) / sizeof(s_mods[0]); i++) {
+            if (strcasecmp(tok, s_mods[i].name) == 0) {
+                *mod |= s_mods[i].mod;
+                break;
+            }
+        }
+        if (i < sizeof(s_mods) / sizeof(s_mods[0])) {
+            continue;
+        }
+        if (*key != 0 || (*key = key_code(tok)) == 0) {
+            return false;
+        }
+    }
+    return *mod != 0 || *key != 0;
+}
+
+esp_err_t usbdev_set_layout(const char *text)
+{
+    nvs_handle_t h;
+    uint8_t mod, key;
+    esp_err_t err;
+
+    if (!parse_layout(text, &mod, &key)) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    err = nvs_open(NVS_NAMESPACE, NVS_READWRITE, &h);
+    if (err == ESP_OK) {
+        err = nvs_set_u16(h, NVS_LAYOUT, (uint16_t)mod << 8 | key);
+        if (err == ESP_OK) {
+            err = nvs_commit(h);
+        }
+        nvs_close(h);
+    }
+    if (err != ESP_OK) {
+        ESP_LOGW(TAG, "cannot save the layout key: %s", esp_err_to_name(err));
+    }
+    xSemaphoreTake(s_type_lock, portMAX_DELAY);
+    s_layout_mod = mod;
+    s_layout_key = key;
+    xSemaphoreGive(s_type_lock);
+    return ESP_OK;
+}
+
+void usbdev_layout_text(char *buf, size_t size)
+{
+    uint8_t mod = s_layout_mod, key = s_layout_key;
+    size_t n = 0;
+
+    if (mod == 0 && key == 0) {
+        strlcpy(buf, "off", size);
+        return;
+    }
+    buf[0] = '\0';
+    for (size_t i = 0; i < sizeof(s_mods) / sizeof(s_mods[0]); i++) {
+        if (mod & s_mods[i].mod) {
+            n += snprintf(buf + n, size - n, "%s+", s_mods[i].name);
+        }
+    }
+    if (key != 0) {
+        key_name(key, buf + n, size - n);
+    } else if (n > 0) {
+        buf[n - 1] = '\0';  /* Only modifiers: no "+" at the end. */
+    }
+}
+
+static void load_layout(void)
+{
+    nvs_handle_t h;
+    uint16_t v = 0;
+
+    if (nvs_open(NVS_NAMESPACE, NVS_READONLY, &h) == ESP_OK) {
+        nvs_get_u16(h, NVS_LAYOUT, &v);
+        nvs_close(h);
+    }
+    s_layout_mod = v >> 8;
+    s_layout_key = v & 0xFF;
 }
 
 /* ---- Mouse mover ---- */
@@ -383,6 +560,7 @@ esp_err_t usbdev_init(void)
     esp_efuse_mac_get_default(mac);
     snprintf(s_serial, sizeof(s_serial), "%02X%02X%02X%02X%02X%02X",
              mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    load_layout();
 
     cfg.descriptor.device = &s_device;
     cfg.descriptor.full_speed_config = s_config;

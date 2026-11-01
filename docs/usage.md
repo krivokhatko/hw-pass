@@ -49,7 +49,7 @@ The device makes a short sound after each action, and plays a melody while it ty
 |---|---|
 | Click | The selection changed. |
 | One beep | A hold reached the next step: release now. Or you must do the next step: type the passkey. |
-| Melody | The device types the password. The melody starts at once and plays while the device types. Each entry has its own melody, from its label: you hear which entry types. The melody stops when the typing ends. |
+| Melody | The device types the password. The melody starts at once and plays while the device types. Each entry has its own melody, from its label: you hear which entry types. A long end note tells that the typing is complete. |
 | Three notes, up | An action is complete: a key got an entry, a keypad is paired, or a phone or laptop connected to the Wi-Fi network. |
 | Two notes, up | A function is on: the mouse mover (also by its schedule), the Wi-Fi setup mode, or the sounds. |
 | Two notes, down | A function is off (also the mouse mover by its schedule), a pairing stopped, or a key lost its entry. |

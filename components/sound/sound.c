@@ -48,9 +48,11 @@
 /* The melody: a phrase of MELODY_NOTES notes that repeats until the stop. */
 #define MELODY_NOTES    8
 #define MELODY_MIN      4       /* Notes that play also when the stop comes at once */
-#define MELODY_MAX      256     /* Safety limit when no stop comes: about 30 s */
-#define NOTE_MS         110
-#define NOTE_GAP_MS     10      /* Two equal notes in a row stay apart. */
+#define MELODY_MAX      128     /* Safety limit when no stop comes: about 30 s */
+#define BEAT_MS         160     /* A short note. A long note is 2 beats. */
+#define NOTE_GAP_MS     20      /* Rest before the next note: the notes stay apart. */
+#define ATTACK_MS       8       /* Rise time of a bell note: soft, no click */
+#define DECAY_SHIFT     12      /* Bell note: the level loses 1/4096 each sample, half in 180 ms. */
 
 /* Notes in Hz. The small speaker is weak below about 700 Hz. */
 #define G5  784
@@ -84,8 +86,7 @@ static const note_t *const s_sounds[SOUND_COUNT] = {
     [SOUND_ERROR] = s_error,
 };
 
-/* The scale of the melody: a pentatonic scale, no two notes of it clash.
- * 3 bits of the seed select a note, 1 bit makes it long. */
+/* The scale of the melody: C major pentatonic, no two notes of it clash. */
 static const uint16_t s_scale[8] = { C6, D6, E6, G6, A6, C7, D7, E7 };
 
 /* ES8311 set-up for the DAC. The codec gets 16-bit samples in I2S
@@ -142,30 +143,46 @@ static esp_err_t codec_setup(void)
     return ESP_OK;
 }
 
-/* Send one note, or silence if hz is 0. Each note starts at phase 0. */
-static esp_err_t tone(uint32_t hz, uint32_t ms)
+/* Send one note, or silence if hz is 0. Each note starts at phase 0.
+ * Short ramps at the start and the end: no click. A plain tone keeps its
+ * level: the beeps. A bell note rises softly, then its level falls like
+ * the sound of a struck bell, and a quiet octave makes it fuller than a
+ * plain sine: the melody. */
+static esp_err_t tone_shape(uint32_t hz, uint32_t ms, bool bell)
 {
     int16_t buf[FRAMES];
     uint32_t count = ms * SAMPLE_HZ / 1000;
     uint32_t ramp = RAMP_MS * SAMPLE_HZ / 1000;
+    uint32_t attack = bell ? ATTACK_MS * SAMPLE_HZ / 1000 : ramp;
     uint32_t step = (uint32_t)(((uint64_t)hz << 32) / SAMPLE_HZ);
     uint32_t phase = 0;
+    int32_t env = LEVEL << 8;   /* Level of the bell, with 8 bits of fraction */
     size_t done;
 
     if (ramp > count / 2) {
         ramp = count / 2;
     }
+    if (attack > count / 2) {
+        attack = count / 2;
+    }
     for (uint32_t i = 0; i < count;) {
         size_t n = 0;
 
         for (; n < FRAMES && i < count; n++, i++) {
-            uint32_t edge = i < count - 1 - i ? i : count - 1 - i;  /* Samples to the nearer end */
-            int32_t level = hz ? LEVEL : 0;
+            int32_t level = hz ? (bell ? env >> 8 : LEVEL) : 0;
+            int32_t s = s_sine[phase >> 24];
 
-            if (edge < ramp) {
-                level = level * (int32_t)edge / (int32_t)ramp;
+            if (i < attack) {
+                level = level * (int32_t)i / (int32_t)attack;
             }
-            buf[n] = (int16_t)(level * s_sine[phase >> 24] / 32768);
+            if (count - 1 - i < ramp) {
+                level = level * (int32_t)(count - 1 - i) / (int32_t)ramp;
+            }
+            if (bell) {
+                s += s_sine[(phase >> 23) & 0xFF] / 4;  /* The octave, 12 dB below */
+                env -= env >> DECAY_SHIFT;
+            }
+            buf[n] = (int16_t)(level * s / 32768);
             phase += step;
         }
         ESP_RETURN_ON_ERROR(i2s_channel_write(s_tx, buf, n * sizeof(buf[0]), &done, WRITE_MS), TAG, "write");
@@ -173,17 +190,54 @@ static esp_err_t tone(uint32_t hz, uint32_t ms)
     return ESP_OK;
 }
 
-/* The phrase of the seed, again and again, until the stop. The check comes
- * after each note: the melody ends in less than one note after the stop. */
+static esp_err_t tone(uint32_t hz, uint32_t ms)
+{
+    return tone_shape(hz, ms, false);
+}
+
+static esp_err_t note(uint32_t hz, uint32_t ms)
+{
+    return tone_shape(hz, ms, true);
+}
+
+/* The phrase of the seed, again and again, until the stop. The first note
+ * is a note of the C major chord (2 bits). Each next note is 1 to 3
+ * degrees of the scale up or down, mostly 1 (3 bits each): a melody that
+ * moves in steps is pleasant to the ear. At the ends of the scale, the
+ * step reflects. The last note of the phrase is the nearest C: the phrase
+ * comes to rest. 1 bit makes a note long, the last note is long. The
+ * check for the stop comes after each note. Then a long C ends the
+ * melody: the typing is complete. */
 static void melody(uint32_t seed)
 {
-    for (int i = 0; i < MELODY_MAX && (i < MELODY_MIN || s_melody_on); i++) {
-        int n = i % MELODY_NOTES;
-        uint32_t ms = (seed >> (24 + n)) & 1 ? 2 * NOTE_MS : NOTE_MS;
+    static const int8_t steps[8] = { -3, -2, -1, -1, 1, 1, 2, 3 };
+    static const uint8_t starts[4] = { 0, 2, 3, 5 };    /* C6, E6, G6, C7 */
+    int d = 0, i;
 
-        if (tone(s_scale[(seed >> (3 * n)) & 7], ms) != ESP_OK || tone(0, NOTE_GAP_MS) != ESP_OK) {
+    for (i = 0; i < MELODY_MAX && (i < MELODY_MIN || s_melody_on); i++) {
+        int n = i % MELODY_NOTES;
+        bool last = n == MELODY_NOTES - 1;
+        uint32_t ms = (last || ((seed >> (20 + n)) & 1) ? 2 * BEAT_MS : BEAT_MS) - NOTE_GAP_MS;
+
+        if (n == 0) {
+            d = starts[seed & 3];
+        } else if (last) {
+            d = d >= 3 ? 5 : 0;
+        } else {
+            d += steps[(seed >> (2 + 3 * (n - 1))) & 7];
+            if (d < 0) {
+                d = -d;
+            }
+            if (d > 7) {
+                d = 14 - d;
+            }
+        }
+        if (note(s_scale[d], ms) != ESP_OK || tone(0, NOTE_GAP_MS) != ESP_OK) {
             return;
         }
+    }
+    if (i < MELODY_MAX) {
+        note(d >= 3 ? C7 : C6, 2 * BEAT_MS);
     }
 }
 

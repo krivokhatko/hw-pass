@@ -47,7 +47,7 @@ The device makes a short sound after each action, and plays a melody while it ty
 
 | Sound | Meaning |
 |---|---|
-| Click | The selection changed. |
+| Click | The selection changed, a PIN digit went in, or Enter or Backspace went to the computer. |
 | One beep | A hold reached the next step: release now. Or you must do the next step: type the passkey. |
 | Melody | The device types the password. The melody starts at once, plays while the device types, and ends with the typing. Each entry has its own melody, from its label: you hear which entry types. |
 | Three notes, up | An action is complete: a key got an entry, a keypad is paired, or a phone or laptop connected to the Wi-Fi network. |
@@ -227,7 +227,7 @@ The keypad does not type in the Wi-Fi setup mode and during a pairing. The other
 
 ### Enter and Backspace
 
-Enter and Backspace on the keypad go to the computer, as on a keyboard. For example, type a password with a key, then push Enter. Hold Backspace to delete more characters. These two keys type no entry, and you cannot give them to an entry.
+Enter and Backspace on the keypad go to the computer, as on a keyboard. For example, type a password with a key, then push Enter. Hold Backspace to delete more characters. A click tells that the key went to the computer. Without a USB host, the screen shows "No USB host" with the error sound. These two keys type no entry, and you cannot give them to an entry.
 
 If you push a different key while you hold Enter or Backspace, the computer gets the release at once: a held key does not repeat while the device types or shows a message.
 

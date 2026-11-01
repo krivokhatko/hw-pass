@@ -678,7 +678,17 @@ static bool poll_keypad(void)
             s_kp_key = 0;
             s_kp_held = 0;
         } else if (passthru(ev.key)) {
-            usbdev_key(ev.key, ev.down);
+            if (ev.down && !usbdev_ready()) {
+                display_backlight(BRIGHTNESS);
+                show_error("No USB host", "Connect to a PC");
+                break;
+            }
+            /* A click as the key goes down: the key went to the computer. */
+            if (usbdev_key(ev.key, ev.down) != ESP_OK) {
+                sound_play(SOUND_ERROR);
+            } else if (ev.down) {
+                sound_play(SOUND_CLICK);
+            }
         } else if (ev.key == KEY_PAD_MINUS || ev.key == KEY_PAD_PLUS) {
             if (ev.down) {
                 select_step(ev.key == KEY_PAD_PLUS ? 1 : -1);

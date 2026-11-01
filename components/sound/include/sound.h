@@ -36,9 +36,9 @@ void sound_prepare(void);
 
 /* Play the melody of a text until sound_melody_stop. The same text gives
  * the same melody. The UI plays the melody of the label while the device
- * types: the user hears that it types, and which entry. The first notes
- * play also when the stop comes at once. A long end note follows the
- * stop. Sounds that come in this time play after the melody. */
+ * types: the user hears that it types, and which entry. The stop ends
+ * the note that plays: the melody is not longer than the typing. Sounds
+ * that come in this time play after the melody. */
 void sound_melody_start(const char *text);
 void sound_melody_stop(void);
 

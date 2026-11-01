@@ -45,12 +45,11 @@
 #define PREPARE         SOUND_COUNT     /* Queue item: turn on the speaker, no sound */
 #define MELODY          (SOUND_COUNT + 1)   /* Queue item: the melody of s_melody_seed */
 
-/* The melody: a phrase of MELODY_NOTES notes that repeats until the stop. */
-#define MELODY_NOTES    8
-#define MELODY_MIN      4       /* Notes that play also when the stop comes at once */
-#define MELODY_MAX      128     /* Safety limit when no stop comes: about 30 s */
-#define BEAT_MS         160     /* A short note. A long note is 2 beats. */
-#define NOTE_GAP_MS     20      /* Rest before the next note: the notes stay apart. */
+/* The melody: a run of bell notes through the scale, until the stop. */
+#define MELODY_MAX      300     /* Safety limit when no stop comes: about 30 s */
+#define NOTE_MS         90      /* The shortest note. The seed adds 0 to 3 steps. */
+#define NOTE_STEP_MS    20
+#define NOTE_GAP_MS     15      /* Rest before the next note: the notes stay apart. */
 #define ATTACK_MS       8       /* Rise time of a bell note: soft, no click */
 #define DECAY_SHIFT     12      /* Bell note: the level loses 1/4096 each sample, half in 180 ms. */
 
@@ -147,7 +146,8 @@ static esp_err_t codec_setup(void)
  * Short ramps at the start and the end: no click. A plain tone keeps its
  * level: the beeps. A bell note rises softly, then its level falls like
  * the sound of a struck bell, and a quiet octave makes it fuller than a
- * plain sine: the melody. */
+ * plain sine: the melody. The stop of the melody ends a bell note at the
+ * next buffer, with the ramp. */
 static esp_err_t tone_shape(uint32_t hz, uint32_t ms, bool bell)
 {
     int16_t buf[FRAMES];
@@ -168,6 +168,9 @@ static esp_err_t tone_shape(uint32_t hz, uint32_t ms, bool bell)
     for (uint32_t i = 0; i < count;) {
         size_t n = 0;
 
+        if (bell && !s_melody_on && count > i + ramp) {
+            count = i + ramp;
+        }
         for (; n < FRAMES && i < count; n++, i++) {
             int32_t level = hz ? (bell ? env >> 8 : LEVEL) : 0;
             int32_t s = s_sine[phase >> 24];
@@ -200,44 +203,30 @@ static esp_err_t note(uint32_t hz, uint32_t ms)
     return tone_shape(hz, ms, true);
 }
 
-/* The phrase of the seed, again and again, until the stop. The first note
- * is a note of the C major chord (2 bits). Each next note is 1 to 3
- * degrees of the scale up or down, mostly 1 (3 bits each): a melody that
- * moves in steps is pleasant to the ear. At the ends of the scale, the
- * step reflects. The last note of the phrase is the nearest C: the phrase
- * comes to rest. 1 bit makes a note long, the last note is long. The
- * check for the stop comes after each note. Then a long C ends the
- * melody: the typing is complete. */
+/* A run through the scale, up and down, until the stop. The seed gives
+ * the first note, the step of 1 to 3 degrees, the direction, and the
+ * speed. At the ends of the scale, the run turns. The stop ends the note
+ * that plays: the melody is not longer than the typing. */
 static void melody(uint32_t seed)
 {
-    static const int8_t steps[8] = { -3, -2, -1, -1, 1, 1, 2, 3 };
-    static const uint8_t starts[4] = { 0, 2, 3, 5 };    /* C6, E6, G6, C7 */
-    int d = 0, i;
+    int d = seed & 7;
+    int step = 1 + (seed >> 3) % 3;
+    int dir = (seed >> 5) & 1 ? 1 : -1;
+    uint32_t ms = NOTE_MS + NOTE_STEP_MS * ((seed >> 6) & 3);
 
-    for (i = 0; i < MELODY_MAX && (i < MELODY_MIN || s_melody_on); i++) {
-        int n = i % MELODY_NOTES;
-        bool last = n == MELODY_NOTES - 1;
-        uint32_t ms = (last || ((seed >> (20 + n)) & 1) ? 2 * BEAT_MS : BEAT_MS) - NOTE_GAP_MS;
-
-        if (n == 0) {
-            d = starts[seed & 3];
-        } else if (last) {
-            d = d >= 3 ? 5 : 0;
-        } else {
-            d += steps[(seed >> (2 + 3 * (n - 1))) & 7];
-            if (d < 0) {
-                d = -d;
-            }
-            if (d > 7) {
-                d = 14 - d;
-            }
-        }
+    for (int i = 0; i < MELODY_MAX && s_melody_on; i++) {
         if (note(s_scale[d], ms) != ESP_OK || tone(0, NOTE_GAP_MS) != ESP_OK) {
             return;
         }
-    }
-    if (i < MELODY_MAX) {
-        note(d >= 3 ? C7 : C6, 2 * BEAT_MS);
+        d += dir * step;
+        if (d < 0) {
+            d = -d;
+            dir = 1;
+        }
+        if (d > 7) {
+            d = 14 - d;
+            dir = -1;
+        }
     }
 }
 

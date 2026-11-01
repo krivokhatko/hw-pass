@@ -13,6 +13,8 @@
 #define PM1_ADDR        0x6E
 #define PM1_HZ          100000
 #define PM1_TIMEOUT_MS  50
+#define PM1_TRIES       3       /* I2C attempts for one access: the chip can miss one. */
+#define PM1_RETRY_MS    1
 
 #define REG_DEVICE_ID   0x00
 #define REG_I2C_CFG     0x09    /* 0: no I2C idle sleep */
@@ -29,15 +31,42 @@ static const char *TAG = "pm1";
 static i2c_master_bus_handle_t s_bus;
 static i2c_master_dev_handle_t s_dev;
 
+/* One access can fail with no answer from the chip. Try again: the I2C
+ * driver resets its state machine after an error. */
 static esp_err_t pm1_read(uint8_t reg, uint8_t *val)
 {
-    return i2c_master_transmit_receive(s_dev, &reg, 1, val, 1, PM1_TIMEOUT_MS);
+    esp_err_t err = ESP_FAIL;
+
+    for (int i = 0; i < PM1_TRIES; i++) {
+        err = i2c_master_transmit_receive(s_dev, &reg, 1, val, 1, PM1_TIMEOUT_MS);
+        if (err == ESP_OK) {
+            if (i > 0) {
+                ESP_LOGW(TAG, "read 0x%02x: ok at try %d", reg, i + 1);
+            }
+            return ESP_OK;
+        }
+        vTaskDelay(pdMS_TO_TICKS(PM1_RETRY_MS));
+    }
+    return err;
 }
 
 static esp_err_t pm1_write(uint8_t reg, uint8_t val)
 {
     uint8_t buf[2] = { reg, val };
-    return i2c_master_transmit(s_dev, buf, sizeof(buf), PM1_TIMEOUT_MS);
+    esp_err_t err = ESP_FAIL;
+
+    for (int i = 0; i < PM1_TRIES; i++) {
+        err = i2c_master_transmit(s_dev, buf, sizeof(buf), PM1_TIMEOUT_MS);
+        if (err == ESP_OK) {
+            if (i > 0) {
+                ESP_LOGW(TAG, "write 0x%02x: ok at try %d", reg, i + 1);
+            }
+            return ESP_OK;
+        }
+        vTaskDelay(pdMS_TO_TICKS(PM1_RETRY_MS));
+    }
+    ESP_LOGW(TAG, "write 0x%02x: %s", reg, esp_err_to_name(err));
+    return err;
 }
 
 static esp_err_t pm1_update(uint8_t reg, uint8_t mask, uint8_t bits)

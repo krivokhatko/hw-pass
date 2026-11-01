@@ -753,17 +753,25 @@ static bool bonded(const ble_addr_t *addr)
     return ble_store_read_peer_sec(&key, &value) == 0 && value.ltk_present;
 }
 
-/* Use the keys of the link. The keypad keeps the subscription in its
- * bonding data: it can send a key before the write. */
-static int use_keys(const peer_t *p)
+/* From now on, the host task takes the keys of p from a trusted link.
+ * For a paired keypad, do this before the connection: the keypad can send
+ * the key that woke it in the connection event that ends the encryption.
+ * The host task then gets the key right after the encryption event, and
+ * before this task runs. The key must not be lost. */
+static void arm_keys(const peer_t *p)
 {
-    int rc;
-
     s_report = p->report;
     s_keys = p->keys;
     __sync_synchronize();   /* The host task sees the keys before s_keys_ok. */
     s_keys_ok = true;
-    rc = subscribe(p->cccd);
+}
+
+/* Subscribe to the keys of the link, after arm_keys. The keypad keeps the
+ * subscription in its bonding data: it can send a key before the write. */
+static int use_keys(const peer_t *p)
+{
+    int rc = subscribe(p->cccd);
+
     if (rc != 0) {
         s_keys_ok = false;
         return rc;
@@ -843,8 +851,10 @@ static void serve(void)
         return;
     }
     s_state = KEYPAD_WAITING;
+    arm_keys(&p);
     rc = connect(&p.addr, BLE_HS_FOREVER);
     if (rc == BLE_HS_EAPP) {
+        s_keys_ok = false;
         return;
     }
     if (rc == 0) {
@@ -858,6 +868,7 @@ static void serve(void)
     }
     if (rc != 0) {
         ESP_LOGW(TAG, "link: %d", rc);
+        s_keys_ok = false;
         disconnect();
         s_state = KEYPAD_WAITING;
         wait(EV_CMD, RETRY_MS);
@@ -943,6 +954,7 @@ static void pair(void)
         error = "Not a keyboard";
         goto end;
     }
+    arm_keys(&p);
     rc = use_keys(&p);
     if (rc != 0) {
         error = "Pairing failed";

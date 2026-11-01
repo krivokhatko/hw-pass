@@ -24,6 +24,11 @@
 #define CODEC_ADDR      0x18
 #define CODEC_HZ        100000
 #define CODEC_TIMEOUT_MS 50
+#define CODEC_TRIES     3       /* I2C attempts for one register: the codec can miss one. */
+#define RETRY_MS        1
+#define START_TRIES     2       /* Attempts to turn on the speaker for one sound */
+#define START_RETRY_MS  20
+#define ID_RETRY_MS     10      /* At the start: the codec can still power up. */
 #define REG_CHIP_ID     0xFD
 
 #define SAMPLE_HZ       16000
@@ -93,13 +98,32 @@ static int16_t s_sine[256];
 static volatile bool s_enabled;
 static bool s_ready;
 
+/* The ES8311 does not answer each write. Try again, as M5Unified does:
+ * the I2C driver resets its state machine after an error. */
+static esp_err_t codec_write(const uint8_t reg_val[2])
+{
+    esp_err_t err = ESP_FAIL;
+
+    for (int i = 0; i < CODEC_TRIES; i++) {
+        err = i2c_master_transmit(s_codec, reg_val, 2, CODEC_TIMEOUT_MS);
+        if (err == ESP_OK) {
+            if (i > 0) {
+                ESP_LOGW(TAG, "codec 0x%02x: ok at try %d", reg_val[0], i + 1);
+            }
+            return ESP_OK;
+        }
+        vTaskDelay(pdMS_TO_TICKS(RETRY_MS));
+    }
+    ESP_LOGW(TAG, "codec 0x%02x: %s", reg_val[0], esp_err_to_name(err));
+    return err;
+}
+
 /* The same set-up at each start: it does no harm when the codec has it,
  * and it helps after a reset of the codec. */
 static esp_err_t codec_setup(void)
 {
     for (size_t i = 0; i < sizeof(s_codec_setup) / sizeof(s_codec_setup[0]); i++) {
-        ESP_RETURN_ON_ERROR(i2c_master_transmit(s_codec, s_codec_setup[i], 2, CODEC_TIMEOUT_MS), TAG,
-                            "codec 0x%02x", s_codec_setup[i][0]);
+        ESP_RETURN_ON_ERROR(codec_write(s_codec_setup[i]), TAG, "setup");
     }
     return ESP_OK;
 }
@@ -174,29 +198,49 @@ static esp_err_t start(void)
     return err;
 }
 
+/* Turn on the speaker for a sound. One failed start does not lose the
+ * sound: a second attempt comes after a short time. */
+static bool start_retry(void)
+{
+    for (int i = 0; i < START_TRIES; i++) {
+        if (start() == ESP_OK) {
+            return true;
+        }
+        vTaskDelay(pdMS_TO_TICKS(START_RETRY_MS));
+    }
+    ESP_LOGW(TAG, "the speaker does not start: sound lost");
+    return false;
+}
+
 /* Play the sounds of the queue. The speaker stays on while the next
  * sound or PREPARE comes in less than IDLE_MS. Then all samples have left
  * the DMA buffers, and the amplifier can go off. While the speaker is on
  * without a sound, the DMA sends the same buffers of zeros again. The
  * first write after this time can go into the buffer that the DMA sends
  * at this time: the DMA does not send the start of the data. Thus one
- * buffer of silence comes first. */
+ * buffer of silence comes first. If this write fails, the channel is in
+ * a bad state: a new start makes it good again. */
 static void sound_task(void *arg)
 {
     uint8_t s;
+    bool on = false;    /* The speaker is on. */
 
     for (;;) {
-        xQueueReceive(s_queue, &s, portMAX_DELAY);
-        if (start() != ESP_OK) {
+        if (xQueueReceive(s_queue, &s, on ? pdMS_TO_TICKS(IDLE_MS) : portMAX_DELAY) != pdTRUE) {
+            stop();
+            on = false;
             continue;
         }
-        play(s);
-        while (xQueueReceive(s_queue, &s, pdMS_TO_TICKS(IDLE_MS)) == pdTRUE) {
-            if (s != PREPARE && tone(0, PAD_MS) == ESP_OK) {
-                play(s);
-            }
+        if (on && s != PREPARE && tone(0, PAD_MS) != ESP_OK) {
+            stop();
+            on = false;
         }
-        stop();
+        if (!on) {
+            on = start_retry();
+        }
+        if (on) {
+            play(s);
+        }
     }
 }
 
@@ -227,8 +271,16 @@ esp_err_t sound_init(void)
         s_sine[i] = (int16_t)lroundf(32767.0f * sinf(2.0f * (float)M_PI * i / 256));
     }
     ESP_RETURN_ON_ERROR(i2c_master_bus_add_device(pm1_bus(), &dev_cfg, &s_codec), TAG, "device");
-    ESP_RETURN_ON_ERROR(i2c_master_transmit_receive(s_codec, &reg, 1, &id, 1, CODEC_TIMEOUT_MS), TAG,
-                        "no codec at 0x%02x", CODEC_ADDR);
+    /* One failed read must not leave the device without sound until the
+     * next start. */
+    for (int i = 0; i < CODEC_TRIES; i++) {
+        err = i2c_master_transmit_receive(s_codec, &reg, 1, &id, 1, CODEC_TIMEOUT_MS);
+        if (err == ESP_OK) {
+            break;
+        }
+        vTaskDelay(pdMS_TO_TICKS(ID_RETRY_MS));
+    }
+    ESP_RETURN_ON_ERROR(err, TAG, "no codec at 0x%02x", CODEC_ADDR);
 
     chan_cfg.dma_desc_num = DMA_BUFS;
     chan_cfg.dma_frame_num = FRAMES;
@@ -255,8 +307,8 @@ esp_err_t sound_init(void)
 
 static void send(uint8_t v)
 {
-    if (s_ready && s_enabled) {
-        xQueueSend(s_queue, &v, 0);
+    if (s_ready && s_enabled && xQueueSend(s_queue, &v, 0) != pdTRUE) {
+        ESP_LOGW(TAG, "queue full: sound %u lost", v);
     }
 }
 

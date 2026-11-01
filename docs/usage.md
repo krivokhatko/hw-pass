@@ -43,13 +43,13 @@ With a PIN, the screen shows "Enter the PIN" and a row of digits until you enter
 
 ## Sounds
 
-The device makes a short sound after each action. Thus you do not have to look at the screen, for example when you type with the keypad.
+The device makes a short sound after each action, and plays a melody while it types. Thus you do not have to look at the screen, for example when you type with the keypad.
 
 | Sound | Meaning |
 |---|---|
 | Click | The selection changed. |
 | One beep | A hold reached the next step: release now. Or you must do the next step: type the passkey. |
-| Two quick notes, up | The device starts to type the password. The sound comes at once, while the device types. |
+| Melody | The device types the password. The melody starts at once and plays while the device types. Each entry has its own melody, from its label: you hear which entry types. The melody stops when the typing ends. |
 | Three notes, up | An action is complete: a key got an entry, a keypad is paired, or a phone or laptop connected to the Wi-Fi network. |
 | Two notes, up | A function is on: the mouse mover (also by its schedule), the Wi-Fi setup mode, or the sounds. |
 | Two notes, down | A function is off (also the mouse mover by its schedule), a pairing stopped, or a key lost its entry. |
@@ -221,7 +221,7 @@ Push the key and release it in less than 2 s. The device types the password of t
 
 A key without an entry types nothing. The screen shows "Key 5: no entry".
 
-The keypad disconnects when it sleeps. A key push wakes it, and it connects again in about 1 s. Some keypads do not send the key that wakes them. Then push the key again.
+The keypad disconnects when it sleeps. A key push wakes it, and it connects again in about 1 s. Some keypads do not send the key that wakes them, and a short push types nothing. Hold the key until "BT" in the header turns green, then release it in less than 2 s: the device reads the key that is down when the keypad connects, and types its entry at the release. Or push the key again.
 
 The keypad does not type in the Wi-Fi setup mode and during a pairing. The other keys also do nothing then.
 

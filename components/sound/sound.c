@@ -43,14 +43,24 @@
 #define WRITE_MS        100
 #define QUEUE_LEN       8
 #define PREPARE         SOUND_COUNT     /* Queue item: turn on the speaker, no sound */
+#define MELODY          (SOUND_COUNT + 1)   /* Queue item: the melody of s_melody_seed */
+
+/* The melody: a phrase of MELODY_NOTES notes that repeats until the stop. */
+#define MELODY_NOTES    8
+#define MELODY_MIN      4       /* Notes that play also when the stop comes at once */
+#define MELODY_MAX      256     /* Safety limit when no stop comes: about 30 s */
+#define NOTE_MS         110
+#define NOTE_GAP_MS     10      /* Two equal notes in a row stay apart. */
 
 /* Notes in Hz. The small speaker is weak below about 700 Hz. */
 #define G5  784
 #define C6  1047
+#define D6  1175
 #define E6  1319
 #define G6  1568
 #define A6  1760
 #define C7  2093
+#define D7  2349
 #define E7  2637
 
 typedef struct {
@@ -60,7 +70,6 @@ typedef struct {
 
 static const note_t s_click[] = { { E7, 6 }, { 0, 0 } };
 static const note_t s_step[] = { { A6, 50 }, { 0, 0 } };
-static const note_t s_type[] = { { G6, 30 }, { C7, 90 }, { 0, 0 } };
 static const note_t s_ok[] = { { E6, 60 }, { G6, 60 }, { C7, 120 }, { 0, 0 } };
 static const note_t s_on[] = { { C6, 70 }, { 0, 20 }, { G6, 100 }, { 0, 0 } };
 static const note_t s_off[] = { { G6, 70 }, { 0, 20 }, { C6, 100 }, { 0, 0 } };
@@ -69,12 +78,15 @@ static const note_t s_error[] = { { G5, 100 }, { 0, 60 }, { G5, 180 }, { 0, 0 } 
 static const note_t *const s_sounds[SOUND_COUNT] = {
     [SOUND_CLICK] = s_click,
     [SOUND_STEP] = s_step,
-    [SOUND_TYPE] = s_type,
     [SOUND_OK] = s_ok,
     [SOUND_ON] = s_on,
     [SOUND_OFF] = s_off,
     [SOUND_ERROR] = s_error,
 };
+
+/* The scale of the melody: a pentatonic scale, no two notes of it clash.
+ * 3 bits of the seed select a note, 1 bit makes it long. */
+static const uint16_t s_scale[8] = { C6, D6, E6, G6, A6, C7, D7, E7 };
 
 /* ES8311 set-up for the DAC. The codec gets 16-bit samples in I2S
  * format with 2 slots: the bit clock is 32 fs. */
@@ -97,6 +109,8 @@ static QueueHandle_t s_queue;
 static int16_t s_sine[256];
 static volatile bool s_enabled;
 static bool s_ready;
+static volatile uint32_t s_melody_seed;
+static volatile bool s_melody_on;
 
 /* The ES8311 does not answer each write. Try again, as M5Unified does:
  * the I2C driver resets its state machine after an error. */
@@ -159,16 +173,32 @@ static esp_err_t tone(uint32_t hz, uint32_t ms)
     return ESP_OK;
 }
 
-static void play(uint8_t s)
+/* The phrase of the seed, again and again, until the stop. The check comes
+ * after each note: the melody ends in less than one note after the stop. */
+static void melody(uint32_t seed)
 {
-    if (s >= SOUND_COUNT) {
-        return;     /* PREPARE */
-    }
-    for (const note_t *n = s_sounds[s]; n->ms > 0; n++) {
-        if (tone(n->hz, n->ms) != ESP_OK) {
+    for (int i = 0; i < MELODY_MAX && (i < MELODY_MIN || s_melody_on); i++) {
+        int n = i % MELODY_NOTES;
+        uint32_t ms = (seed >> (24 + n)) & 1 ? 2 * NOTE_MS : NOTE_MS;
+
+        if (tone(s_scale[(seed >> (3 * n)) & 7], ms) != ESP_OK || tone(0, NOTE_GAP_MS) != ESP_OK) {
             return;
         }
     }
+}
+
+static void play(uint8_t s)
+{
+    if (s == MELODY) {
+        melody(s_melody_seed);
+    } else if (s < SOUND_COUNT) {
+        for (const note_t *n = s_sounds[s]; n->ms > 0; n++) {
+            if (tone(n->hz, n->ms) != ESP_OK) {
+                return;
+            }
+        }
+    }
+    /* PREPARE: nothing */
 }
 
 /* Amplifier off before the clocks stop: no click. */
@@ -322,6 +352,29 @@ void sound_play(sound_t s)
 void sound_prepare(void)
 {
     send(PREPARE);
+}
+
+/* FNV-1a: the same text gives the same seed. */
+static uint32_t hash(const char *s)
+{
+    uint32_t h = 2166136261u;
+
+    for (; *s; s++) {
+        h = (h ^ (uint8_t)*s) * 16777619u;
+    }
+    return h;
+}
+
+void sound_melody_start(const char *text)
+{
+    s_melody_seed = hash(text);
+    s_melody_on = true;
+    send(MELODY);
+}
+
+void sound_melody_stop(void)
+{
+    s_melody_on = false;
 }
 
 void sound_enable(bool on)

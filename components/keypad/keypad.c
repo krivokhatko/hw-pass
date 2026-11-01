@@ -144,6 +144,9 @@ static hid_set_t s_down;            /* Host task only */
 static volatile int s_battery = -1;
 static volatile uint16_t s_battery_value;
 
+/* Time of the connection, until the first key report: for the log. */
+static volatile uint32_t s_link_ms;
+
 /* Results of the scan and the GATT procedures */
 static ble_addr_t s_found;
 static char s_found_name[KEYPAD_NAME_MAX + 1];
@@ -344,6 +347,10 @@ static void on_report(struct os_mbuf *om)
     if (os_mbuf_copydata(om, 0, len, buf) != 0) {
         return;
     }
+    if (s_link_ms != 0) {
+        ESP_LOGI(TAG, "first key report %lu ms after the connection", (unsigned long)(now_ms() - s_link_ms));
+        s_link_ms = 0;
+    }
     ESP_LOG_BUFFER_HEX_LEVEL(TAG, buf, len, ESP_LOG_DEBUG);
     if (hid_keys_down(&s_keys, buf, len, &down)) {
         set_keys(&down);
@@ -436,6 +443,7 @@ static int gap_event(struct ble_gap_event *event, void *arg)
         s_status = event->connect.status;
         if (event->connect.status == 0) {
             s_conn = event->connect.conn_handle;
+            s_link_ms = now_ms();
         }
         xEventGroupSetBits(s_events, EV_CONNECT);
         return 0;
@@ -467,8 +475,13 @@ static int gap_event(struct ble_gap_event *event, void *arg)
         }
         return BLE_GAP_REPEAT_PAIRING_RETRY;
     case BLE_GAP_EVENT_NOTIFY_RX:
-        if (s_keys_ok && event->notify_rx.attr_handle == s_report && trusted(event->notify_rx.conn_handle)) {
-            on_report(event->notify_rx.om);
+        if (s_keys_ok && event->notify_rx.attr_handle == s_report) {
+            if (trusted(event->notify_rx.conn_handle)) {
+                on_report(event->notify_rx.om);
+            } else {
+                /* Before the encryption, a report is not from a known keypad. */
+                ESP_LOGW(TAG, "key report before the encryption: lost");
+            }
         } else if (s_battery_value != 0 && event->notify_rx.attr_handle == s_battery_value &&
                    trusted(event->notify_rx.conn_handle)) {
             on_battery(event->notify_rx.om);
@@ -569,6 +582,15 @@ static int on_read(uint16_t conn, const struct ble_gatt_error *error, struct ble
 
 static int on_write(uint16_t conn, const struct ble_gatt_error *error, struct ble_gatt_attr *attr, void *arg)
 {
+    return gatt_done(error->status);
+}
+
+/* The keys that are down now: the result of the read in use_keys. */
+static int on_report_read(uint16_t conn, const struct ble_gatt_error *error, struct ble_gatt_attr *attr, void *arg)
+{
+    if (error->status == 0 && attr && s_keys_ok && trusted(conn)) {
+        on_report(attr->om);
+    }
     return gatt_done(error->status);
 }
 
@@ -767,7 +789,10 @@ static void arm_keys(const peer_t *p)
 }
 
 /* Subscribe to the keys of the link, after arm_keys. The keypad keeps the
- * subscription in its bonding data: it can send a key before the write. */
+ * subscription in its bonding data: it can send a key before the write.
+ * Then read the keys that are down now: the key that woke the keypad, when
+ * the user still holds it. The keypad can send its report before the
+ * encryption, and the device does not take it then. */
 static int use_keys(const peer_t *p)
 {
     int rc = subscribe(p->cccd);
@@ -775,6 +800,13 @@ static int use_keys(const peer_t *p)
     if (rc != 0) {
         s_keys_ok = false;
         return rc;
+    }
+    rc = gatt_wait(ble_gattc_read(s_conn, p->report, on_report_read, NULL));
+    if (rc == BLE_HS_ETIMEOUT) {
+        return rc;      /* gatt_wait ended the link. */
+    }
+    if (rc != 0) {
+        ESP_LOGI(TAG, "no read of the keys: %d", rc);   /* The keys still come as reports. */
     }
     s_state = KEYPAD_CONNECTED;
     ESP_LOGI(TAG, "connected: %s", p->name);

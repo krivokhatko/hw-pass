@@ -7,13 +7,13 @@
 extern "C" {
 #endif
 
-/* Short sounds on the speaker. The sound task plays them: the caller
- * does not wait. All functions are safe to call from different tasks. */
+/* Short sounds and the typing melody on the speaker. The sound task plays
+ * them: the caller does not wait. All functions are safe to call from
+ * different tasks. */
 
 typedef enum {
     SOUND_CLICK,    /* The selection changed. */
     SOUND_STEP,     /* A hold reached the next step, or the user must act. */
-    SOUND_TYPE,     /* Typing starts: the device got the command. */
     SOUND_OK,       /* An action is complete: a key has an entry, a keypad is paired. */
     SOUND_ON,       /* A function is on. */
     SOUND_OFF,      /* A function is off, or a key lost its entry. */
@@ -33,6 +33,14 @@ void sound_play(sound_t s);
  * the speaker now. The start takes about 90 ms. After this time, a sound
  * starts in 20 ms. Without this call, it starts in 80 ms. */
 void sound_prepare(void);
+
+/* Play the melody of a text until sound_melody_stop. The same text gives
+ * the same melody. The UI plays the melody of the label while the device
+ * types: the user hears that it types, and which entry. The first notes
+ * play also when the stop comes at once. Sounds that come in this time
+ * play after the melody. */
+void sound_melody_start(const char *text);
+void sound_melody_stop(void);
 
 void sound_enable(bool on);
 bool sound_enabled(void);

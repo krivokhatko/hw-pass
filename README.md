@@ -41,7 +41,7 @@ tools/                Host scripts.
 |---|---|
 | `pm1` | M5PM1 power chip: watchdog off, LCD power on, speaker amplifier on and off. It owns the internal I2C bus. |
 | `display` | ST7789 LCD, backlight, frame buffer, and text. |
-| `sound` | ES8311 audio codec on I2S, and the AW8737 speaker amplifier: short tones for `ui`. |
+| `sound` | ES8311 audio codec on I2S, and the AW8737 speaker amplifier: short tones and the typing melody for `ui`. |
 | `clock` | Time in the system clock (UTC) and the time zone: kept across a restart, lost at a power loss. The board has no clock chip. |
 | `buttons` | Front and side buttons: debounce, short and long push, push of both. |
 | `vault` | Password entries in the `vault` NVS partition. With a PIN, the entries are one AES-256-GCM blob: the key comes from PBKDF2 of the PIN, and from the eFuse HMAC key when the chip has one. The lock state, the wrong-PIN counter, and the wait times. |

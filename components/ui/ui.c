@@ -465,14 +465,16 @@ static void type_entry(int i, bool enter)
         show_error("No USB host", "Connect to a PC");
         return;
     }
-    /* At once: the sound plays while the device types. */
-    sound_play(SOUND_TYPE);
+    /* At once: the melody of the label plays while the device types. The
+     * user hears that it types, and which entry. */
+    sound_melody_start(label);
     show_message(enter ? "Typing + Enter" : "Typing", label, C_ACCENT);
     err = vault_secret(i, secret, sizeof(secret));
     if (err == ESP_OK) {
         err = usbdev_type(secret, enter);
     }
     vault_zero(secret, sizeof(secret));
+    sound_melody_stop();
     if (err == ESP_OK) {
         show_message("Done", label, C_OK);
         vTaskDelay(pdMS_TO_TICKS(DONE_MS));

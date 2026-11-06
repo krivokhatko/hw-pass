@@ -20,25 +20,25 @@ CONFIG_TINYUSB_DEBUG_LEVEL=0
 CONFIG_ESP_WIFI_NVS_ENABLED=n
 # Browsers send long request headers.
 CONFIG_HTTPD_MAX_REQ_HDR_LEN=2048
-# Bluetooth LE keypad: NimBLE host, central role. One link, one bond
-# and one more during a new pairing. Bonding keys stay in NVS.
-# The keypad also sends requests to the device (the FBK21C looks for an
-# iPhone service). If no answer comes in 30 s, the keypad sends no more
-# keys. The GATT server answers; it needs the peripheral role. The device
-# does not advertise: no other device can connect to it.
+# Bluetooth LE: NimBLE host with two links. Central role: the keypad.
+# Peripheral role: the device is a keyboard and a mouse for a computer
+# (HID over GATT) and advertises for it. The GATT server also answers the
+# requests of the keypad (the FBK21C looks for an iPhone service; without
+# an answer in 30 s, it sends no more keys). Bonds: the keypad, the
+# computer, and one more during a new pairing. Bonding keys stay in NVS.
 CONFIG_BT_ENABLED=y
 CONFIG_BT_NIMBLE_ENABLED=y
 CONFIG_BT_NIMBLE_ROLE_PERIPHERAL=y
 CONFIG_BT_NIMBLE_GATT_SERVER=y
-CONFIG_BT_NIMBLE_ROLE_BROADCASTER=n
-CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1
-CONFIG_BT_NIMBLE_MAX_BONDS=2
+CONFIG_BT_NIMBLE_MAX_CONNECTIONS=2
+CONFIG_BT_NIMBLE_MAX_BONDS=3
 CONFIG_BT_NIMBLE_NVS_PERSIST=y
 CONFIG_BT_NIMBLE_50_FEATURE_SUPPORT=n
 # Debug logs show the keys of the link.
 CONFIG_BT_NIMBLE_LOG_LEVEL_WARNING=y
-# Small pools: one link, one scan or connection at a time.
-CONFIG_BT_CTRL_BLE_MAX_ACT=3
+# Small pools: two links, the advertising, and one scan or connection
+# attempt at a time. Each activity takes 828 bytes.
+CONFIG_BT_CTRL_BLE_MAX_ACT=5
 CONFIG_BT_NIMBLE_MSYS_2_BLOCK_COUNT=8
 CONFIG_BT_NIMBLE_TRANSPORT_ACL_FROM_LL_COUNT=10
 CONFIG_BT_NIMBLE_TRANSPORT_EVT_COUNT=16

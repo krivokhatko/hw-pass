@@ -9,9 +9,13 @@
 extern "C" {
 #endif
 
-/* Period of the mouse mover. The usual minimum of the screen lock and
- * sleep times is 1 min. */
-#define USBDEV_MOUSE_PERIOD_S   30
+/* USB IDs. 0x303A is the Espressif vendor ID, 0x4005 the TinyUSB example
+ * PID for CDC + HID. Change the version when the descriptors change:
+ * Windows keeps data for each VID, PID, and version. The Bluetooth link
+ * (blehid) reports the same IDs. */
+#define USBDEV_VID      0x303A
+#define USBDEV_PID      0x4005
+#define USBDEV_VERSION  0x0101
 
 /* Start the USB device: a boot keyboard, a CDC-ACM serial port, and a
  * boot mouse. After this call, log output goes to the serial port. */
@@ -23,35 +27,13 @@ bool usbdev_ready(void);
 /* Caps Lock state from the host. */
 bool usbdev_caps_lock(void);
 
-/* Type printable ASCII text with the US key layout. Caps Lock does not
- * change the result. If enter is true, push Enter at the end. Before the
- * text, the device pushes the layout key, if one is set.
- * Returns ESP_ERR_INVALID_RESPONSE and types nothing if the host does
- * not turn Caps Lock off. */
-esp_err_t usbdev_type(const char *s, bool enter);
+/* Send a key report: modifiers and up to 6 keys that are down (HID usage
+ * IDs, page 0x07). Waits up to 200 ms for the endpoint. Returns false if
+ * the host is not ready or does not take the report. */
+bool usbdev_send_keys(uint8_t mod, const uint8_t keys[6]);
 
-/* Layout key: a key that the device pushes before it types, for a host
- * with more than one key layout. The host has a shortcut that selects
- * the US or English layout, for example F16 or Ctrl+Shift+1. Text: "off",
- * or modifiers and one key with "+" between: ctrl, shift, alt, win, and
- * F1 to F24, 0 to 9, a to z, or space. Only modifiers also work. The
- * setting is kept in NVS. ESP_ERR_INVALID_ARG: unknown text. */
-#define USBDEV_LAYOUT_TEXT  24
-esp_err_t usbdev_set_layout(const char *text);
-void usbdev_layout_text(char *buf, size_t size);
-
-/* Push (down) or release a key: HID usage ID, page 0x07. The key stays
- * down until its release, and the host repeats it. Key 0 releases all
- * keys. Typing also releases them. After an error, the next call sends
- * the keys again. */
-esp_err_t usbdev_key(uint8_t key, bool down);
-
-/* Mouse mover. While it is on, the mouse pointer moves 1 pixel each
- * USBDEV_MOUSE_PERIOD_S: to the right, then back to the left. The host
- * sees user activity: it does not lock the screen or sleep. No move
- * while the device types or the host is not ready. Default: off. */
-void usbdev_mouse_mover(bool on);
-bool usbdev_mouse_mover_on(void);
+/* Send a mouse move. Does not wait: returns false if the endpoint is busy. */
+bool usbdev_send_mouse(int8_t dx, int8_t dy);
 
 /* A terminal holds the serial port open (DTR is on). */
 bool usbdev_serial_open(void);

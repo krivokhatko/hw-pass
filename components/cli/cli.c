@@ -13,8 +13,10 @@
 #include "esp_app_desc.h"
 #include "esp_system.h"
 #include "nvs.h"
+#include "blehid.h"
 #include "clock.h"
 #include "display.h"
+#include "hid.h"
 #include "imu.h"
 #include "keypad.h"
 #include "mover.h"
@@ -185,7 +187,7 @@ static bool report(esp_err_t err, const char *what)
         out("The %s must contain only printable ASCII characters.\n", what);
         break;
     case ESP_ERR_INVALID_STATE:
-        out("The USB host is not ready.\n");
+        out("No computer is ready: no USB host, and no Bluetooth computer.\n");
         break;
     case ESP_ERR_INVALID_RESPONSE:
         out("Caps Lock did not turn off. Nothing was typed. Turn Caps Lock off.\n");
@@ -476,18 +478,18 @@ static void cmd_lock(char *arg)
 /* "layout" shows the layout key. "layout F16" or "layout off" sets it. */
 static void cmd_layout(char *arg)
 {
-    char text[USBDEV_LAYOUT_TEXT];
+    char text[HID_LAYOUT_TEXT];
     size_t len = strlen(arg);
 
     while (len > 0 && arg[len - 1] == ' ') {
         arg[--len] = '\0';
     }
-    if (len > 0 && usbdev_set_layout(arg) != ESP_OK) {
+    if (len > 0 && hid_set_layout(arg) != ESP_OK) {
         out("Give a key, with modifiers if needed, or \"off\": for example \"layout F16\" or\n"
             "\"layout ctrl+shift+1\". Modifiers: ctrl, shift, alt, win. Keys: F1 to F24, 0 to 9, a to z, space.\n");
         return;
     }
-    usbdev_layout_text(text, sizeof(text));
+    hid_layout_text(text, sizeof(text));
     if (strcmp(text, "off") == 0) {
         out("Layout key: off. The device types without a layout change.\n");
     } else {
@@ -504,7 +506,7 @@ static void cmd_kbtest(char *arg)
         KBTEST_DELAY_MS / 1000);
     vTaskDelay(pdMS_TO_TICKS(KBTEST_DELAY_MS));
     drain_input();
-    if (!report(usbdev_type(s_kbtest, true), "")) {
+    if (!report(hid_type(s_kbtest, true), "")) {
         return;
     }
     n = read_line(line, sizeof(line), false, KBTEST_DELAY_MS);
@@ -539,6 +541,53 @@ static void cmd_unpair(char *arg)
     }
 }
 
+/* "wireless" shows the Bluetooth computer. "wireless pair" starts a
+ * pairing: the screen shows the passkey. "wireless forget" removes the
+ * computer. */
+static void cmd_wireless(char *arg)
+{
+    char name[BLEHID_NAME_MAX + 1], question[64];
+    blehid_state_t state = blehid_state();
+    size_t len = strlen(arg);
+    esp_err_t err;
+
+    while (len > 0 && arg[len - 1] == ' ') {
+        arg[--len] = '\0';
+    }
+    blehid_name(name, sizeof(name));
+    if (strcmp(arg, "pair") == 0) {
+        if (locked()) {
+            return;
+        }
+        ui_pair();
+        out("Look at the screen. Add \"hw-pass\" in the Bluetooth settings of the computer,\n"
+            "then type the passkey from the screen. A button on the device stops the pairing.\n");
+    } else if (strcmp(arg, "forget") == 0) {
+        if (state == BLEHID_NONE) {
+            out("No computer is paired.\n");
+            return;
+        }
+        snprintf(question, sizeof(question), "Remove the computer %s?", name);
+        if (!confirm(question)) {
+            return;
+        }
+        err = blehid_unpair();
+        if (err == ESP_OK) {
+            out("The computer is removed. Also remove \"hw-pass\" on the computer.\n");
+        } else {
+            out("Error: %s.\n", esp_err_to_name(err));
+        }
+    } else if (len > 0) {
+        out("Use \"wireless\", \"wireless pair\", or \"wireless forget\".\n");
+    } else if (state == BLEHID_NONE) {
+        out("No computer is paired. Use \"wireless pair\", or hold the two buttons for 8 s.\n");
+    } else if (state == BLEHID_WAITING) {
+        out("Computer %s: not connected. The device waits for it.\n", name);
+    } else {
+        out("Computer %s: connected%s.\n", name, hid_link() == HID_LINK_BLE ? ", it gets the keys" : "");
+    }
+}
+
 static void cmd_mouse(char *arg)
 {
     char next[MOVER_NEXT_TEXT];
@@ -546,7 +595,7 @@ static void cmd_mouse(char *arg)
 
     mover_set(on);
     if (on) {
-        out("Mouse mover on: the pointer moves 1 pixel each %d s.", USBDEV_MOUSE_PERIOD_S);
+        out("Mouse mover on: the pointer moves 1 pixel each %d s.", HID_MOUSE_PERIOD_S);
     } else {
         out("Mouse mover off.");
     }
@@ -905,7 +954,21 @@ static void cmd_info(char *arg)
     out("NVS:       %u of %u slots used\n", (unsigned)stats.used_entries, (unsigned)stats.total_entries);
     out("USB host:  %s, Caps Lock %s\n", usbdev_ready() ? "ready" : "not ready",
         usbdev_caps_lock() ? "on" : "off");
-    usbdev_layout_text(text, sizeof(text));
+    blehid_name(name, sizeof(name));
+    switch (blehid_state()) {
+    case BLEHID_NONE:
+        out("Computer:  none. Use \"wireless pair\".\n");
+        break;
+    case BLEHID_WAITING:
+        out("Computer:  %s, not connected\n", name);
+        break;
+    case BLEHID_CONNECTED:
+        out("Computer:  %s, connected, Caps Lock %s\n", name, blehid_caps_lock() ? "on" : "off");
+        break;
+    }
+    out("Keys go:   %s\n", hid_link() == HID_LINK_BLE ? "to the computer over Bluetooth" :
+        hid_link() == HID_LINK_USB ? "to the USB host" : "nowhere: no computer is ready");
+    hid_layout_text(text, sizeof(text));
     out("Layout:    key %s\n", text);
     mover_next_text(next, sizeof(next));
     out("Mouse:     mover %s%s%s\n", mover_on() ? "on" : "off", next[0] ? ", next: " : "", next);
@@ -1028,6 +1091,7 @@ static const struct {
     { "kbtest", "", "Type all ASCII characters. Checks the key layout.", cmd_kbtest },
     { "web", "", "Start or stop the Wi-Fi setup mode.", cmd_web },
     { "unpair", "", "Remove the Bluetooth keypad.", cmd_unpair },
+    { "wireless", "[pair|forget]", "Bluetooth computer: show, pair, or remove it.", cmd_wireless },
     { "mouse", "", "Turn the mouse mover on or off.", cmd_mouse },
     { "auto", "[on|off HH:MM days]", "Schedule of the mouse mover: toggle, or set.", cmd_auto },
     { "time", "[YYYY-MM-DD HH:MM]", "Show or set the time.", cmd_time },

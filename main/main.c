@@ -1,9 +1,12 @@
 /* Application entry point. Start the modules, then run the user interface. */
 #include "esp_log.h"
 #include "nvs_flash.h"
+#include "ble.h"
+#include "blehid.h"
 #include "cli.h"
 #include "clock.h"
 #include "display.h"
+#include "hid.h"
 #include "imu.h"
 #include "keypad.h"
 #include "mover.h"
@@ -47,6 +50,9 @@ void app_main(void)
     check(rng_init(), "rng");
     check(clock_init(), "clock");
     check(usbdev_init(), "usb");
+    check(ble_init(), "ble");
+    check(blehid_init(), "blehid");     /* Before keypad_init: its services must be in the host before the start. */
+    check(hid_init(), "hid");
     check(mover_init(), "mover");
     check(keypad_init(), "keypad");
     check(ntp_init(), "ntp");

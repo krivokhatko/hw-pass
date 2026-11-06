@@ -9,11 +9,11 @@
 extern "C" {
 #endif
 
-/* Mouse mover: while it is on, the device moves the USB mouse pointer
- * 1 pixel each 30 s, and the computer does not lock or sleep. usbdev
- * moves the pointer. This module keeps the on/off setting, and turns the
- * mover on and off at set times: the schedule. All functions are safe to
- * call from different tasks. */
+/* Mouse mover: while it is on, the device moves the mouse pointer of the
+ * computer 1 pixel each 30 s, and the computer does not lock or sleep.
+ * hid moves the pointer, over USB or Bluetooth. This module keeps the
+ * on/off setting, and turns the mover on and off at set times: the
+ * schedule. All functions are safe to call from different tasks. */
 
 #define MOVER_DAY_MIN       1440    /* Minutes in a day */
 #define MOVER_DAYS_ALL      0x7F
@@ -33,7 +33,7 @@ typedef struct {
 } mover_sched_t;
 
 /* Load the setting and the schedule, and start the schedule. Call after
- * usbdev_init. The schedule does a change up to 5 s after its time.
+ * hid_init. The schedule does a change up to 5 s after its time.
  * When the time becomes known after a power loss, or moves by 12 h or
  * more, the mover gets the state of the last change before the new time.
  * A small correction of the time forward does the changes that it skips;

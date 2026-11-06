@@ -1,5 +1,5 @@
 /* Mouse mover: the on/off setting, and the schedule that turns the mover
- * on and off at set times. usbdev moves the pointer.
+ * on and off at set times. hid moves the pointer.
  *
  * The schedule runs in the esp_timer task. Each TICK_MS, it looks at the
  * minutes since the last look and does the changes of these minutes: a
@@ -21,8 +21,8 @@
 #include "esp_timer.h"
 #include "nvs.h"
 #include "clock.h"
+#include "hid.h"
 #include "sound.h"
-#include "usbdev.h"
 #include "mover.h"
 
 #define TICK_MS         5000
@@ -106,7 +106,7 @@ static void load(void)
         nvs_get_u8(h, "mouse", &on);
         nvs_close(h);
     }
-    usbdev_mouse_mover(on != 0);
+    hid_mouse_mover(on != 0);
 }
 
 /* ---- Schedule ---- */
@@ -143,9 +143,9 @@ static bool set_state(bool on)
     bool changed;
 
     xSemaphoreTake(s_lock, portMAX_DELAY);
-    changed = usbdev_mouse_mover_on() != on;
+    changed = hid_mouse_mover_on() != on;
     if (changed) {
-        usbdev_mouse_mover(on);
+        hid_mouse_mover(on);
         save_on(on);
     }
     xSemaphoreGive(s_lock);
@@ -244,7 +244,7 @@ void mover_set(bool on)
 
 bool mover_on(void)
 {
-    return usbdev_mouse_mover_on();
+    return hid_mouse_mover_on();
 }
 
 void mover_get_sched(mover_sched_t *s)

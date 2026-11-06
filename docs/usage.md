@@ -1,6 +1,6 @@
 # User guide
 
-hw-pass is a USB keyboard that types stored passwords. Select an entry with the buttons. The device types the password into the focused window.
+hw-pass is a USB keyboard that types stored passwords. Select an entry with the buttons. The device types the password into the focused window. The device is also a Bluetooth keyboard for a computer without a cable. See "Bluetooth computer".
 
 ## Buttons
 
@@ -8,9 +8,9 @@ hw-pass is a USB keyboard that types stored passwords. Select an entry with the 
 |---|---|---|
 | Side (KEY2) | Select the next entry | Select the previous entry |
 | Front (KEY1, below the screen) | Type the password | Type the password, then push Enter |
-| Both together | - | Hold 2 s, then release: start the Wi-Fi setup mode. Hold 5 s, then release: pair a Bluetooth keypad. |
+| Both together | - | Hold 2 s, then release: start the Wi-Fi setup mode. Hold 5 s, then release: pair a Bluetooth keypad. Hold 8 s, then release: pair a computer over Bluetooth. |
 
-Push the two buttons at the same time. If you hold the front button alone for 0.6 s, the device types the password. The footer shows what occurs when you release the two buttons. A beep sounds after 2 s and after 5 s.
+Push the two buttons at the same time. If you hold the front button alone for 0.6 s, the device types the password. The footer shows what occurs when you release the two buttons. A beep sounds after 2 s, 5 s, and 8 s.
 
 On the PIN screen, the side button moves the cursor and the front button picks an item. See "PIN".
 
@@ -25,7 +25,7 @@ The power button on the other side belongs to the power chip:
 ## Screen
 
 ```
-hw-pass   3/12  MM BT 85% USB  <- position, mouse mover, keypad state and battery, USB state (green: ready)
+hw-pass   3/12  MM BT 85% USB  <- position, mouse mover, keypad state and battery, link to the computer
   GitHub                 1     <- the keypad key of the entry
   Mail                         <- the selected entry has a color bar
   Bank                   2
@@ -35,7 +35,9 @@ Side: next  Front: type  21:45 <- the time
 
 "BT" shows only when a keypad is paired. Green: the keypad is connected. Gray: the device waits for the keypad. The number after "BT" is the battery level of the keypad. See "Battery level".
 
-"MM" shows only when the mouse mover is on. Green: the USB host is ready. Gray: the pointer does not move.
+"USB" or "BLE" at the right is the link that gets the keys. Green: the computer is ready. "BLE" in gray: a computer is paired over Bluetooth, but it is not connected. "USB" in red: no computer is ready. See "Bluetooth computer".
+
+"MM" shows only when the mouse mover is on. Green: a computer is ready. Gray: the pointer does not move.
 
 The footer shows the time when it is set. "--:--" means: the schedule of the mouse mover is on, but the time is not set. See "Time".
 
@@ -233,7 +235,7 @@ The keypad does not type in the Wi-Fi setup mode and during a pairing. The other
 
 ### Enter and Backspace
 
-Enter and Backspace on the keypad go to the computer, as on a keyboard. For example, type a password with a key, then push Enter. Hold Backspace to delete more characters. A click tells that the key went to the computer. Without a USB host, the screen shows "No USB host" with the error sound. These two keys type no entry, and you cannot give them to an entry.
+Enter and Backspace on the keypad go to the computer, as on a keyboard. For example, type a password with a key, then push Enter. Hold Backspace to delete more characters. A click tells that the key went to the computer. Without a computer, the screen shows "No computer" with the error sound. These two keys type no entry, and you cannot give them to an entry.
 
 If you push a different key while you hold Enter or Backspace, the computer gets the release at once: a held key does not repeat while the device types or shows a message.
 
@@ -266,6 +268,33 @@ The `info` command also shows the level.
 ### Remove the keypad
 
 Type `unpair` on the serial port. The entries keep their keys: a new keypad types the same entries with the same keys.
+
+## Bluetooth computer
+
+The device is also a Bluetooth LE keyboard and mouse. A laptop without a USB cable gets the passwords, Enter and Backspace of the keypad, and the moves of the mouse mover. On battery, the device works without a cable. The device keeps one paired computer.
+
+### Pair a computer
+
+1. Hold the two buttons for 8 s, then release them. After 5 s, the footer shows "Release: keypad. Hold: PC". After 8 s, it shows "Release: pair computer". Or type `wireless pair` on the serial port.
+2. The screen shows "Waiting". On the computer, open the Bluetooth settings, add a device, and select "hw-pass".
+3. The screen shows a passkey of 6 digits. Type the digits on the computer, then push Enter.
+4. The screen shows "Computer paired" and the name of the computer.
+
+If no computer pairs in 60 s, the screen shows "No computer". A button push stops the pairing. If the pairing does not complete, the old computer stays paired. A new computer replaces the old computer: also remove "hw-pass" on the old computer.
+
+Windows, macOS, and Linux ask for the passkey. A computer that does not ask for a passkey cannot pair: the device accepts no pairing without it.
+
+### Use the computer
+
+After the pairing, the device advertises while the computer is not connected, and the computer connects by itself when it sees the device: after a start of the device, after a restart of the computer, or when the computer wakes. "BLE" in the header is green when the computer is connected. While the computer is connected, it gets the keys and the mouse moves, also when a USB host is connected. Without the computer, the USB host gets them.
+
+The device locks when the computer disconnects, as it locks when the USB connection stops. Enter the PIN again.
+
+The computer sets the speed of the link. A password of 20 characters takes about 1 s. The computer sees a battery level of 100 %: the device does not measure its battery.
+
+### Remove the computer
+
+Type `wireless forget` on the serial port. Then remove "hw-pass" in the Bluetooth settings of the computer. If you remove the device on the computer only, the computer cannot connect again: pair it again.
 
 ## Mouse mover
 
@@ -410,6 +439,7 @@ The baud rate has no effect. Push Enter to get the prompt.
 | `kbtest` | Type all printable ASCII characters. Checks the key layout of the host. |
 | `web` | Start the Wi-Fi setup mode and show the network name and the Wi-Fi password. If the mode is on, stop it. |
 | `unpair` | Remove the Bluetooth keypad. The entries keep their keys. |
+| `wireless [pair\|forget]` | Show the Bluetooth computer, pair one (the screen shows the passkey), or remove it. See "Bluetooth computer". |
 | `mouse` | Turn the mouse mover on or off. The device keeps the setting. See "Mouse mover". |
 | `auto [on\|off HH:MM days]` | Turn the schedule of the mouse mover on or off, or set its times and days. See "Schedule". |
 | `time [YYYY-MM-DD HH:MM]` | Show or set the time. See "Time". |
@@ -418,7 +448,7 @@ The baud rate has no effect. Push Enter to get the prompt.
 | `ntp [on\|off\|server x]` | Sync the time now, turn the automatic sync on or off, or set the NTP server. See "Time". |
 | `sound` | Turn the sounds on or off. The device keeps the setting. See "Sounds". |
 | `rotate` | Turn the screen 180 degrees, for a device that lies flat. The turn holds until you turn the device. See "Orientation". |
-| `info` | Show the firmware version and the device state, also the PIN state, the layout key, the keypad, its battery level, the mouse mover, its schedule, the time, the time zone, the time sync, the sounds, and the tilt. |
+| `info` | Show the firmware version and the device state, also the PIN state, the USB host, the Bluetooth computer, the layout key, the keypad, its battery level, the mouse mover, its schedule, the time, the time zone, the time sync, the sounds, and the tilt. |
 | `dfu` | Restart into ROM download mode for flashing. |
 
 Limits:
@@ -440,7 +470,7 @@ Each password has at least one character of each class.
 
 ## Typing speed
 
-The device sends one key report each 10 ms: a password of 20 characters takes about 0.5 s. A faster speed can lose keys in a remote desktop (RDP) session or on a slow host.
+The device sends one key report each 10 ms: a password of 20 characters takes about 0.5 s. A faster speed can lose keys in a remote desktop (RDP) session or on a slow host. Over Bluetooth, the computer sets the interval of the link, and a password of 20 characters takes about 1 s.
 
 ## Key layout
 
@@ -470,7 +500,7 @@ Read these limits before you store important passwords:
 
 - Flash encryption is off. Without a PIN, a person with the device can read the passwords from the flash with esptool, and can type all passwords.
 - With a PIN, the entries in flash are encrypted with AES-256-GCM. The key comes from PBKDF2-HMAC-SHA512 of the PIN, with 50000 iterations: about 1 s on the device. Without the hardware key, a person with a copy of the flash can try PINs on a fast computer: a graphics card tries all 6-digit PINs in less than a minute, and all 8-digit PINs in about an hour. The PIN then stops a casual reader, not an attacker. With the hardware key (see "PIN"), each try needs the chip and takes about 1 s with its own firmware: all 6-digit PINs take 12 days, all 8-digit PINs 3 years. The wait times after wrong PINs apply to this firmware only.
-- While the device is unlocked, the key and the entries are in RAM. A lock sets them to zero. The device locks when the USB bus stops: cable out, computer off or asleep. Some hosts stop an idle USB device: then the device asks for the PIN again.
+- While the device is unlocked, the key and the entries are in RAM. A lock sets them to zero. The device locks when the USB bus stops: cable out, computer off or asleep. Some hosts stop an idle USB device: then the device asks for the PIN again. The device also locks when the Bluetooth computer disconnects.
 - `unlock` and `pin` on the command line send the PIN through the USB host. A program on the host can read it. The buttons and the keypad do not send the PIN to the host.
 - `del` and `pass` mark the old data as deleted, but the old bytes stay in flash until NVS reuses the page. With a PIN, the old bytes are encrypted, but after a change of the PIN, old copies with the old key can stay for some time. `wipe` erases the full vault partition.
 - `gen` and the random passwords of the page use the hardware random number generator. Its entropy source is the ADC noise when the radio is off, and the radio when Wi-Fi or Bluetooth is on.
@@ -497,11 +527,19 @@ Time sync:
 
 Bluetooth keypad:
 
-- Bluetooth is off until you start a pairing. With a paired keypad, Bluetooth is on and the device waits for the keypad. After `unpair` or a pairing that did not complete, Bluetooth stays on until the next restart, but it does not send or receive.
+- Bluetooth is off until you start a pairing. With a paired keypad or computer, Bluetooth is on: the device waits for the keypad, and advertises for the computer. After `unpair`, `wireless forget`, or a pairing that did not complete, Bluetooth stays on until the next restart, but without a paired device it does not send or receive.
 - A person with the paired keypad can type all passwords that have a key, push Enter and Backspace on the computer, and turn on the mouse mover, also when the screen is dark. With a PIN, this needs the PIN first. Keep the keypad as safe as the device.
 - Only the buttons can start a pairing. At other times, the device refuses a new pairing. It connects only to the paired keypad, and uses its keys only on a link that the bonding keys encrypt. If the keypad loses its bonding keys, for example after a pairing with a different computer on the same channel, pair it again with the buttons.
 - With a passkey, a different device cannot get into the pairing. A keypad without a passkey pairs with "Just Works": a person near you with special equipment can get into such a pairing. Pair such a keypad where no unknown persons are near.
 - The bonding keys are in the `nvs` partition. Flash encryption is off: a person with the device can read the bonding keys and make a false keypad. This person can also read the passwords.
+
+Bluetooth computer:
+
+- With a paired computer, the device advertises while the computer is not connected. Outside a pairing, the advertisements are not discoverable: the device does not show in the device lists of other computers, but a scanner sees the name "hw-pass" and that it is a keyboard.
+- Only a pairing that you start (the buttons, or `wireless pair`) can pair a computer. The passkey on the screen protects the pairing: a person who does not see the screen cannot complete it. Outside a pairing, the device refuses a new pairing. A connection without the bonding keys of the paired computer ends after 10 s.
+- The paired computer gets the passwords that the front button or the keypad types, like a USB host. A person at this computer can read them there. The header shows "BLE" in green while this computer is connected and gets the keys.
+- `wireless pair` on the command line starts a pairing from the USB host. A program on the host can start it, but it cannot see the passkey on the screen, and the screen shows the pairing.
+- The bonding keys of the computer are in the `nvs` partition, like the keys of the keypad.
 
 Mouse mover:
 

@@ -1,7 +1,8 @@
 /* Bluetooth LE keypad: a HID keyboard (HID over GATT) paired with the
- * device. The NimBLE host runs the central role. The keypad task does
- * the steps of a connection one after the other. The host task gives it
- * the results, and gives the key changes and the battery level to the UI.
+ * device. The shared NimBLE host (ble.c) runs the central role. The
+ * keypad task does the steps of a connection one after the other. The
+ * host task gives it the results, and gives the key changes and the
+ * battery level to the UI.
  *
  * Protection:
  * - Only the buttons start a pairing (ui.c).
@@ -13,7 +14,8 @@
  * - In a pairing, the screen shows a random passkey, and the user types
  *   it on the keypad. This stops a man in the middle. A keypad without
  *   passkey entry pairs without this protection ("Just Works").
- * - Bluetooth starts only when a keypad is paired, or at a pairing. */
+ * - Bluetooth starts only when a keypad is paired, or at a pairing. The
+ *   computer link (blehid.c) can also start it. */
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -37,14 +39,8 @@ void keypad_key_name(uint8_t key, char buf[KEYPAD_KEY_NAME])
 #include "esp_log.h"
 #include "nvs.h"
 #include "host/ble_hs.h"
-#include "host/util/util.h"
-#include "nimble/nimble_port.h"
-#include "nimble/nimble_port_freertos.h"
+#include "ble.h"
 #include "rng.h"
-
-#if MYNEWT_VAL(BLE_RESTART_PAIR)
-#error "BLE_RESTART_PAIR pairs again without the user: see CMakeLists.txt"
-#endif
 
 #define UUID_HID            0x1812
 #define UUID_DEVICE_NAME    0x2A00
@@ -60,7 +56,6 @@ void keypad_key_name(uint8_t key, char buf[KEYPAD_KEY_NAME])
 #define APPEARANCE_HID      0x03C0  /* Category 15: keyboard, mouse, and others */
 
 #define FOREVER             UINT32_MAX
-#define SYNC_MS             5000
 #define SCAN_MS             60000   /* Pairing: time to find a keypad */
 #define CONNECT_MS          10000
 #define PAIR_MS             60000   /* Time to type the passkey */
@@ -127,7 +122,6 @@ static keypad_pair_t s_pair;
 static cmd_t s_cmd;
 static volatile bool s_pairing;
 static volatile keypad_state_t s_state;
-static bool s_started;
 
 /* The link. The host task changes it. */
 static volatile uint16_t s_conn = BLE_HS_CONN_HANDLE_NONE;
@@ -156,8 +150,6 @@ static int s_chr_count;
 static uint16_t s_dsc_cccd, s_dsc_ref;
 static uint8_t s_data[DATA_MAX];
 static size_t s_data_len;
-
-void ble_store_config_init(void);
 
 static void lock(void)
 {
@@ -232,12 +224,6 @@ static void copy_name(char *dst, const uint8_t *src, size_t len)
     dst[n] = '\0';
 }
 
-static void addr_name(char *dst, const ble_addr_t *a)
-{
-    snprintf(dst, KEYPAD_NAME_MAX + 1, "%02X:%02X:%02X:%02X:%02X:%02X",
-             a->val[5], a->val[4], a->val[3], a->val[2], a->val[1], a->val[0]);
-}
-
 /* ---- Paired keypad in NVS ---- */
 
 static void load_peer(void)
@@ -290,13 +276,15 @@ static bool have_peer(void)
     return s_peer.version != 0;
 }
 
-/* Remove the keypad and all bonding keys. */
+/* Remove the keypad and its bonding keys. The keys of the computer
+ * (blehid.c) stay. */
 static void forget(void)
 {
-    peer_t none = { 0 };
+    peer_t none = { 0 }, old;
 
-    if (s_started) {
-        ble_store_clear();
+    get_peer(&old);
+    if (ble_started() && old.version) {
+        ble_store_util_delete_peer(&old.addr);
     }
     save_peer(&none);
     s_state = KEYPAD_NONE;
@@ -401,7 +389,7 @@ static void on_adv(const struct ble_gap_disc_desc *d)
         if (name[0]) {
             strcpy(s_found_name, name);
         } else {
-            addr_name(s_found_name, &d->addr);
+            ble_addr_text(s_found_name, sizeof(s_found_name), &d->addr);
         }
         xEventGroupSetBits(s_events, EV_FOUND);
     }
@@ -492,22 +480,14 @@ static int gap_event(struct ble_gap_event *event, void *arg)
     }
 }
 
-static void on_sync(void)
+/* The host became ready, or it reset. */
+static void on_ble(bool ready)
 {
-    ble_hs_util_ensure_addr(0);
-    xEventGroupSetBits(s_events, EV_SYNC);
-}
-
-static void on_reset(int reason)
-{
-    ESP_LOGE(TAG, "host reset: %d", reason);
-    xEventGroupClearBits(s_events, EV_SYNC);
-}
-
-static void host_task(void *arg)
-{
-    nimble_port_run();
-    nimble_port_freertos_deinit();
+    if (ready) {
+        xEventGroupSetBits(s_events, EV_SYNC);
+    } else {
+        xEventGroupClearBits(s_events, EV_SYNC);
+    }
 }
 
 /* ---- Host task: GATT results ---- */
@@ -765,16 +745,6 @@ static int encrypt(uint32_t ms)
     return s_status;
 }
 
-/* The keypad has bonding keys with an LTK. Without the LTK, the host
- * pairs again at the encryption: a connection would make new keys. */
-static bool bonded(const ble_addr_t *addr)
-{
-    struct ble_store_key_sec key = { .peer_addr = *addr };
-    struct ble_store_value_sec value;
-
-    return ble_store_read_peer_sec(&key, &value) == 0 && value.ltk_present;
-}
-
 /* From now on, the host task takes the keys of p from a trusted link.
  * For a paired keypad, do this before the connection: the keypad can send
  * the key that woke it in the connection event that ends the encryption.
@@ -877,7 +847,9 @@ static void serve(void)
     int rc;
 
     get_peer(&p);
-    if (!bonded(&p.addr)) {
+    /* Without the LTK, the host pairs again at the encryption: a
+     * connection would make new keys. */
+    if (!ble_bonded(&p.addr)) {
         ESP_LOGW(TAG, "no bonding keys: pair the keypad again");
         forget();
         return;
@@ -908,21 +880,6 @@ static void serve(void)
     }
     use_battery();
     hold_link();
-}
-
-/* Remove all bonding keys, except the keys of addr. */
-static void keep_only(const ble_addr_t *addr)
-{
-    ble_addr_t peers[MYNEWT_VAL(BLE_STORE_MAX_BONDS)];
-    int n = 0;
-
-    if (ble_store_util_bonded_peers(peers, &n, sizeof(peers) / sizeof(peers[0])) == 0) {
-        for (int i = 0; i < n; i++) {
-            if (ble_addr_cmp(&peers[i], addr) != 0) {
-                ble_store_util_delete_peer(&peers[i]);
-            }
-        }
-    }
 }
 
 static int scan(void)
@@ -974,7 +931,7 @@ static void pair(void)
     }
     rc = encrypt(PAIR_MS);
     if (rc != 0 || ble_gap_conn_find(s_conn, &desc) != 0 || !desc.sec_state.bonded ||
-        !bonded(&desc.peer_id_addr)) {
+        !ble_bonded(&desc.peer_id_addr)) {
         ESP_LOGE(TAG, "pairing: %d", rc);
         error = "Pairing failed";
         goto end;
@@ -1001,7 +958,9 @@ static void pair(void)
     }
     s_pairing = false;
     unlock();
-    keep_only(&p.addr);
+    if (old.version && ble_addr_cmp(&old.addr, &p.addr) != 0) {
+        ble_store_util_delete_peer(&old.addr);  /* The old keypad loses its keys. */
+    }
     save_peer(&p);
     s_battery = -1;     /* The level of the old keypad */
     set_pair(KEYPAD_PAIR_DONE, p.name, NULL);
@@ -1025,35 +984,6 @@ end:
     set_pair(KEYPAD_PAIR_FAILED, NULL, error);
 }
 
-static esp_err_t start(void)
-{
-    esp_err_t err;
-
-    if (!s_started) {
-        rng_radio_lock();
-        err = nimble_port_init();
-        rng_radio_unlock(RNG_RADIO_BT, err == ESP_OK);
-        if (err != ESP_OK) {
-            ESP_LOGE(TAG, "Bluetooth start: %s", esp_err_to_name(err));
-            return err;
-        }
-        ble_hs_cfg.sync_cb = on_sync;
-        ble_hs_cfg.reset_cb = on_reset;
-        ble_hs_cfg.store_status_cb = ble_store_util_status_rr;
-        ble_hs_cfg.sm_io_cap = BLE_HS_IO_DISPLAY_ONLY;
-        ble_hs_cfg.sm_bonding = 1;
-        ble_hs_cfg.sm_mitm = 1;
-        ble_hs_cfg.sm_sc = 1;
-        ble_hs_cfg.sm_our_key_dist = BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID;
-        ble_hs_cfg.sm_their_key_dist = BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID;
-        ble_store_config_init();
-        nimble_port_freertos_init(host_task);
-        s_started = true;
-        ESP_LOGI(TAG, "Bluetooth on");
-    }
-    return (wait(EV_SYNC, SYNC_MS) & EV_SYNC) ? ESP_OK : ESP_ERR_TIMEOUT;
-}
-
 static void keypad_task(void *arg)
 {
     for (;;) {
@@ -1063,7 +993,7 @@ static void keypad_task(void *arg)
             forget();
             continue;
         }
-        if ((cmd == CMD_PAIR || have_peer()) && start() != ESP_OK) {
+        if ((cmd == CMD_PAIR || have_peer()) && ble_start() != ESP_OK) {
             if (cmd == CMD_PAIR) {
                 s_pairing = false;
                 set_pair(KEYPAD_PAIR_FAILED, NULL, "Bluetooth error");
@@ -1091,6 +1021,9 @@ esp_err_t keypad_init(void)
     s_queue = xQueueCreate(EVENTS, sizeof(keypad_event_t));
     if (!s_lock || !s_events || !s_queue) {
         return ESP_ERR_NO_MEM;
+    }
+    if (ble_on_sync(on_ble) != ESP_OK) {
+        return ESP_ERR_INVALID_STATE;
     }
     load_peer();
     s_state = have_peer() ? KEYPAD_WAITING : KEYPAD_NONE;

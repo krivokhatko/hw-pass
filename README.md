@@ -2,7 +2,7 @@
 
 Hardware password typer. Firmware for the M5Stack StickS3 (ESP32-S3).
 
-The device is a USB keyboard. The side button selects a stored entry. The front button types its password. A paired Bluetooth LE keypad can also type: each key types one entry, and Enter and Backspace go to the computer. On the keypad, `-` and `+` select an entry, and `*` turns the mouse mover on or off. Two ways add and change entries: a command line on a USB serial port, and a web page in the Wi-Fi setup mode. A PIN encrypts the entries and locks the device until the user enters it, with the buttons or the keypad. Before it types, the device can push a key that selects the key layout of the host. The device is also a USB mouse: the mouse mover keeps the computer awake, by hand or on a schedule. The device gets the time from an NTP server over Wi-Fi, or you set it. A short sound on the speaker tells the result of each action. The screen turns with the device: a tilt sensor tells which edge is up.
+The device is a USB keyboard. The side button selects a stored entry. The front button types its password. The device is also a Bluetooth LE keyboard and mouse for a laptop without a cable: a paired computer gets the keys while it is connected. A paired Bluetooth LE keypad can also type: each key types one entry, and Enter and Backspace go to the computer. On the keypad, `-` and `+` select an entry, and `*` turns the mouse mover on or off. Two ways add and change entries: a command line on a USB serial port, and a web page in the Wi-Fi setup mode. A PIN encrypts the entries and locks the device until the user enters it, with the buttons or the keypad. Before it types, the device can push a key that selects the key layout of the host. The device is also a USB mouse: the mouse mover keeps the computer awake, by hand or on a schedule. The device gets the time from an NTP server over Wi-Fi, or you set it. A short sound on the speaker tells the result of each action. The screen turns with the device: a tilt sensor tells which edge is up.
 
 For the buttons, the commands, and the security limits, refer to [docs/usage.md](docs/usage.md).
 
@@ -48,17 +48,20 @@ tools/                Host scripts.
 | `vault` | Password entries in the `vault` NVS partition. With a PIN, the entries are one AES-256-GCM blob: the key comes from PBKDF2 of the PIN, and from the eFuse HMAC key when the chip has one. The lock state, the wrong-PIN counter, and the wait times. |
 | `kdf` | PBKDF2-HMAC-SHA512 on the SHA hardware, for `vault` and `backup`. |
 | `rng` | Random passwords. Selects the entropy source: ADC noise or radio. |
-| `usbdev` | TinyUSB device: HID boot keyboard, CDC-ACM serial port, and HID boot mouse: the pointer moves of the mouse mover. The layout key that goes before the typed text. |
+| `usbdev` | TinyUSB device: HID boot keyboard, CDC-ACM serial port, and HID boot mouse. Sends the reports of `hid`. |
+| `hid` | Keyboard and mouse output: types text, holds keys, and moves the pointer of the mouse mover. Selects the link: the Bluetooth computer when it is connected, else the USB host. The layout key and the Caps Lock check. |
 | `mover` | Mouse mover: the on/off setting, and the schedule that turns it on and off at set times. |
 | `ntp` | Time sync: a Wi-Fi station joins the network for some seconds and gets the time from an NTP server (SNTP, RFC 4330). |
 | `cli` | Command line on the USB serial port. |
 | `web` | Wi-Fi setup mode: access point, captive DNS, web server, and the page (`www/index.html`). |
 | `backup` | Encrypted backup of the entries. The file format is the same as `openssl enc`. |
+| `ble` | Bluetooth LE host (NimBLE), shared by `keypad` and `blehid`: the start, the pairing method, and the bonding keys in NVS. |
+| `blehid` | Bluetooth LE keyboard and mouse for a computer (HID over GATT): the services, the advertising, the pairing with a passkey, and the key and mouse reports. One paired computer in NVS. |
 | `keypad` | Bluetooth LE keypad: NimBLE central, pairing, HID over GATT client, battery level, and key changes for `ui`. `hidmap.c` reads the HID report map. |
 | `ui` | Screen content and button actions. The PIN screen, and the lock when the USB connection stops. |
 | `sysinfo` | Chip information in the log. |
 
-Threads: `ui_run` runs in the main task. `cli` has its own task. TinyUSB has its own task. In the Wi-Fi setup mode, the web server, the DNS server, and the Wi-Fi driver have their own tasks. `ui_run` starts and stops this mode. `keypad` has its own task, and the NimBLE host has a task after the first Bluetooth start. `sound` has its own task. The mouse mover and its schedule run in the `esp_timer` task. `ntp` has its own task; the Wi-Fi setup mode holds it while the mode runs. `vault`, `rng`, `mover`, `ntp`, and the keyboard and mouse functions in `usbdev` have locks.
+Threads: `ui_run` runs in the main task. `cli` has its own task. TinyUSB has its own task. In the Wi-Fi setup mode, the web server, the DNS server, and the Wi-Fi driver have their own tasks. `ui_run` starts and stops this mode. `keypad` has its own task, and the NimBLE host has a task after the first Bluetooth start (`ble`). `blehid` has no task: the host task runs the events of the computer link. `sound` has its own task. The mouse mover and its schedule run in the `esp_timer` task. `ntp` has its own task; the Wi-Fi setup mode holds it while the mode runs. `vault`, `rng`, `hid`, `blehid`, `mover`, `ntp`, and the serial port in `usbdev` have locks.
 
 ## USB
 
@@ -102,7 +105,7 @@ To change the configuration:
 2. Delete `sdkconfig`.
 3. Run `idf.py build`.
 
-Project options are in the "hw-pass" menu of `idf.py menuconfig` (`main/Kconfig.projbuild`). For a build without the web page, add `CONFIG_HWPASS_WEB=n` to `sdkconfig.defaults`. For a build without the time sync, add `CONFIG_HWPASS_NTP=n`. With both, the build has no Wi-Fi code. For a build without Bluetooth, add `CONFIG_BT_ENABLED=n`: then the device cannot pair a keypad.
+Project options are in the "hw-pass" menu of `idf.py menuconfig` (`main/Kconfig.projbuild`). For a build without the web page, add `CONFIG_HWPASS_WEB=n` to `sdkconfig.defaults`. For a build without the time sync, add `CONFIG_HWPASS_NTP=n`. With both, the build has no Wi-Fi code. For a build without Bluetooth, add `CONFIG_BT_ENABLED=n`: then the device cannot pair a keypad or a computer.
 
 Wi-Fi and Bluetooth can run at the same time. Both need much internal RAM: the Wi-Fi and NimBLE options in `sdkconfig.defaults` make the buffers small. With both on, about 90 KB of heap stays free.
 

@@ -1,14 +1,17 @@
 /* Screen, buttons, and sounds. The side button selects an entry. The
  * front button types the password of the entry. Both buttons together
- * start the Wi-Fi setup mode or the pairing of a keypad. A keypad key
- * types the entry that has this key. The keypad keys - and + select an
- * entry, and * turns the mouse mover on or off. A sound tells the result
- * of each action: the user does not have to look at the screen.
+ * start the Wi-Fi setup mode, the pairing of a keypad, or the pairing of
+ * a computer over Bluetooth. A keypad key types the entry that has this
+ * key. The keypad keys - and + select an entry, and * turns the mouse
+ * mover on or off. A sound tells the result of each action: the user does
+ * not have to look at the screen. The keys go to the Bluetooth computer
+ * while it is connected, else to the USB host (hid.c).
  *
  * With a PIN, the device starts locked and locks again when the USB
- * connection stops. The PIN screen shows a row of digits: the side
- * button moves, the front button picks. The keypad digits, Enter, and
- * Backspace also work. Nothing else works while locked.
+ * connection or the link to the Bluetooth computer stops. The PIN screen
+ * shows a row of digits: the side button moves, the front button picks.
+ * The keypad digits, Enter, and Backspace also work. Nothing else works
+ * while locked.
  *
  * The screen turns with the device: the tilt sensor tells which edge is
  * up. When the device lies flat, the screen keeps its orientation, and
@@ -24,9 +27,11 @@
 #include "esp_log.h"
 #include "nvs.h"
 #include "qrcode.h"
+#include "blehid.h"
 #include "buttons.h"
 #include "clock.h"
 #include "display.h"
+#include "hid.h"
 #include "imu.h"
 #include "keypad.h"
 #include "mover.h"
@@ -44,6 +49,7 @@
 #define INFO_MS         1500    /* Message after a pairing or a key change */
 #define BOTH_MS         2000    /* Hold both buttons, then release: Wi-Fi setup mode. */
 #define PAIR_MS         5000    /* Hold both buttons longer: pair a keypad. */
+#define HOST_MS         8000    /* Hold both buttons still longer: pair a computer. */
 #define BIND_MS         2000    /* Hold a keypad key: it gets the selected entry. */
 #define HINT_MS         300     /* Keypad hold time before the progress bar shows */
 #define HOLD_STEP_MS    100     /* Redraw interval of the hold progress bar */
@@ -51,7 +57,7 @@
 #define TILT_MS         100     /* Read interval of the tilt sensor */
 #define TILT_STABLE     5       /* Reads in a row with the same result before the screen turns: 0.5 s */
 
-/* Keypad keys that go to the USB host: HID usage IDs */
+/* Keypad keys that go to the computer: HID usage IDs */
 #define KEY_ENTER       0x28
 #define KEY_BACKSPACE   0x2A
 #define KEY_PAD_ENTER   0x58
@@ -99,6 +105,7 @@ static volatile bool s_flip_request;
 static volatile bool s_dfu_request;
 static volatile bool s_web_start;
 static volatile bool s_web_stop;
+static volatile bool s_pair_request;
 static bool s_flip;
 static imu_up_t s_up;           /* The stable result of the tilt sensor */
 static imu_up_t s_up_new;       /* The last result, and how many reads in a row gave it */
@@ -131,6 +138,11 @@ void ui_web(bool on)
     } else {
         s_web_stop = true;
     }
+}
+
+void ui_pair(void)
+{
+    s_pair_request = true;
 }
 
 /* Settings: "flip" (screen) and "mute" (sounds). Default 0. */
@@ -232,9 +244,9 @@ static void text_center(int y, const char *s, const font_t *f, uint16_t fg)
     display_text((DISPLAY_W - (int)strlen(s) * f->w) / 2, y, s, f, fg, C_BG);
 }
 
-/* The header items from the right: USB, keypad and its battery level,
- * mouse mover, position. With all items, the title just fits:
- * "hw-pass 32/32  MM BT 100% USB". */
+/* The header items from the right: the link that gets the keys (USB or
+ * BLE), keypad and its battery level, mouse mover, position. With all
+ * items, the title just fits: "hw-pass 32/32  MM BT 100% USB". */
 static void draw_frame(void)
 {
     char text[24];
@@ -242,10 +254,16 @@ static void draw_frame(void)
     int x = DISPLAY_W - 4 - 3 * font_8x16.w;
     keypad_state_t kp = keypad_state();
     int battery = keypad_battery();
+    hid_link_t link = hid_link();
+    /* "BLE": the computer gets the keys, or no link is ready and a
+     * computer is paired (gray). "USB": the host gets the keys, or no
+     * link is ready and no computer is paired (red). */
+    bool ble = link == HID_LINK_BLE || (link == HID_LINK_NONE && blehid_state() != BLEHID_NONE);
 
     display_fill(0, 0, DISPLAY_W, DISPLAY_H, C_BG);
     display_text(4, HEADER_Y, "hw-pass", &font_8x16, C_DIM, C_BG);
-    display_text(x, HEADER_Y, "USB", &font_8x16, usbdev_ready() ? C_OK : C_ERROR, C_BG);
+    display_text(x, HEADER_Y, ble ? "BLE" : "USB", &font_8x16,
+                 link != HID_LINK_NONE ? C_OK : ble ? C_DIM : C_ERROR, C_BG);
     if (kp != KEYPAD_NONE) {
         uint16_t color = kp == KEYPAD_CONNECTED ? C_OK : C_DIM;
 
@@ -260,7 +278,7 @@ static void draw_frame(void)
     }
     if (mover_on()) {
         x -= 3 * font_8x16.w;
-        display_text(x, HEADER_Y, "MM", &font_8x16, usbdev_ready() ? C_OK : C_DIM, C_BG);
+        display_text(x, HEADER_Y, "MM", &font_8x16, hid_ready() ? C_OK : C_DIM, C_BG);
     }
     if (n > 0) {
         snprintf(text, sizeof(text), "%d/%d", s_sel + 1, n);
@@ -270,7 +288,8 @@ static void draw_frame(void)
     display_fill(0, FOOTER_Y - 2, DISPLAY_W, 1, C_LINE);
 }
 
-/* The footer during a hold of both buttons: 2 s, then 3 s more. */
+/* The footer during a hold of both buttons: 2 s, then 3 s more, then 3 s
+ * more. */
 static void draw_both_hold(void)
 {
     if (s_hold_ms < BOTH_MS) {
@@ -279,9 +298,12 @@ static void draw_both_hold(void)
     } else if (s_hold_ms < PAIR_MS) {
         display_fill(0, FOOTER_Y - 3, DISPLAY_W * (s_hold_ms - BOTH_MS) / (PAIR_MS - BOTH_MS), 2, C_BT);
         display_text(4, FOOTER_Y, "Release: Wi-Fi. Hold: keypad", &font_8x16, C_ACCENT, C_BG);
+    } else if (s_hold_ms < HOST_MS) {
+        display_fill(0, FOOTER_Y - 3, DISPLAY_W * (s_hold_ms - PAIR_MS) / (HOST_MS - PAIR_MS), 2, C_BT);
+        display_text(4, FOOTER_Y, "Release: keypad. Hold: PC", &font_8x16, C_BT, C_BG);
     } else {
         display_fill(0, FOOTER_Y - 3, DISPLAY_W, 2, C_BT);
-        display_text(4, FOOTER_Y, "Release: pair keypad", &font_8x16, C_BT, C_BG);
+        display_text(4, FOOTER_Y, "Release: pair computer", &font_8x16, C_BT, C_BG);
     }
 }
 
@@ -510,8 +532,8 @@ static void type_entry(int i, bool enter)
     if (vault_label(i, label, sizeof(label)) != ESP_OK) {
         return;
     }
-    if (!usbdev_ready()) {
-        show_error("No USB host", "Connect to a PC");
+    if (!hid_ready()) {
+        show_error("No computer", "USB or Bluetooth");
         return;
     }
     /* At once: the melody of the label plays while the device types. The
@@ -520,7 +542,7 @@ static void type_entry(int i, bool enter)
     show_message(enter ? "Typing + Enter" : "Typing", label, C_ACCENT);
     err = vault_secret(i, secret, sizeof(secret));
     if (err == ESP_OK) {
-        err = usbdev_type(secret, enter);
+        err = hid_type(secret, enter);
     }
     vault_zero(secret, sizeof(secret));
     sound_melody_stop();
@@ -675,7 +697,7 @@ static char keypad_digit(uint8_t key)
 }
 
 /* The keypad while locked: digits, Enter, and Backspace go to the PIN.
- * Nothing goes to the USB host. */
+ * Nothing goes to the computer. */
 static bool poll_pin_keypad(void)
 {
     keypad_event_t ev;
@@ -700,7 +722,7 @@ static bool poll_pin_keypad(void)
     return dirty;
 }
 
-/* Enter and Backspace go to the USB host as they are: after a password,
+/* Enter and Backspace go to the computer as they are: after a password,
  * or to correct text. They have no entry. */
 static bool passthru(uint8_t key)
 {
@@ -723,17 +745,17 @@ static bool poll_keypad(void)
     while (keypad_event(&ev)) {
         dirty = true;
         if (ev.key == 0) {
-            usbdev_key(0, false);
+            hid_key(0, false);
             s_kp_key = 0;
             s_kp_held = 0;
         } else if (passthru(ev.key)) {
-            if (ev.down && !usbdev_ready()) {
+            if (ev.down && !hid_ready()) {
                 display_backlight(BRIGHTNESS);
-                show_error("No USB host", "Connect to a PC");
+                show_error("No computer", "USB or Bluetooth");
                 break;
             }
             /* A click as the key goes down: the key went to the computer. */
-            if (usbdev_key(ev.key, ev.down) != ESP_OK) {
+            if (hid_key(ev.key, ev.down) != ESP_OK) {
                 sound_play(SOUND_ERROR);
             } else if (ev.down) {
                 sound_play(SOUND_CLICK);
@@ -749,7 +771,7 @@ static bool poll_keypad(void)
         } else if (!ev.down && ev.key == s_kp_key) {
             s_kp_key = 0;
             s_kp_held = 0;
-            usbdev_key(0, false);
+            hid_key(0, false);
             display_backlight(BRIGHTNESS);
             if (ev.key == KEY_PAD_STAR) {
                 if (ev.ms - s_kp_ms < BIND_MS) {
@@ -860,6 +882,95 @@ static void pair_mode(void)
     keypad_pair_stop();
 }
 
+static void draw_pair_pc(const blehid_pair_t *p)
+{
+    char text[16];
+
+    display_fill(0, 0, DISPLAY_W, DISPLAY_H, C_BG);
+    display_text(4, HEADER_Y, "Pair computer", &font_8x16, C_BT, C_BG);
+    switch (p->step) {
+    case BLEHID_PAIR_WAITING:
+        text_center(LIST_Y + 4, "Waiting", &font_12x24, C_ACCENT);
+        text_center(LIST_Y + 40, "Add \"hw-pass\" in the", &font_8x16, C_TEXT);
+        text_center(LIST_Y + 58, "Bluetooth settings", &font_8x16, C_TEXT);
+        break;
+    case BLEHID_PAIR_PASSKEY:
+        snprintf(text, sizeof(text), "%06lu", (unsigned long)p->passkey);
+        text_center(LIST_Y, "Type on the computer:", &font_8x16, C_TEXT);
+        text_center(LIST_Y + 22, text, &font_12x24, C_ACCENT);
+        text_center(LIST_Y + 54, "then Enter", &font_8x16, C_TEXT);
+        break;
+    case BLEHID_PAIR_DONE:
+        text_center(LIST_Y + 4, "Computer paired", &font_12x24, C_OK);
+        text_center(LIST_Y + 40, p->name, &font_8x16, C_TEXT);
+        break;
+    case BLEHID_PAIR_FAILED:
+        text_center(LIST_Y + 4, "Pairing failed", &font_12x24, C_ERROR);
+        text_center(LIST_Y + 40, p->error ? p->error : "", &font_8x16, C_TEXT);
+        break;
+    }
+    if (p->step != BLEHID_PAIR_DONE && p->step != BLEHID_PAIR_FAILED) {
+        display_text(4, FOOTER_Y, "Button: stop", &font_8x16, C_DIM, C_BG);
+    }
+    display_flush();
+}
+
+/* Pairing of a computer over Bluetooth. Return when it is done, when it
+ * fails, or when a button stops it. */
+static void pair_pc_mode(void)
+{
+    blehid_pair_t pair, shown = { 0 };
+    bool armed = false;     /* Both buttons were up after the start. */
+    bool first = true;
+    esp_err_t err;
+
+    display_backlight(BRIGHTNESS);
+    show_message("Pair computer", "Starting", C_ACCENT);
+    err = blehid_pair_start();
+    if (err != ESP_OK) {
+        show_error("Bluetooth error", err == ESP_ERR_NOT_SUPPORTED ? "Not in this build" : esp_err_to_name(err));
+        return;
+    }
+    for (;;) {
+        press_t side = buttons_poll(BUTTON_SIDE);
+        press_t front = buttons_poll(BUTTON_FRONT);
+        uint32_t both = buttons_both_ms();
+
+        armed |= both == 0;
+        blehid_pair_status(&pair);
+        if (poll_flip() || first || pair.step != shown.step || pair.passkey != shown.passkey ||
+            strcmp(pair.name, shown.name) != 0) {
+            if (pair.step == BLEHID_PAIR_PASSKEY && shown.step != pair.step) {
+                sound_play(SOUND_STEP);     /* Type the passkey now. */
+            }
+            draw_pair_pc(&pair);
+            shown = pair;
+            first = false;
+        }
+        if (pair.step == BLEHID_PAIR_DONE || pair.step == BLEHID_PAIR_FAILED) {
+            bool done = pair.step == BLEHID_PAIR_DONE;
+
+            sound_play(done ? SOUND_OK : SOUND_ERROR);
+            /* The name of the computer can come after the pairing. */
+            for (int ms = 0; ms < (done ? INFO_MS : ERROR_MS); ms += HOLD_STEP_MS) {
+                vTaskDelay(pdMS_TO_TICKS(HOLD_STEP_MS));
+                blehid_pair_status(&pair);
+                if (strcmp(pair.name, shown.name) != 0) {
+                    draw_pair_pc(&pair);
+                    shown = pair;
+                }
+            }
+            break;
+        }
+        if (side != PRESS_NONE || front != PRESS_NONE || (armed && both > 0) || s_dfu_request) {
+            sound_play(SOUND_OFF);
+            break;
+        }
+        vTaskDelay(pdMS_TO_TICKS(BUTTONS_POLL_MS));
+    }
+    blehid_pair_stop();
+}
+
 /* Wi-Fi setup mode. Return when a button push, the page, the command
  * line, or the timeout stops it. buttons: the buttons started it. */
 static void web_mode(bool buttons)
@@ -926,6 +1037,8 @@ void ui_run(void)
 {
     uint32_t generation = vault_generation();
     bool usb = usbdev_ready();
+    bool ble = blehid_ready();
+    blehid_state_t pc_state = blehid_state();
     keypad_state_t kp = keypad_state();
     int battery = keypad_battery();
     int minute = clock_minute();
@@ -960,7 +1073,7 @@ void ui_run(void)
         press_t front = buttons_poll(BUTTON_FRONT);
         uint32_t both = buttons_both_ms();
         uint32_t hold = 0;
-        bool web = false, pair = false;
+        bool web = false, pair = false, pair_pc = false;
         bool dirty = false;
         int n;
 
@@ -980,30 +1093,34 @@ void ui_run(void)
          * screen selects the mode. */
         if (both == 0) {
             web = !both_used && s_hold_ms >= BOTH_MS && s_hold_ms < PAIR_MS;
-            pair = !both_used && s_hold_ms >= PAIR_MS;
+            pair = !both_used && s_hold_ms >= PAIR_MS && s_hold_ms < HOST_MS;
+            pair_pc = !both_used && s_hold_ms >= HOST_MS;
             both_used = false;
         } else if (!both_used) {
             hold = both;
         }
         if (locked) {
             /* No modes while locked: the page and a pairing need the entries. */
-            web = pair = false;
+            web = pair = pair_pc = false;
             hold = 0;
-            s_web_start = false;
+            s_web_start = s_pair_request = false;
         }
         s_web_stop = false;     /* The mode is off. */
-        if (s_web_start || web || pair) {
+        if (s_web_start || s_pair_request || web || pair || pair_pc) {
             /* A request from the command line counts first: the USB host
              * gets the Wi-Fi password. */
             bool cli = s_web_start;
 
             s_web_start = false;
             s_hold_ms = hold = 0;
-            usbdev_key(0, false);
+            hid_key(0, false);
             if (cli || web) {
                 web_mode(!cli);
-            } else {
+            } else if (pair) {
                 pair_mode();
+            } else {
+                s_pair_request = false;
+                pair_pc_mode();
             }
             /* The buttons and the keypad were not read during the mode and
              * the messages. A push in this time must not type. Both
@@ -1019,9 +1136,10 @@ void ui_run(void)
             dirty = true;
         }
         if (hold / HOLD_STEP_MS != s_hold_ms / HOLD_STEP_MS) {
-            /* A beep at 2 s and at 5 s: the user can hold without a look
-             * at the screen. */
-            if ((s_hold_ms < BOTH_MS && hold >= BOTH_MS) || (s_hold_ms < PAIR_MS && hold >= PAIR_MS)) {
+            /* A beep at 2 s, 5 s, and 8 s: the user can hold without a
+             * look at the screen. */
+            if ((s_hold_ms < BOTH_MS && hold >= BOTH_MS) || (s_hold_ms < PAIR_MS && hold >= PAIR_MS) ||
+                (s_hold_ms < HOST_MS && hold >= HOST_MS)) {
                 sound_play(SOUND_STEP);
             }
             s_hold_ms = hold;
@@ -1038,11 +1156,17 @@ void ui_run(void)
         if (s_sel >= n) {
             s_sel = n > 0 ? n - 1 : 0;
         }
-        if (usb != usbdev_ready()) {
-            usb = !usb;
-            if (!usb) {
-                vault_lock();   /* The connection stopped: the next host must give the PIN. */
+        if (usb != usbdev_ready() || ble != blehid_ready()) {
+            /* A link stopped: the next computer must give the PIN. */
+            if ((usb && !usbdev_ready()) || (ble && !blehid_ready())) {
+                vault_lock();
             }
+            usb = usbdev_ready();
+            ble = blehid_ready();
+            dirty = true;
+        }
+        if (pc_state != blehid_state()) {
+            pc_state = blehid_state();
             dirty = true;
         }
         if (locked != vault_locked()) {

@@ -13,6 +13,7 @@
 #include "esp_app_desc.h"
 #include "esp_system.h"
 #include "nvs.h"
+#include "battery.h"
 #include "blehid.h"
 #include "clock.h"
 #include "display.h"
@@ -954,6 +955,12 @@ static void cmd_info(char *arg)
     out("NVS:       %u of %u slots used\n", (unsigned)stats.used_entries, (unsigned)stats.total_entries);
     out("USB host:  %s, Caps Lock %s\n", usbdev_ready() ? "ready" : "not ready",
         usbdev_caps_lock() ? "on" : "off");
+    if (battery_level() >= 0) {
+        out("Battery:   %d %%, %.2f V%s%s\n", battery_level(), battery_mv() / 1000.0,
+            battery_usb() ? ", USB power" : "", battery_charging() ? ", charging" : "");
+    } else {
+        out("Battery:   no measurement%s\n", battery_usb() ? ", USB power" : "");
+    }
     blehid_name(name, sizeof(name));
     switch (blehid_state()) {
     case BLEHID_NONE:

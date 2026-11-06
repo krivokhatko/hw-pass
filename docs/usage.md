@@ -290,7 +290,11 @@ After the pairing, the device advertises while the computer is not connected, an
 
 The device locks when the computer disconnects, as it locks when the USB connection stops. Enter the PIN again.
 
-The computer sets the speed of the link. A password of 20 characters takes about 1 s. The computer sees a battery level of 100 %: the device does not measure its battery.
+The computer sets the speed of the link. A password of 20 characters takes about 1 s.
+
+### Battery level
+
+The computer shows the battery level of the device (Bluetooth Battery service), and it gets each change. The level comes from the battery voltage, and it moves in steps of 2 %. On USB power, the charger sets the voltage: the level is high while the battery charges. `info` shows the level, the voltage, USB power, and the charge state.
 
 ### Remove the computer
 
@@ -448,7 +452,7 @@ The baud rate has no effect. Push Enter to get the prompt.
 | `ntp [on\|off\|server x]` | Sync the time now, turn the automatic sync on or off, or set the NTP server. See "Time". |
 | `sound` | Turn the sounds on or off. The device keeps the setting. See "Sounds". |
 | `rotate` | Turn the screen 180 degrees, for a device that lies flat. The turn holds until you turn the device. See "Orientation". |
-| `info` | Show the firmware version and the device state, also the PIN state, the USB host, the Bluetooth computer, the layout key, the keypad, its battery level, the mouse mover, its schedule, the time, the time zone, the time sync, the sounds, and the tilt. |
+| `info` | Show the firmware version and the device state, also the PIN state, the USB host, the battery of the device, the Bluetooth computer, the layout key, the keypad, its battery level, the mouse mover, its schedule, the time, the time zone, the time sync, the sounds, and the tilt. |
 | `dfu` | Restart into ROM download mode for flashing. |
 
 Limits:

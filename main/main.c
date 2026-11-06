@@ -1,6 +1,7 @@
 /* Application entry point. Start the modules, then run the user interface. */
 #include "esp_log.h"
 #include "nvs_flash.h"
+#include "battery.h"
 #include "ble.h"
 #include "blehid.h"
 #include "cli.h"
@@ -43,6 +44,7 @@ void app_main(void)
     }
     check(err, "nvs");
     check(pm1_init(), "pm1");
+    check(battery_init(), "battery");
     check(display_init(), "display");
     check(sound_init(), "sound");
     check(imu_init(), "imu");

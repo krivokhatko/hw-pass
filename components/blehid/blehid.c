@@ -5,7 +5,8 @@
  * one paired computer in NVS and advertises while no computer is
  * connected: the paired computer connects by itself when it sees the
  * device. The host task runs the events of the link; this module has no
- * task of its own.
+ * task of its own. The Battery service gives the level of the battery of
+ * the device (battery.c): the computer shows it, and gets each change.
  *
  * Protection:
  * - Only a request of the user starts a pairing (ui.c): the buttons, or
@@ -39,6 +40,7 @@
 #include "nvs.h"
 #include "host/ble_hs.h"
 #include "services/gap/ble_svc_gap.h"
+#include "battery.h"
 #include "ble.h"
 #include "rng.h"
 #include "usbdev.h"
@@ -65,7 +67,7 @@
 #define MOUSE_LEN           3       /* Buttons, X, Y */
 #define LED_CAPS_LOCK       0x02
 #define PROTOCOL_REPORT     1
-#define BATTERY_LEVEL       100     /* The board does not report its battery level. */
+#define BATTERY_UNKNOWN     100     /* Level in the report when there is no measurement */
 
 #define ADV_ITVL_MIN        160     /* 100 ms */
 #define ADV_ITVL_MAX        240     /* 150 ms */
@@ -683,7 +685,7 @@ static int gatt_access(uint16_t conn, uint16_t attr, struct ble_gatt_access_ctxt
     case ATTR_MOUSE_REF:
         return put(ctxt, mouse_ref, sizeof(mouse_ref));
     case ATTR_BATTERY:
-        v = BATTERY_LEVEL;
+        v = battery_level() < 0 ? BATTERY_UNKNOWN : battery_level();
         return put(ctxt, &v, 1);
     case ATTR_PNP_ID:
         return put(ctxt, pnp_id, sizeof(pnp_id));
@@ -745,6 +747,15 @@ bool blehid_caps_lock(void)
     return s_leds & LED_CAPS_LOCK;
 }
 
+/* The battery level changed (esp_timer task). The computer gets a
+ * notification when it asked for them: the host knows that. */
+static void on_battery(int level)
+{
+    if (s_conn != BLE_HS_CONN_HANDLE_NONE && s_ready) {
+        ble_gatts_chr_updated(s_battery_handle);
+    }
+}
+
 /* ---- API ---- */
 
 esp_err_t blehid_init(void)
@@ -761,6 +772,7 @@ esp_err_t blehid_init(void)
     load_host();
     ESP_RETURN_ON_ERROR(ble_add_services(s_services), TAG, "services");
     ESP_RETURN_ON_ERROR(ble_on_sync(on_ble), TAG, "sync");
+    ESP_RETURN_ON_ERROR(battery_on_change(on_battery), TAG, "battery");
     if (have_host()) {
         ESP_LOGI(TAG, "paired: %s", s_host.name);
         return ble_start();     /* The sync callback starts the advertising. */

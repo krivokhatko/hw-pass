@@ -39,7 +39,8 @@ tools/                Host scripts.
 
 | Module | Function |
 |---|---|
-| `pm1` | M5PM1 power chip: watchdog off, LCD power on, speaker amplifier on and off. It owns the internal I2C bus. |
+| `pm1` | M5PM1 power chip: watchdog off, LCD power on, speaker amplifier on and off, battery voltage, USB power and charge state. It owns the internal I2C bus. |
+| `battery` | Battery of the device: the voltage from `pm1` every 20 s, and the level in % from a discharge curve. `blehid` reports the level to the computer; `info` shows it. |
 | `display` | ST7789 LCD, backlight, frame buffer, and text. |
 | `sound` | ES8311 audio codec on I2S, and the AW8737 speaker amplifier: short tones and the typing melody for `ui`. |
 | `clock` | Time in the system clock (UTC) and the time zone: kept across a restart, lost at a power loss. The board has no clock chip. |
@@ -56,12 +57,12 @@ tools/                Host scripts.
 | `web` | Wi-Fi setup mode: access point, captive DNS, web server, and the page (`www/index.html`). |
 | `backup` | Encrypted backup of the entries. The file format is the same as `openssl enc`. |
 | `ble` | Bluetooth LE host (NimBLE), shared by `keypad` and `blehid`: the start, the pairing method, and the bonding keys in NVS. |
-| `blehid` | Bluetooth LE keyboard and mouse for a computer (HID over GATT): the services, the advertising, the pairing with a passkey, and the key and mouse reports. One paired computer in NVS. |
+| `blehid` | Bluetooth LE keyboard and mouse for a computer (HID over GATT): the services, the advertising, the pairing with a passkey, the key and mouse reports, and the battery level. One paired computer in NVS. |
 | `keypad` | Bluetooth LE keypad: NimBLE central, pairing, HID over GATT client, battery level, and key changes for `ui`. `hidmap.c` reads the HID report map. |
 | `ui` | Screen content and button actions. The PIN screen, and the lock when the USB connection stops. |
 | `sysinfo` | Chip information in the log. |
 
-Threads: `ui_run` runs in the main task. `cli` has its own task. TinyUSB has its own task. In the Wi-Fi setup mode, the web server, the DNS server, and the Wi-Fi driver have their own tasks. `ui_run` starts and stops this mode. `keypad` has its own task, and the NimBLE host has a task after the first Bluetooth start (`ble`). `blehid` has no task: the host task runs the events of the computer link. `sound` has its own task. The mouse mover and its schedule run in the `esp_timer` task. `ntp` has its own task; the Wi-Fi setup mode holds it while the mode runs. `vault`, `rng`, `hid`, `blehid`, `mover`, `ntp`, and the serial port in `usbdev` have locks.
+Threads: `ui_run` runs in the main task. `cli` has its own task. TinyUSB has its own task. In the Wi-Fi setup mode, the web server, the DNS server, and the Wi-Fi driver have their own tasks. `ui_run` starts and stops this mode. `keypad` has its own task, and the NimBLE host has a task after the first Bluetooth start (`ble`). `blehid` has no task: the host task runs the events of the computer link. `sound` has its own task. The mouse mover, its schedule, and the battery measurement run in the `esp_timer` task. `ntp` has its own task; the Wi-Fi setup mode holds it while the mode runs. `vault`, `rng`, `hid`, `blehid`, `mover`, `ntp`, and the serial port in `usbdev` have locks.
 
 ## USB
 

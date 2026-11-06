@@ -17,13 +17,20 @@
 #define PM1_RETRY_MS    1
 
 #define REG_DEVICE_ID   0x00
+#define REG_PWR_SRC     0x04    /* Power sources: bit 0 5 V input, bit 1 5 V in/out, bit 2 battery node */
 #define REG_I2C_CFG     0x09    /* 0: no I2C idle sleep */
 #define REG_WDT_CNT     0x0A    /* 0: watchdog off */
 #define REG_GPIO_MODE   0x10    /* 1: output */
 #define REG_GPIO_OUT    0x11
+#define REG_GPIO_IN     0x12
 #define REG_GPIO_DRV    0x13    /* 0: push-pull */
 #define REG_GPIO_FUNC0  0x16    /* 0: GPIO function */
+#define REG_VBAT_L      0x22    /* Battery voltage in mV, 2 bytes, low byte first */
+#define REG_VIN_L       0x24    /* 5 V input voltage in mV, 2 bytes, low byte first */
 
+#define PWR_SRC_VIN     (1 << 0)    /* The 5 V input has power. */
+
+#define PIN_CHG_STAT    (1 << 0)    /* PM1 G0: status of the charger, low = charging */
 #define PIN_LCD_POWER   (1 << 2)    /* PM1 G2: LCD power (L3B enable) */
 #define PIN_SPEAKER     (1 << 3)    /* PM1 G3: speaker amplifier enable */
 
@@ -33,12 +40,12 @@ static i2c_master_dev_handle_t s_dev;
 
 /* One access can fail with no answer from the chip. Try again: the I2C
  * driver resets its state machine after an error. */
-static esp_err_t pm1_read(uint8_t reg, uint8_t *val)
+static esp_err_t pm1_read_buf(uint8_t reg, uint8_t *buf, size_t len)
 {
     esp_err_t err = ESP_FAIL;
 
     for (int i = 0; i < PM1_TRIES; i++) {
-        err = i2c_master_transmit_receive(s_dev, &reg, 1, val, 1, PM1_TIMEOUT_MS);
+        err = i2c_master_transmit_receive(s_dev, &reg, 1, buf, len, PM1_TIMEOUT_MS);
         if (err == ESP_OK) {
             if (i > 0) {
                 ESP_LOGW(TAG, "read 0x%02x: ok at try %d", reg, i + 1);
@@ -48,6 +55,21 @@ static esp_err_t pm1_read(uint8_t reg, uint8_t *val)
         vTaskDelay(pdMS_TO_TICKS(PM1_RETRY_MS));
     }
     return err;
+}
+
+static esp_err_t pm1_read(uint8_t reg, uint8_t *val)
+{
+    return pm1_read_buf(reg, val, 1);
+}
+
+/* A voltage register pair in mV. */
+static esp_err_t pm1_read_mv(uint8_t reg, int *mv)
+{
+    uint8_t buf[2];
+
+    ESP_RETURN_ON_ERROR(pm1_read_buf(reg, buf, sizeof(buf)), TAG, "read 0x%02x", reg);
+    *mv = buf[0] | (buf[1] << 8);
+    return ESP_OK;
 }
 
 static esp_err_t pm1_write(uint8_t reg, uint8_t val)
@@ -85,6 +107,13 @@ static esp_err_t pm1_output(uint8_t pin, bool level)
     return pm1_update(REG_GPIO_OUT, pin, level ? pin : 0);
 }
 
+/* Make a PM1 pin an input. */
+static esp_err_t pm1_input(uint8_t pin)
+{
+    ESP_RETURN_ON_ERROR(pm1_update(REG_GPIO_FUNC0, pin, 0), TAG, "func");
+    return pm1_update(REG_GPIO_MODE, pin, 0);
+}
+
 esp_err_t pm1_init(void)
 {
     i2c_master_bus_config_t bus_cfg = {
@@ -120,6 +149,7 @@ esp_err_t pm1_init(void)
     ESP_RETURN_ON_ERROR(pm1_write(REG_WDT_CNT, 0x00), TAG, "wdt");
     ESP_RETURN_ON_ERROR(pm1_output(PIN_SPEAKER, false), TAG, "speaker");
     ESP_RETURN_ON_ERROR(pm1_output(PIN_LCD_POWER, true), TAG, "lcd power");
+    ESP_RETURN_ON_ERROR(pm1_input(PIN_CHG_STAT), TAG, "charger status");
     /* Let the LCD supply become stable before the LCD reset. */
     vTaskDelay(pdMS_TO_TICKS(100));
     ESP_LOGI(TAG, "id 0x%02x, LCD power on", id);
@@ -134,4 +164,25 @@ i2c_master_bus_handle_t pm1_bus(void)
 esp_err_t pm1_speaker(bool on)
 {
     return pm1_update(REG_GPIO_OUT, PIN_SPEAKER, on ? PIN_SPEAKER : 0);
+}
+
+esp_err_t pm1_battery_mv(int *mv)
+{
+    return pm1_read_mv(REG_VBAT_L, mv);
+}
+
+esp_err_t pm1_vin_mv(int *mv)
+{
+    return pm1_read_mv(REG_VIN_L, mv);
+}
+
+esp_err_t pm1_power(bool *usb, bool *charging)
+{
+    uint8_t src, in;
+
+    ESP_RETURN_ON_ERROR(pm1_read(REG_PWR_SRC, &src), TAG, "power source");
+    ESP_RETURN_ON_ERROR(pm1_read(REG_GPIO_IN, &in), TAG, "input");
+    *usb = src & PWR_SRC_VIN;
+    *charging = !(in & PIN_CHG_STAT);
+    return ESP_OK;
 }

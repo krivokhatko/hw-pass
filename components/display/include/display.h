@@ -32,7 +32,9 @@ esp_err_t display_init(void);
 /* Turn the picture 180 degrees. The change shows at the next flush. */
 void display_set_flip(bool flip);
 
-/* Set the backlight. 0 is off, 255 is full. */
+/* Set the backlight. 0 is off, 255 is full. At 0, the panel also sleeps:
+ * it keeps the picture, and drawing works. A level above 0 wakes it, in
+ * about 10 ms. Call from one task only. */
 void display_backlight(uint8_t level);
 
 /* Read the panel power mode (RDDPM) at start-up. 0x9C: on and awake. */

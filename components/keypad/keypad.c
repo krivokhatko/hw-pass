@@ -103,14 +103,17 @@ typedef struct {
 
 static const char *TAG = "keypad";
 
-/* Fast scan for the keypad, 30 % of the time. A keypad sends
- * advertisements after a key wakes it. Short connection interval: fast
- * keys. The keypad can ask for a longer one. */
+/* Scan for the keypad 10 % of the time: the receiver is a large part of
+ * the battery use while the keypad sleeps. A keypad sends advertisements
+ * for some seconds after a key wakes it: the scan sees one of them in
+ * about a second. Connection interval 30 ms: a key comes in this time,
+ * and the radio is on 4 times less than at 7.5 ms. The keypad can ask
+ * for its own parameters. */
 static const struct ble_gap_conn_params s_conn_params = {
-    .scan_itvl = 160,               /* 100 ms */
+    .scan_itvl = 480,               /* 300 ms */
     .scan_window = 48,              /* 30 ms */
-    .itvl_min = 6,                  /* 7.5 ms */
-    .itvl_max = 12,                 /* 15 ms */
+    .itvl_min = 24,                 /* 30 ms */
+    .itvl_max = 24,
     .supervision_timeout = 400,     /* 4 s */
 };
 

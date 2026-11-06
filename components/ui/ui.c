@@ -27,6 +27,7 @@
 #include "esp_log.h"
 #include "nvs.h"
 #include "qrcode.h"
+#include "battery.h"
 #include "blehid.h"
 #include "buttons.h"
 #include "clock.h"
@@ -43,7 +44,8 @@
 #include "ui.h"
 
 #define BRIGHTNESS      160
-#define IDLE_OFF_MS     60000   /* Backlight off after this idle time. */
+#define IDLE_OFF_MS     60000   /* Screen dark after this idle time, on USB power */
+#define IDLE_OFF_BAT_MS 20000   /* On battery: the backlight is the largest user. */
 #define DONE_MS         600
 #define ERROR_MS        1500
 #define INFO_MS         1500    /* Message after a pairing or a key change */
@@ -1249,7 +1251,7 @@ void ui_run(void)
             display_backlight(BRIGHTNESS);
         }
         idle_ms += BUTTONS_POLL_MS;
-        if (screen_on && idle_ms >= IDLE_OFF_MS) {
+        if (screen_on && idle_ms >= (battery_usb() ? IDLE_OFF_MS : IDLE_OFF_BAT_MS)) {
             screen_on = false;
             display_backlight(0);
         }

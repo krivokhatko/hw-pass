@@ -14,7 +14,7 @@ Push the two buttons at the same time. If you hold the front button alone for 0.
 
 On the PIN screen, the side button moves the cursor and the front button picks an item. See "PIN".
 
-The screen goes dark after 60 s without activity. The first push turns it on again and does nothing else.
+The screen goes dark after 60 s without activity, or after 20 s on battery. The first push turns it on again and does nothing else.
 
 The power button on the other side belongs to the power chip:
 
@@ -277,7 +277,7 @@ The device is also a Bluetooth LE keyboard and mouse. A laptop without a USB cab
 
 1. Hold the two buttons for 8 s, then release them. After 5 s, the footer shows "Release: keypad. Hold: PC". After 8 s, it shows "Release: pair computer". Or type `wireless pair` on the serial port.
 2. The screen shows "Waiting". On the computer, open the Bluetooth settings, add a device, and select "hw-pass".
-3. The screen shows a passkey of 6 digits. Type the digits on the computer, then push Enter.
+3. The screen shows a passkey of 6 digits (`wireless` on the serial port shows it too). Type the digits on the computer, then push Enter.
 4. The screen shows "Computer paired" and the name of the computer.
 
 If no computer pairs in 60 s, the screen shows "No computer". A button push stops the pairing. If the pairing does not complete, the old computer stays paired. A new computer replaces the old computer: also remove "hw-pass" on the old computer.
@@ -295,6 +295,8 @@ The computer sets the speed of the link. A password of 20 characters takes about
 ### Battery level
 
 The computer shows the battery level of the device (Bluetooth Battery service), and it gets each change. The level comes from the battery voltage, and it moves in steps of 2 %. On USB power, the charger sets the voltage: the level is high while the battery charges. `info` shows the level, the voltage, USB power, and the charge state.
+
+On battery, the screen goes dark after 20 s. The device also asks the computer for a link with a long latency: the radio sleeps between the keys. Some computers connect with a shorter latency.
 
 ### Remove the computer
 
@@ -443,7 +445,7 @@ The baud rate has no effect. Push Enter to get the prompt.
 | `kbtest` | Type all printable ASCII characters. Checks the key layout of the host. |
 | `web` | Start the Wi-Fi setup mode and show the network name and the Wi-Fi password. If the mode is on, stop it. |
 | `unpair` | Remove the Bluetooth keypad. The entries keep their keys. |
-| `wireless [pair\|forget]` | Show the Bluetooth computer, pair one (the screen shows the passkey), or remove it. See "Bluetooth computer". |
+| `wireless [pair\|forget]` | Show the Bluetooth computer, pair one (the screen and `wireless` show the passkey), or remove it. See "Bluetooth computer". |
 | `mouse` | Turn the mouse mover on or off. The device keeps the setting. See "Mouse mover". |
 | `auto [on\|off HH:MM days]` | Turn the schedule of the mouse mover on or off, or set its times and days. See "Schedule". |
 | `time [YYYY-MM-DD HH:MM]` | Show or set the time. See "Time". |

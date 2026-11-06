@@ -28,9 +28,12 @@
 
 #define BL_HZ           256         /* Same as M5GFX for this board. */
 #define BL_MIN          16          /* Lowest duty that gives light. */
+#define WAKE_MS         10          /* Wait after sleep out */
 
+#define CMD_SLPIN       0x10
 #define CMD_SLPOUT      0x11
 #define CMD_INVON       0x21
+#define CMD_DISPOFF     0x28
 #define CMD_DISPON      0x29
 #define CMD_CASET       0x2A
 #define CMD_RASET       0x2B
@@ -186,12 +189,41 @@ void display_set_flip(bool flip)
     }
 }
 
+/* The panel sleeps while the backlight is off: its oscillator, charge
+ * pumps, and scanning stop. The RAM keeps the picture, and writes to it
+ * work. Sleep out needs WAKE_MS before the next command (datasheet: 5 ms).
+ * The panel needs 120 ms between a sleep out and the next sleep in: the
+ * idle time before a dark screen is much longer. */
+static bool s_asleep;
+
+static void panel_sleep(bool sleep)
+{
+    if (!s_ready || sleep == s_asleep) {
+        return;
+    }
+    s_asleep = sleep;
+    if (sleep) {
+        esp_lcd_panel_io_tx_param(s_io, CMD_DISPOFF, NULL, 0);
+        esp_lcd_panel_io_tx_param(s_io, CMD_SLPIN, NULL, 0);
+    } else {
+        esp_lcd_panel_io_tx_param(s_io, CMD_SLPOUT, NULL, 0);
+        vTaskDelay(pdMS_TO_TICKS(WAKE_MS));
+        esp_lcd_panel_io_tx_param(s_io, CMD_DISPON, NULL, 0);
+    }
+}
+
 void display_backlight(uint8_t level)
 {
     uint32_t duty = level ? BL_MIN + (255 - BL_MIN) * level / 255 : 0;
 
+    if (level) {
+        panel_sleep(false);
+    }
     ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, duty);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+    if (!level) {
+        panel_sleep(true);
+    }
 }
 
 uint8_t display_power_mode(void)

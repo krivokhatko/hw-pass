@@ -1,5 +1,6 @@
 /* Application entry point. Start the modules, then run the user interface. */
 #include "esp_log.h"
+#include "esp_pm.h"
 #include "nvs_flash.h"
 #include "battery.h"
 #include "ble.h"
@@ -33,9 +34,17 @@ static void check(esp_err_t err, const char *what)
 
 void app_main(void)
 {
+    /* Battery: 80 MHz while all tasks wait. The APB clock stays at 80 MHz
+     * at both frequencies: the peripherals see no change. */
+    const esp_pm_config_t pm = {
+        .max_freq_mhz = CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ,
+        .min_freq_mhz = 80,
+        .light_sleep_enable = false,
+    };
     esp_err_t err;
 
     sysinfo_log();
+    check(esp_pm_configure(&pm), "pm");
 
     err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {

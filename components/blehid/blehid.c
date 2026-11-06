@@ -75,6 +75,10 @@
 #define ENCRYPT_MS          10000   /* A link without encryption ends after this time. */
 #define SEND_WAIT_MS        200     /* Time for a free buffer of a key report */
 #define HOST_VERSION        1
+#define LINK_ITVL_MIN       12      /* 15 ms: connection interval that the device asks for */
+#define LINK_ITVL_MAX       24      /* 30 ms */
+#define LINK_LATENCY        30      /* Events the device can miss: wakes about once a second */
+#define LINK_TIMEOUT        600     /* 6 s: more than 2 x (LINK_LATENCY + 1) x LINK_ITVL_MAX */
 
 #define ID(x)               ((void *)(intptr_t)(x))
 
@@ -187,6 +191,7 @@ static uint16_t s_battery_handle;
 
 static int gatt_access(uint16_t conn, uint16_t attr, struct ble_gatt_access_ctxt *ctxt, void *arg);
 static int gap_event(struct ble_gap_event *event, void *arg);
+static void request_params(uint16_t conn);
 
 /* HID service, Battery service, and Device Information service. The HID
  * attributes need an encrypted link. */
@@ -545,6 +550,7 @@ static void on_encrypted(uint16_t conn, int status)
         s_ready = true;
         end_pairing(BLEHID_PAIR_DONE, NULL);
         ESP_LOGI(TAG, "paired: %s, key size %u", h.name, desc.sec_state.key_size);
+        request_params(conn);
         ble_gattc_read_by_uuid(conn, 1, 0xFFFF, BLE_UUID16_DECLARE(UUID_DEVICE_NAME), on_name, NULL);
         return;
     }
@@ -553,6 +559,7 @@ static void on_encrypted(uint16_t conn, int status)
         esp_timer_stop(s_timer);
         s_ready = true;
         ESP_LOGI(TAG, "connected: %s", old.name);
+        request_params(conn);
         return;
     }
     ESP_LOGW(TAG, "unknown link (status %d): ends", status);
@@ -605,6 +612,12 @@ static int gap_event(struct ble_gap_event *event, void *arg)
             ble_store_util_delete_peer(&desc.peer_id_addr);
         }
         return BLE_GAP_REPEAT_PAIRING_RETRY;
+    case BLE_GAP_EVENT_CONN_UPDATE:
+        if (event->conn_update.status == 0 && ble_gap_conn_find(event->conn_update.conn_handle, &desc) == 0) {
+            ESP_LOGI(TAG, "link: interval %u ms, latency %u", (unsigned)(desc.conn_itvl * 5 / 4),
+                     (unsigned)desc.conn_latency);
+        }
+        return 0;
     case BLE_GAP_EVENT_SUBSCRIBE:
         if (event->subscribe.attr_handle == s_keys_handle) {
             s_notify = event->subscribe.cur_notify;
@@ -753,6 +766,25 @@ static void on_battery(int level)
 {
     if (s_conn != BLE_HS_CONN_HANDLE_NONE && s_ready) {
         ble_gatts_chr_updated(s_battery_handle);
+    }
+}
+
+/* Battery: ask the computer for a link with a latency. The device can
+ * then miss LINK_LATENCY connection events when it has nothing to send,
+ * and the radio wakes about once a second instead of each interval. A
+ * report still goes at the next event. The computer can refuse. */
+static void request_params(uint16_t conn)
+{
+    const struct ble_gap_upd_params params = {
+        .itvl_min = LINK_ITVL_MIN,
+        .itvl_max = LINK_ITVL_MAX,
+        .latency = LINK_LATENCY,
+        .supervision_timeout = LINK_TIMEOUT,
+    };
+    int rc = ble_gap_update_params(conn, &params);
+
+    if (rc != 0) {
+        ESP_LOGW(TAG, "link parameters: %d", rc);
     }
 }
 

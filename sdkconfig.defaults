@@ -8,6 +8,10 @@ CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
 CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
 # 1 ms tick for key timing and button sampling.
 CONFIG_FREERTOS_HZ=1000
+# Battery: the CPU runs at 80 MHz while all tasks wait, and at the default
+# frequency while a task runs (esp_pm_configure in main.c). No light
+# sleep: USB and the backlight PWM need the clocks.
+CONFIG_PM_ENABLE=y
 CONFIG_ESP_MAIN_TASK_STACK_SIZE=6144
 # The schedule of the mouse mover runs in the esp_timer task and saves
 # the state to NVS there.

@@ -549,6 +549,7 @@ static void cmd_wireless(char *arg)
 {
     char name[BLEHID_NAME_MAX + 1], question[64];
     blehid_state_t state = blehid_state();
+    blehid_pair_t pair;
     size_t len = strlen(arg);
     esp_err_t err;
 
@@ -580,12 +581,21 @@ static void cmd_wireless(char *arg)
         }
     } else if (len > 0) {
         out("Use \"wireless\", \"wireless pair\", or \"wireless forget\".\n");
-    } else if (state == BLEHID_NONE) {
-        out("No computer is paired. Use \"wireless pair\", or hold the two buttons for 8 s.\n");
-    } else if (state == BLEHID_WAITING) {
-        out("Computer %s: not connected. The device waits for it.\n", name);
     } else {
-        out("Computer %s: connected%s.\n", name, hid_link() == HID_LINK_BLE ? ", it gets the keys" : "");
+        /* A pairing runs: the screen shows the same. */
+        blehid_pair_status(&pair);
+        if (pair.step == BLEHID_PAIR_WAITING) {
+            out("Pairing: the device waits for the computer.\n");
+        } else if (pair.step == BLEHID_PAIR_PASSKEY) {
+            out("Pairing: passkey %06lu. Type it on the computer.\n", (unsigned long)pair.passkey);
+        }
+        if (state == BLEHID_NONE) {
+            out("No computer is paired. Use \"wireless pair\", or hold the two buttons for 8 s.\n");
+        } else if (state == BLEHID_WAITING) {
+            out("Computer %s: not connected. The device waits for it.\n", name);
+        } else {
+            out("Computer %s: connected%s.\n", name, hid_link() == HID_LINK_BLE ? ", it gets the keys" : "");
+        }
     }
 }
 

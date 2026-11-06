@@ -41,7 +41,7 @@ tools/                Host scripts.
 |---|---|
 | `pm1` | M5PM1 power chip: watchdog off, LCD power on, speaker amplifier on and off, battery voltage, USB power and charge state. It owns the internal I2C bus. |
 | `battery` | Battery of the device: the voltage from `pm1` every 20 s, and the level in % from a discharge curve. `blehid` reports the level to the computer; `info` shows it. |
-| `display` | ST7789 LCD, backlight, frame buffer, and text. |
+| `display` | ST7789 LCD, backlight, panel sleep while the screen is dark, frame buffer, and text. |
 | `sound` | ES8311 audio codec on I2S, and the AW8737 speaker amplifier: short tones and the typing melody for `ui`. |
 | `clock` | Time in the system clock (UTC) and the time zone: kept across a restart, lost at a power loss. The board has no clock chip. |
 | `imu` | BMI270 accelerometer on the internal I2C bus: which edge of the screen is up. The chip loads its 8 KB configuration file at each start (`bmi270_config.c`, from the Bosch BMI270 Sensor API, BSD-3-Clause). |
@@ -109,6 +109,19 @@ To change the configuration:
 Project options are in the "hw-pass" menu of `idf.py menuconfig` (`main/Kconfig.projbuild`). For a build without the web page, add `CONFIG_HWPASS_WEB=n` to `sdkconfig.defaults`. For a build without the time sync, add `CONFIG_HWPASS_NTP=n`. With both, the build has no Wi-Fi code. For a build without Bluetooth, add `CONFIG_BT_ENABLED=n`: then the device cannot pair a keypad or a computer.
 
 Wi-Fi and Bluetooth can run at the same time. Both need much internal RAM: the Wi-Fi and NimBLE options in `sdkconfig.defaults` make the buffers small. With both on, about 90 KB of heap stays free.
+
+## Battery use
+
+The device has no current measurement. These measures keep the use low on battery:
+
+- CPU: `CONFIG_PM_ENABLE` and `esp_pm_configure` in `main.c`. The CPU runs at 80 MHz while all tasks wait, and at 160 MHz while a task runs. The APB clock stays at 80 MHz: the peripherals see no change. No light sleep: USB, the backlight PWM, and the Bluetooth controller would need more work.
+- Screen: the backlight is the largest user. The screen goes dark after 60 s on USB power, after 20 s on battery (`ui`). While it is dark, the panel sleeps (`display_backlight(0)`).
+- Keypad link (`keypad`): the device scans for the sleeping keypad 10 % of the time (30 ms in 300 ms), and uses a connection interval of 30 ms.
+- Computer link (`blehid`): after the encryption, the device asks for a connection interval of 15 to 30 ms with a latency of 30 events. The computer can refuse. Key reports go at the next event in both cases.
+- Advertising for the paired computer: 100 to 150 ms. A slower rate would save little and make the connection of the computer slow.
+- Tilt sensor: low-power mode, 25 Hz, read every 100 ms (`imu`). Sound: the amplifier and the I2S clocks are off 1 s after a sound (`sound`). Wi-Fi: on only in the setup mode (5 min idle limit) and during a time sync.
+
+Not done: light sleep between Bluetooth events (the largest possible gain), standby of the audio codec between sounds (adds 50 ms and a click risk), and USB off without USB power (TinyUSB restart).
 
 ## Add a module
 

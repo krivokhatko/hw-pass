@@ -2,9 +2,48 @@
 
 Hardware password typer. Firmware for the M5Stack StickS3 (ESP32-S3).
 
-The device is a USB keyboard. The side button selects a stored entry. The front button types its password. The device is also a Bluetooth LE keyboard and mouse for a laptop without a cable: a paired computer gets the keys while it is connected. A paired Bluetooth LE keypad can also type: each key types one entry, and Enter and Backspace go to the computer. On the keypad, `-` and `+` select an entry, and `*` turns the mouse mover on or off. Two ways add and change entries: a command line on a USB serial port, and a web page in the Wi-Fi setup mode. A PIN encrypts the entries and locks the device until the user enters it, with the buttons or the keypad. Before it types, the device can push a key that selects the key layout of the host. The device is also a USB mouse: the mouse mover keeps the computer awake, by hand or on a schedule. The device gets the time from an NTP server over Wi-Fi, or you set it. A short sound on the speaker tells the result of each action. The screen turns with the device: a tilt sensor tells which edge is up.
+The device is a USB keyboard that types stored passwords. The side button selects an entry. The front button types its password into the focused window.
 
-For the buttons, the commands, and the security limits, refer to [docs/usage.md](docs/usage.md).
+- Bluetooth LE keyboard and mouse: a paired laptop gets the keys without a cable. The laptop also sees the battery level of the device.
+- Bluetooth LE keypad: each key types one entry. Enter and Backspace go to the computer. `-` and `+` select an entry, `*` turns the mouse mover on or off.
+- Entries: a command line on the USB serial port, or a web page in the Wi-Fi setup mode. Encrypted backup and import.
+- PIN: the entries are encrypted in flash, and the device types nothing until you enter the PIN with the buttons or the keypad.
+- Layout key: before it types, the device can push a key that selects the key layout of the host.
+- Mouse mover: the device is also a USB mouse that keeps the computer awake, by hand or on a schedule. The time comes from an NTP server over Wi-Fi, or you set it.
+- A short sound tells the result of each action. The screen turns with the device.
+
+| Document | Content |
+|---|---|
+| [docs/usage.md](docs/usage.md) | User guide: the buttons, the screen, each function, the commands, and the security limits. |
+| [docs/dev-setup.md](docs/dev-setup.md) | Toolchain, serial port access, the first flash of a new device, and the USB link from WSL2. |
+| [docs/contributing.md](docs/contributing.md) | Code and text style, the hardware map, how to test a change, and the commit message format. |
+
+## Hardware
+
+| Item | Note |
+|---|---|
+| M5Stack StickS3 | ESP32-S3-PICO-1 with 8 MB flash, a 240 × 135 LCD, two buttons, a speaker, a tilt sensor, a battery, and USB-C. No change to the hardware. |
+| USB-C cable | A data cable, not a charge-only cable. |
+| Bluetooth LE keypad (optional) | Tested: A4Tech FBK21C. Other keyboards with HID over GATT are not tested. |
+| Computer with Bluetooth LE (optional) | For the wireless mode. Tested with Linux (BlueZ). |
+
+## Quick start
+
+1. Install the toolchain and give yourself access to the serial port: [docs/dev-setup.md](docs/dev-setup.md).
+2. Build:
+   ```
+   get_idf
+   idf.py build
+   ```
+3. Flash. A new device comes with UIFlow2: hold the power button until the computer sees the download mode, then run `idf.py -p /dev/ttyACM0 erase-flash` and `idf.py -p /dev/ttyACM0 flash`. A device with hw-pass: `tools/flash.sh`.
+4. Open the command line with `picocom /dev/ttyACM0` and push Enter. Add an entry:
+   ```
+   add GitHub
+   ```
+   The device asks for the password two times.
+5. Put the focus on a text editor and push the front button. The device types the password.
+
+Then set a PIN (`pin`), add entries on the web page, pair a keypad, or pair a laptop. The user guide tells how: [docs/usage.md](docs/usage.md).
 
 ## Target
 
@@ -13,15 +52,15 @@ For the buttons, the commands, and the security limits, refer to [docs/usage.md]
 | Board | M5Stack StickS3 |
 | SoC | ESP32-S3-PICO-1, revision v0.2 |
 | Flash | 8 MB, quad |
-| PSRAM | 8 MB, not enabled yet |
+| PSRAM | 8 MB, not enabled |
 | Console | USB Serial/JTAG. UART0 is not connected to USB. |
 
 ## Toolchain
 
-- ESP-IDF v5.5.5, installed in `~/esp/esp-idf`.
-- Do not use ESP-IDF v6.x yet. M5GFX has open display bugs on v6.x.
+- ESP-IDF v5.5.5, installed in `~/esp/esp-idf`. The project is tested with this version only.
+- Python and the tools of ESP-IDF. No other tools.
 
-For the WSL setup, refer to [docs/dev-setup.md](docs/dev-setup.md).
+For the setup, refer to [docs/dev-setup.md](docs/dev-setup.md).
 
 ## Layout
 
@@ -32,7 +71,7 @@ partitions.csv        Flash partition table for 8 MB flash.
 main/                 Application entry point (app_main) and the project options (Kconfig.projbuild). Keep it small.
 components/           Project modules. One directory for each module.
 docs/                 User and developer documentation.
-tools/                Host scripts.
+tools/                Host scripts: flash.sh flashes the device, psf2c.py makes the font file.
 ```
 
 ## Modules
@@ -62,7 +101,11 @@ tools/                Host scripts.
 | `ui` | Screen content and button actions. The PIN screen, and the lock when the USB connection stops. |
 | `sysinfo` | Chip information in the log. |
 
+`main.c` starts the modules in this order: power chip, battery, display, sound, tilt sensor, vault, random numbers, clock, USB, Bluetooth host, Bluetooth computer link, keyboard output, mouse mover, keypad, time sync, command line. Then it runs the UI. A module that fails to start logs an error, and the device goes on: the serial port must stay available for the next flash.
+
 Threads: `ui_run` runs in the main task. `cli` has its own task. TinyUSB has its own task. In the Wi-Fi setup mode, the web server, the DNS server, and the Wi-Fi driver have their own tasks. `ui_run` starts and stops this mode. `keypad` has its own task, and the NimBLE host has a task after the first Bluetooth start (`ble`). `blehid` has no task: the host task runs the events of the computer link. `sound` has its own task. The mouse mover, its schedule, and the battery measurement run in the `esp_timer` task. `ntp` has its own task; the Wi-Fi setup mode holds it while the mode runs. `vault`, `rng`, `hid`, `blehid`, `mover`, `ntp`, and the serial port in `usbdev` have locks.
+
+Flash layout (`partitions.csv`): two 3 MB application slots for a later OTA update, the `nvs` partition for the settings and the bonding keys, and the `vault` partition for the entries. `wipe` erases the `vault` partition only.
 
 ## USB
 
@@ -74,7 +117,7 @@ The ROM and the first part of the start-up use the built-in USB Serial/JTAG (`30
 | 1, 2 | CDC-ACM serial port | `0x82`, `0x83` |
 | 3 | HID boot mouse | `0x84` |
 
-The ESP32-S3 has 5 IN endpoints, EP0 included. All are in use: a new USB function needs a free IN endpoint. Add a new interface after the last one: then Windows keeps the COM port number. When the descriptors change, change `USB_BCD`.
+The ESP32-S3 has 5 IN endpoints, EP0 included. All are in use: a new USB function needs a free IN endpoint. Add a new interface after the last one: then Windows keeps the COM port number. When the descriptors change, change `USBDEV_VERSION`.
 
 `idf.py flash` cannot reset the chip through the TinyUSB serial port. Use the `dfu` command or `tools/flash.sh`.
 
@@ -95,6 +138,8 @@ If the firmware does not start the serial port, push and hold the power button. 
 To open the command line: `picocom /dev/ttyACM0`. `idf.py monitor` also works, but it cannot show the start-up log.
 
 Flashing does not erase the `vault` partition. `idf.py erase-flash` erases it.
+
+The "Firmware" line of `info` shows the commit of the build (`git describe`), with `-dirty` when the tree had changes.
 
 ## Configuration
 
@@ -123,20 +168,21 @@ The device has no current measurement. These measures keep the use low on batter
 
 Not done: light sleep between Bluetooth events (the largest possible gain), standby of the audio codec between sounds (adds 50 ms and a click risk), and USB off without USB power (TinyUSB restart).
 
-## Add a module
+## Contributing
 
-1. Make the directory `components/<name>/`.
-2. Put the public headers in `components/<name>/include/`.
-3. Register the module with `idf_component_register` in `components/<name>/CMakeLists.txt`.
-4. Add `<name>` to `PRIV_REQUIRES` of each component that uses it.
+Changes are welcome. [docs/contributing.md](docs/contributing.md) has the rules: one module for one function, plain English in comments and documents, the documents change with the code, a commit message with one bullet for each module, and a test by hand on the device. The same document tells how to add a module, an external component, or a configuration option.
 
-The build includes only the components that `main` needs. A module that no component requires is not built.
+Before you store important passwords, read "Security" in [docs/usage.md](docs/usage.md): flash encryption is off, and the PIN protects the entries only within the limits that this section gives.
 
-For an example, refer to `components/sysinfo/`.
+## Third-party code
 
-## External components
+| Code | Use | License |
+|---|---|---|
+| [ESP-IDF](https://github.com/espressif/esp-idf) v5.5.5 | Framework, drivers, NimBLE, mbedTLS, Wi-Fi | Apache-2.0 |
+| [esp_tinyusb](https://components.espressif.com/components/espressif/esp_tinyusb) | USB device stack glue | Apache-2.0 |
+| [TinyUSB](https://github.com/hathach/tinyusb) | USB device stack | MIT |
+| [espressif/qrcode](https://components.espressif.com/components/espressif/qrcode) | QR code on the screen. Contains qrcodegen by Project Nayuki (MIT). | Apache-2.0 |
+| [Terminus Font](https://terminus-font.sourceforge.net/) | `components/display/font.c` | SIL Open Font License 1.1, `components/display/OFL.txt` |
+| Bosch BMI270 Sensor API | `components/imu/bmi270_config.c`, the configuration file of the sensor | BSD-3-Clause |
 
-1. Add the component to the module that uses it: `idf.py add-dependency --component <module> "<namespace>/<name>^<version>"`.
-2. Commit `components/<module>/idf_component.yml` and `dependencies.lock`.
-
-Git ignores `managed_components/`.
+`idf.py build` downloads the Espressif components into `managed_components/`.

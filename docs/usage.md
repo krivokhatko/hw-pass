@@ -41,6 +41,12 @@ The footer shows the time when it is set. "--:--" means: the schedule of the mou
 
 With a PIN, the screen shows "Enter the PIN" and a row of digits until you enter the PIN. See "PIN".
 
+### Orientation
+
+The screen turns with the device. Hold the device with a long edge up: the text is upright, with the header at the top. Hold it with an end up: the text reads from the top to the bottom. The screen turns 0.5 s after the device.
+
+When the device lies flat, the tilt sensor cannot tell which edge is up. Then the screen keeps its orientation, and `rotate` on the serial port turns it. A turn with `rotate` holds until you turn the device. The device keeps the orientation across a restart.
+
 ## Sounds
 
 The device makes a short sound after each action, and plays a melody while it types. Thus you do not have to look at the screen, for example when you type with the keypad.
@@ -411,8 +417,8 @@ The baud rate has no effect. Push Enter to get the prompt.
 | `wifi [<name>\|off]` | Show, set, or remove the Wi-Fi network of the time sync. Asks for the password. See "Time". |
 | `ntp [on\|off\|server x]` | Sync the time now, turn the automatic sync on or off, or set the NTP server. See "Time". |
 | `sound` | Turn the sounds on or off. The device keeps the setting. See "Sounds". |
-| `rotate` | Turn the screen 180 degrees. The device keeps the setting. |
-| `info` | Show the firmware version and the device state, also the PIN state, the layout key, the keypad, its battery level, the mouse mover, its schedule, the time, the time zone, the time sync, and the sounds. |
+| `rotate` | Turn the screen 180 degrees, for a device that lies flat. The turn holds until you turn the device. See "Orientation". |
+| `info` | Show the firmware version and the device state, also the PIN state, the layout key, the keypad, its battery level, the mouse mover, its schedule, the time, the time zone, the time sync, the sounds, and the tilt. |
 | `dfu` | Restart into ROM download mode for flashing. |
 
 Limits:

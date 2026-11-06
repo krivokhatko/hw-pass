@@ -8,7 +8,11 @@
  * With a PIN, the device starts locked and locks again when the USB
  * connection stops. The PIN screen shows a row of digits: the side
  * button moves, the front button picks. The keypad digits, Enter, and
- * Backspace also work. Nothing else works while locked. */
+ * Backspace also work. Nothing else works while locked.
+ *
+ * The screen turns with the device: the tilt sensor tells which edge is
+ * up. When the device lies flat, the screen keeps its orientation, and
+ * the "rotate" command turns it. */
 #include <ctype.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -23,6 +27,7 @@
 #include "buttons.h"
 #include "clock.h"
 #include "display.h"
+#include "imu.h"
 #include "keypad.h"
 #include "mover.h"
 #include "ntp.h"
@@ -43,6 +48,8 @@
 #define HINT_MS         300     /* Keypad hold time before the progress bar shows */
 #define HOLD_STEP_MS    100     /* Redraw interval of the hold progress bar */
 #define BATTERY_LOW     20      /* Keypad battery level in %: red at this level and below */
+#define TILT_MS         100     /* Read interval of the tilt sensor */
+#define TILT_STABLE     5       /* Reads in a row with the same result before the screen turns: 0.5 s */
 
 /* Keypad keys that go to the USB host: HID usage IDs */
 #define KEY_ENTER       0x28
@@ -93,6 +100,10 @@ static volatile bool s_dfu_request;
 static volatile bool s_web_start;
 static volatile bool s_web_stop;
 static bool s_flip;
+static imu_up_t s_up;           /* The stable result of the tilt sensor */
+static imu_up_t s_up_new;       /* The last result, and how many reads in a row gave it */
+static int s_up_count;
+static uint32_t s_up_ms;        /* Time of the last read */
 static int s_sel;
 static uint32_t s_hold_ms;      /* Both buttons are down: progress bar */
 static uint8_t s_kp_key;        /* The keypad key that is down, or 0 */
@@ -168,12 +179,50 @@ static int clock_minute(void)
     return clock_get(&t) ? t.tm_hour * 60 + t.tm_min : -1;
 }
 
-static void flip(void)
+static void set_flip(bool flip)
 {
-    s_flip_request = false;
-    s_flip = !s_flip;
-    save_setting("flip", s_flip);
+    if (flip != s_flip) {
+        s_flip = flip;
+        save_setting("flip", s_flip);
+    }
     display_set_flip(s_flip);
+}
+
+/* The command line asks for a turn, or the device was turned. The tilt
+ * sensor reads each TILT_MS, and a new result must hold for TILT_STABLE
+ * reads. Only a change of the result turns the screen: a turn by the
+ * command line holds until the device is turned. When the device lies
+ * flat, the sensor gives no edge. Return true when the screen turned. */
+static bool poll_flip(void)
+{
+    uint32_t now = now_ms();
+    bool turned = false;
+    imu_up_t up;
+
+    if (s_flip_request) {
+        s_flip_request = false;
+        set_flip(!s_flip);
+        turned = true;
+    }
+    if (now - s_up_ms < TILT_MS) {
+        return turned;
+    }
+    s_up_ms = now;
+    up = imu_up();
+    if (up != s_up_new) {
+        s_up_new = up;
+        s_up_count = 1;
+    } else if (s_up_count < TILT_STABLE) {
+        s_up_count++;
+    }
+    if (s_up_count == TILT_STABLE && up != s_up) {
+        s_up = up;
+        if (up != IMU_FLAT && s_flip != (up == IMU_BOTTOM_UP)) {
+            set_flip(up == IMU_BOTTOM_UP);
+            turned = true;
+        }
+    }
+    return turned;
 }
 
 /* ---- Drawing ---- */
@@ -788,11 +837,8 @@ static void pair_mode(void)
 
         armed |= both == 0;
         keypad_pair_status(&pair);
-        if (first || s_flip_request || pair.step != shown.step || pair.passkey != shown.passkey ||
+        if (poll_flip() || first || pair.step != shown.step || pair.passkey != shown.passkey ||
             strcmp(pair.name, shown.name) != 0) {
-            if (s_flip_request) {
-                flip();
-            }
             if (pair.step == KEYPAD_PAIR_PASSKEY && shown.step != pair.step) {
                 sound_play(SOUND_STEP);     /* Type the passkey now. */
             }
@@ -847,8 +893,7 @@ static void web_mode(bool buttons)
             s_web_stop || s_dfu_request || web_left_s() == 0) {
             break;
         }
-        if (s_flip_request) {
-            flip();
+        if (poll_flip()) {
             dirty = true;
         }
         if (connected != web_connected()) {
@@ -896,6 +941,12 @@ void ui_run(void)
     buttons_init();
     s_flip = load_setting("flip") != 0;
     display_set_flip(s_flip);
+    /* The device starts the way it is held. Flat: the last orientation. */
+    s_up = s_up_new = imu_up();
+    s_up_count = 1;
+    if (s_up != IMU_FLAT) {
+        set_flip(s_up == IMU_BOTTOM_UP);
+    }
     sound_enable(load_setting("mute") == 0);
     if (locked) {
         draw_pin();
@@ -922,8 +973,7 @@ void ui_run(void)
             display_backlight(BRIGHTNESS);
             usbdev_dfu();
         }
-        if (s_flip_request) {
-            flip();
+        if (poll_flip()) {
             dirty = true;
         }
         /* Hold both buttons, then release them. The last hold time on the

@@ -4,6 +4,7 @@
 #include "cli.h"
 #include "clock.h"
 #include "display.h"
+#include "imu.h"
 #include "keypad.h"
 #include "mover.h"
 #include "ntp.h"
@@ -41,6 +42,7 @@ void app_main(void)
     check(pm1_init(), "pm1");
     check(display_init(), "display");
     check(sound_init(), "sound");
+    check(imu_init(), "imu");
     check(vault_init(), "vault");
     check(rng_init(), "rng");
     check(clock_init(), "clock");

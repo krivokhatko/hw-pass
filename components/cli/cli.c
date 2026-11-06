@@ -15,6 +15,7 @@
 #include "nvs.h"
 #include "clock.h"
 #include "display.h"
+#include "imu.h"
 #include "keypad.h"
 #include "mover.h"
 #include "ntp.h"
@@ -867,7 +868,7 @@ static void cmd_sound(char *arg)
 static void cmd_rotate(char *arg)
 {
     ui_flip();
-    out("The screen turns 180 degrees.\n");
+    out("The screen turns 180 degrees. It holds until you turn the device.\n");
 }
 
 static void cmd_info(char *arg)
@@ -878,6 +879,7 @@ static void cmd_info(char *arg)
     char name[KEYPAD_NAME_MAX + 1], battery[24] = "", next[MOVER_NEXT_TEXT], times[80], text[40];
     char tz[CLOCK_TZ_MAX + 1], ssid[NTP_SSID_MAX + 1], server[NTP_SERVER_MAX + 1], result[NTP_RESULT_TEXT];
     int level = keypad_battery();
+    float g[3];
 
     nvs_get_stats("vault", &stats);
     out("Firmware:  %s %s (ESP-IDF %s)\n", app->project_name, app->version, app->idf_ver);
@@ -957,6 +959,15 @@ static void cmd_info(char *arg)
     out("Heap:      %u bytes free, %u minimum\n", (unsigned)esp_get_free_heap_size(),
         (unsigned)esp_get_minimum_free_heap_size());
     out("LCD:       power mode 0x%02X (0x9C is correct)\n", display_power_mode());
+    if (imu_read(g) == ESP_OK) {
+        imu_up_t up = imu_up();
+
+        out("Tilt:      %s, x %+.2f y %+.2f z %+.2f g\n",
+            up == IMU_TOP_UP ? "top edge up" : up == IMU_BOTTOM_UP ? "bottom edge up" : "flat",
+            g[0], g[1], g[2]);
+    } else {
+        out("Tilt:      no sensor\n");
+    }
 }
 
 /* The Wi-Fi password is not a vault secret. It is new at each start. */
@@ -1024,7 +1035,7 @@ static const struct {
     { "wifi", "[<name>|off]", "Network of the time sync. Asks for the password.", cmd_wifi },
     { "ntp", "[on|off|server x]", "Sync the time now, or set the automatic sync.", cmd_ntp },
     { "sound", "", "Turn the sounds on or off.", cmd_sound },
-    { "rotate", "", "Turn the screen 180 degrees.", cmd_rotate },
+    { "rotate", "", "Turn the screen 180 degrees, for a device that lies flat.", cmd_rotate },
     { "info", "", "Show the device status.", cmd_info },
     { "dfu", "", "Restart into download mode for flashing.", cmd_dfu },
 };

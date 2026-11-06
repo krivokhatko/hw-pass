@@ -2,7 +2,7 @@
 
 Hardware password typer. Firmware for the M5Stack StickS3 (ESP32-S3).
 
-The device is a USB keyboard. The side button selects a stored entry. The front button types its password. A paired Bluetooth LE keypad can also type: each key types one entry, and Enter and Backspace go to the computer. On the keypad, `-` and `+` select an entry, and `*` turns the mouse mover on or off. Two ways add and change entries: a command line on a USB serial port, and a web page in the Wi-Fi setup mode. A PIN encrypts the entries and locks the device until the user enters it, with the buttons or the keypad. Before it types, the device can push a key that selects the key layout of the host. The device is also a USB mouse: the mouse mover keeps the computer awake, by hand or on a schedule. The device gets the time from an NTP server over Wi-Fi, or you set it. A short sound on the speaker tells the result of each action.
+The device is a USB keyboard. The side button selects a stored entry. The front button types its password. A paired Bluetooth LE keypad can also type: each key types one entry, and Enter and Backspace go to the computer. On the keypad, `-` and `+` select an entry, and `*` turns the mouse mover on or off. Two ways add and change entries: a command line on a USB serial port, and a web page in the Wi-Fi setup mode. A PIN encrypts the entries and locks the device until the user enters it, with the buttons or the keypad. Before it types, the device can push a key that selects the key layout of the host. The device is also a USB mouse: the mouse mover keeps the computer awake, by hand or on a schedule. The device gets the time from an NTP server over Wi-Fi, or you set it. A short sound on the speaker tells the result of each action. The screen turns with the device: a tilt sensor tells which edge is up.
 
 For the buttons, the commands, and the security limits, refer to [docs/usage.md](docs/usage.md).
 
@@ -43,6 +43,7 @@ tools/                Host scripts.
 | `display` | ST7789 LCD, backlight, frame buffer, and text. |
 | `sound` | ES8311 audio codec on I2S, and the AW8737 speaker amplifier: short tones and the typing melody for `ui`. |
 | `clock` | Time in the system clock (UTC) and the time zone: kept across a restart, lost at a power loss. The board has no clock chip. |
+| `imu` | BMI270 accelerometer on the internal I2C bus: which edge of the screen is up. The chip loads its 8 KB configuration file at each start (`bmi270_config.c`, from the Bosch BMI270 Sensor API, BSD-3-Clause). |
 | `buttons` | Front and side buttons: debounce, short and long push, push of both. |
 | `vault` | Password entries in the `vault` NVS partition. With a PIN, the entries are one AES-256-GCM blob: the key comes from PBKDF2 of the PIN, and from the eFuse HMAC key when the chip has one. The lock state, the wrong-PIN counter, and the wait times. |
 | `kdf` | PBKDF2-HMAC-SHA512 on the SHA hardware, for `vault` and `backup`. |

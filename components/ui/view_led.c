@@ -1,9 +1,16 @@
-/* The view on the two RGB key LEDs of the Chain Dual Key. The LED under
- * the side key shows the link to the computer; the LED under the front
- * key shows the selected entry by its color. Blinks and flashes show the
- * modes, the holds, and the PIN pushes. A text that the user must read
- * (a passkey, the Wi-Fi network and password, a result) goes to the
- * serial port.
+/* The view on the RGB LEDs: the two key LEDs of the Chain Dual Key, or
+ * the one LED of the StampS3A. The LED under the side key shows the link
+ * to the computer; the LED under the front key shows the selected entry
+ * by its color. Blinks and flashes show the modes, the holds, and the PIN
+ * pushes. A text that the user must read (a passkey, the Wi-Fi network
+ * and password, a result) goes to the serial port.
+ *
+ * One LED (LEDS_COUNT == 1): the LED is the side LED and the front LED
+ * at the same time. It shows the entry color while a computer gets the
+ * keys, with a blue tick every 2 s when this is the Bluetooth computer.
+ * Without entries, or without a computer, it shows the link. A hold of
+ * the button on the PIN screen: amber, release for the digit; cyan after
+ * 2 s, release for the check.
  *
  * Side LED:  green, the USB host gets the keys. Blue, the Bluetooth
  *            computer gets the keys. Blue blink, a computer is paired
@@ -32,12 +39,13 @@
 #include "view.h"
 
 #define LED_SIDE        0       /* Under the side key: select */
-#define LED_FRONT       1       /* Under the front key: type */
+#define LED_FRONT       (LEDS_COUNT - 1)    /* Under the front key: type. One LED: the same LED. */
 #define BRIGHT          64      /* Full light, of 255. The LEDs are bright. */
 #define DIM             6       /* After the idle time */
 #define BLINK_MS        1000
 #define FAST_MS         300
 #define FLASH_MS        120     /* A white tick at a push */
+#define BLE_TICK_MS     2000    /* One LED: a blue tick with this period while the Bluetooth computer gets the keys */
 
 typedef struct {
     uint8_t r, g, b;
@@ -75,6 +83,7 @@ static bool s_dim;
 static uint32_t s_flash_until;  /* A white tick on the LEDs of s_flash_mask until this time */
 static uint8_t s_flash_mask;
 static int s_pin_cur, s_pin_len;    /* The last PIN state: a change gives a tick */
+static bool s_ble_tick;             /* One LED: the blue tick is on */
 static bool s_web_printed;          /* The network is on the serial port */
 static bool s_web_connected;
 
@@ -103,6 +112,9 @@ static void set(int i, rgb_t color, uint16_t blink_ms, uint8_t level)
     s_led[i].color = color;
     s_led[i].blink_ms = blink_ms;
     s_led[i].level = level;
+    if (i == LED_FRONT) {
+        s_ble_tick = false;     /* A new state of the front LED: view_list turns the tick on again. */
+    }
 }
 
 static void set_both(rgb_t color, uint16_t blink_ms, uint8_t level)
@@ -134,6 +146,9 @@ static void render(void)
 
         if (l->blink_ms > 0 && now % l->blink_ms >= l->blink_ms / 2) {
             c = C_OFF;
+        }
+        if (s_ble_tick && i == LED_FRONT && now % BLE_TICK_MS < FLASH_MS) {
+            c = C_BLUE;
         }
         if (flashing && (s_flash_mask & (1 << i))) {
             c = C_WHITE;
@@ -210,11 +225,19 @@ void view_list(const ui_view_t *v)
     s_web_printed = false;
     s_pin_cur = s_pin_len = 0;
     set_link();
+#if LEDS_COUNT == 1
+    /* The entry color while a computer gets the keys, else the link. */
+    if (n > 0 && hid_ready()) {
+        set(LED_FRONT, s_palette[v->sel % 8], 0, 255);
+        s_ble_tick = hid_link() == HID_LINK_BLE;
+    }
+#else
     if (n > 0) {
         set(LED_FRONT, s_palette[v->sel % 8], 0, 255);
     } else {
         set(LED_FRONT, C_OFF, 0, 255);
     }
+#endif
     if (v->hold_ms > 0) {
         set_hold(v->hold_ms);
     } else if (v->kp_held >= UI_HINT_MS) {
@@ -226,12 +249,18 @@ void view_list(const ui_view_t *v)
 
 /* Locked: the front LED blinks amber, red during the wait after wrong
  * PINs. A push of the side key gives a white tick on the side LED; a
- * digit that goes in or out gives a tick on both. */
+ * digit that goes in or out gives a tick on both. One button: a hold
+ * shows steady amber, release for the digit; cyan after 2 s, release for
+ * the check. */
 void view_pin(const ui_view_t *v)
 {
     s_web_printed = false;
     set_link();
-    set(LED_FRONT, vault_wait_s() > 0 ? C_RED : C_AMBER, BLINK_MS, 255);
+    if (v->hold_ms > 0) {
+        set(LED_FRONT, v->hold_ms < UI_BOTH_MS ? C_AMBER : C_CYAN, 0, 255);
+    } else {
+        set(LED_FRONT, vault_wait_s() > 0 ? C_RED : C_AMBER, BLINK_MS, 255);
+    }
     if (v->pin_len != s_pin_len) {
         flash((1 << LED_SIDE) | (1 << LED_FRONT));
     } else if (v->pin_cur != s_pin_cur && v->pin_cur > 0) {

@@ -4,7 +4,7 @@
 
 <h1 align="center">hw-pass</h1>
 
-<p align="center"><b>Hardware password typer. Firmware for the M5Stack StickS3 and Chain Dual Key (ESP32-S3).</b><br>
+<p align="center"><b>Hardware password typer. Firmware for the M5Stack StickS3, Chain Dual Key, and StampS3A (ESP32-S3).</b><br>
 Free and open source. Your donations keep the development going.</p>
 
 <p align="center">
@@ -54,6 +54,7 @@ Donatello takes a card from any country, or cryptocurrency, and pays out in Ukra
 |---|---|
 | M5Stack StickS3 | ESP32-S3-PICO-1 with 8 MB flash, a 240 × 135 LCD, two buttons, a speaker, a tilt sensor, a battery, and USB-C. No change to the hardware. |
 | M5Stack Chain Dual Key (SKU C147) | Instead of the StickS3. ESP32-S3FN8 with 8 MB flash, two mechanical keys with an RGB LED under each key, a battery, a power switch, and USB-C. No screen and no speaker: the LEDs show the state, and the serial port shows the texts. See "Chain Dual Key" in [docs/usage.md](docs/usage.md). |
+| M5Stack StampS3A (SKU S007-V033) | Instead of the StickS3. ESP32-S3FN8 with 8 MB flash, one button, one RGB LED, and USB-C. No screen, no speaker, no battery: the LED shows the state, and the serial port shows the texts. A tap of the button types, a hold selects the next entry. See "StampS3A" in [docs/usage.md](docs/usage.md). |
 | USB-C cable | A data cable, not a charge-only cable. |
 | Bluetooth LE keypad (optional) | Tested: A4Tech FBK21C. Other keyboards with HID over GATT are not tested. |
 | Computer with Bluetooth LE (optional) | For the wireless mode. Tested with Linux (BlueZ). |
@@ -67,26 +68,26 @@ Donatello takes a card from any country, or cryptocurrency, and pays out in Ukra
    idf.py build
    ```
    Or take the full image of the [latest release](https://github.com/krivokhatko/hw-pass/releases/latest), without a build. See "Releases".
-3. Flash. A new device comes with the firmware of M5Stack: put it in the download mode (StickS3: hold the power button; Chain Dual Key: hold Key1 while you connect the cable), then run `idf.py -p /dev/ttyACM0 erase-flash` and `idf.py -p /dev/ttyACM0 flash`. A device with hw-pass: `tools/flash.sh`. For a release image, use the esptool commands of "Releases". For the Chain Dual Key, build with its board file first: see "Boards".
+3. Flash. A new device comes with the firmware of M5Stack: put it in the download mode (StickS3: hold the power button; Chain Dual Key: hold Key1 while you connect the cable; StampS3A: hold the button while you connect the cable), then run `idf.py -p /dev/ttyACM0 erase-flash` and `idf.py -p /dev/ttyACM0 flash`. A device with hw-pass: `tools/flash.sh`. For a release image, use the esptool commands of "Releases". For the Chain Dual Key and the StampS3A, build with the board file first: see "Boards".
 4. Open the command line with `picocom /dev/ttyACM0` and push Enter. Add an entry:
    ```
    add GitHub
    ```
    The device asks for the password two times.
-5. Put the focus on a text editor and push the front button (Chain Dual Key: Key1, the key far from the lanyard hole). The device types the password.
+5. Put the focus on a text editor and push the front button (Chain Dual Key: Key1, the key far from the lanyard hole; StampS3A: tap the button). The device types the password.
 
 Then set a PIN (`pin`), add entries on the web page, pair a keypad, or pair a laptop. The user guide tells how: [docs/usage.md](docs/usage.md).
 
 ## Target
 
-| Item | StickS3 | Chain Dual Key |
-|---|---|---|
-| SoC | ESP32-S3-PICO-1, revision v0.2 | ESP32-S3FN8 |
-| Flash | 8 MB, quad | 8 MB, quad, in the chip |
-| PSRAM | 8 MB, not enabled | None |
-| Console | USB Serial/JTAG. UART0 is not connected to USB. | The same. |
-| Input | Two buttons | Two mechanical keys |
-| Output | LCD, speaker | Two RGB LEDs, the serial port |
+| Item | StickS3 | Chain Dual Key | StampS3A |
+|---|---|---|---|
+| SoC | ESP32-S3-PICO-1, revision v0.2 | ESP32-S3FN8 | ESP32-S3FN8 |
+| Flash | 8 MB, quad | 8 MB, quad, in the chip | 8 MB, quad, in the chip |
+| PSRAM | 8 MB, not enabled | None | None |
+| Console | USB Serial/JTAG. UART0 is not connected to USB. | The same. | The same. |
+| Input | Two buttons | Two mechanical keys | One button |
+| Output | LCD, speaker | Two RGB LEDs, the serial port | One RGB LED, the serial port |
 
 ## Boards
 
@@ -94,6 +95,7 @@ Then set a PIN (`pin`), add entries on the web page, pair a keypad, or pair a la
 |---|---|---|
 | M5Stack StickS3 | `boards/sticks3.defaults` | The default board. Tested. |
 | M5Stack Chain Dual Key | `boards/dualkey.defaults` | Tested. |
+| M5Stack StampS3A | `boards/stamps3a.defaults` | Builds and flashes. The test of the button and the LED on the device is pending. |
 
 `sdkconfig.defaults` is the build for the StickS3, and `idf.py build` builds it. A board file comes after it and changes the options that differ:
 
@@ -101,7 +103,7 @@ Then set a PIN (`pin`), add entries on the web page, pair a keypad, or pair a la
 idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;boards/<name>.defaults" build
 ```
 
-The board file selects the board in Kconfig (`CONFIG_HWPASS_BOARD_*`, `main/Kconfig.projbuild`). The board selects its parts: `CONFIG_HWPASS_LCD`, `HWPASS_IMU`, `HWPASS_SPEAKER`, `HWPASS_BATTERY`, `HWPASS_PM1`, `HWPASS_LEDS`. The code checks the parts, and the pins of a board go behind `#if CONFIG_HWPASS_BOARD_*`. The "Board" line of `info` shows the name. The CI builds each board of `.github/workflows/build.yml`. To add a board, see "Add a board" in [docs/contributing.md](docs/contributing.md).
+The board file selects the board in Kconfig (`CONFIG_HWPASS_BOARD_*`, `main/Kconfig.projbuild`). The board selects its parts: `CONFIG_HWPASS_LCD`, `HWPASS_IMU`, `HWPASS_SPEAKER`, `HWPASS_BATTERY`, `HWPASS_PM1`, `HWPASS_LEDS`, and the counts `HWPASS_BUTTONS` and `HWPASS_LED_COUNT`. The code checks the parts, and the pins of a board go behind `#if CONFIG_HWPASS_BOARD_*`. The "Board" line of `info` shows the name. The CI builds each board of `.github/workflows/build.yml`. To add a board, see "Add a board" in [docs/contributing.md](docs/contributing.md).
 
 ## Toolchain
 
@@ -115,7 +117,7 @@ For the setup, refer to [docs/dev-setup.md](docs/dev-setup.md).
 ```
 CMakeLists.txt        Project file.
 sdkconfig.defaults    Project configuration for the StickS3. Edit this file, not sdkconfig.
-boards/               One file for each board: sticks3.defaults, dualkey.defaults. The options that differ from sdkconfig.defaults.
+boards/               One file for each board: sticks3.defaults, dualkey.defaults, stamps3a.defaults. The options that differ from sdkconfig.defaults.
 partitions.csv        Flash partition table for 8 MB flash.
 main/                 Application entry point (app_main) and the project options (Kconfig.projbuild). Keep it small.
 components/           Project modules. One directory for each module.
@@ -135,8 +137,8 @@ tools/                Host scripts: flash.sh flashes the device (with a build di
 | `sound` | StickS3: ES8311 audio codec on I2S, and the AW8737 speaker amplifier: short tones and the typing melody for `ui`. On a board without a speaker, the sounds go nowhere. |
 | `clock` | Time in the system clock (UTC) and the time zone: kept across a restart, lost at a power loss. The boards have no clock chip. |
 | `imu` | StickS3: BMI270 accelerometer on the internal I2C bus: which edge of the screen is up. The chip loads its 8 KB configuration file at each start (`bmi270_config.c`, from the Bosch BMI270 Sensor API, BSD-3-Clause). |
-| `buttons` | Front and side buttons (the two keys of the Chain Dual Key): debounce, short and long push, push of both. |
-| `leds` | Chain Dual Key: the two WS2812 LEDs under the keys, on an RMT channel. |
+| `buttons` | Front and side buttons (the two keys of the Chain Dual Key): debounce, short and long push, push of both. StampS3A: the one button; a tap is a short push, a longer push is a hold. |
+| `leds` | The WS2812 LEDs on an RMT channel: two under the keys of the Chain Dual Key, one on the StampS3A. |
 | `vault` | Password entries in the `vault` NVS partition. With a PIN, the entries are one AES-256-GCM blob: the key comes from PBKDF2 of the PIN, and from the eFuse HMAC key when the chip has one. The lock state, the wrong-PIN counter, and the wait times. |
 | `kdf` | PBKDF2-HMAC-SHA512 on the SHA hardware, for `vault` and `backup`. |
 | `rng` | Random passwords. Selects the entropy source: ADC noise or radio. |
@@ -150,7 +152,7 @@ tools/                Host scripts: flash.sh flashes the device (with a build di
 | `ble` | Bluetooth LE host (NimBLE), shared by `keypad` and `blehid`: the start, the pairing method, and the bonding keys in NVS. |
 | `blehid` | Bluetooth LE keyboard and mouse for a computer (HID over GATT): the services, the advertising, the pairing with a passkey, the key and mouse reports, and the battery level. One paired computer in NVS. |
 | `keypad` | Bluetooth LE keypad: NimBLE central, pairing, HID over GATT client, battery level, and key changes for `ui`. `hidmap.c` reads the HID report map. |
-| `ui` | Button actions, the modes, the PIN entry, and the lock when the USB connection stops (`ui.c`). The view shows the state: `view_lcd.c` draws the screen of the StickS3, `view_led.c` sets the key LEDs of the Chain Dual Key and prints the texts on the serial port. |
+| `ui` | Button actions, the modes, the PIN entry, and the lock when the USB connection stops (`ui.c`). The view shows the state: `view_lcd.c` draws the screen of the StickS3, `view_led.c` sets the key LEDs of the Chain Dual Key or the one LED of the StampS3A, and prints the texts on the serial port. |
 | `sysinfo` | Chip information in the log. |
 
 `main.c` starts the modules in this order: power chip, battery, display, sound, tilt sensor, vault, random numbers, clock, USB, Bluetooth host, Bluetooth computer link, keyboard output, mouse mover, keypad, time sync, command line. Then it runs the UI. It does not start the modules of the parts that the board does not have (`CONFIG_HWPASS_*`); the linker removes their code. A module that fails to start logs an error, and the device goes on: the serial port must stay available for the next flash.
@@ -185,7 +187,7 @@ tools/flash.sh
 
 If the device runs other firmware with USB Serial/JTAG, use `idf.py -p /dev/ttyACM0 flash`.
 
-If the firmware does not start the serial port, push and hold the power button: the power chip starts the ROM download mode (StickS3). On the Chain Dual Key, hold Key1 while you connect the cable.
+If the firmware does not start the serial port, push and hold the power button: the power chip starts the ROM download mode (StickS3). On the Chain Dual Key, hold Key1 while you connect the cable. On the StampS3A, hold the button while you connect the cable.
 
 To open the command line: `picocom /dev/ttyACM0`. `idf.py monitor` also works, but it cannot show the start-up log.
 
@@ -206,7 +208,7 @@ Each push to `master` and each pull request builds every board (`.github/workflo
 esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash 0x10000 hw-pass-v1.0.0-sticks3-app.bin
 ```
 
-The device must be in the download mode: `dfu` on the serial port, or hold the power button (StickS3), or hold Key1 while you connect the cable (Chain Dual Key). Without ESP-IDF, `pip install esptool` gives `esptool.py`. When a release changes the partition table or the bootloader, its notes say that the full image is necessary.
+The device must be in the download mode: `dfu` on the serial port, or hold the power button (StickS3), or hold Key1 (Chain Dual Key) or the button (StampS3A) while you connect the cable. Without ESP-IDF, `pip install esptool` gives `esptool.py`. When a release changes the partition table or the bootloader, its notes say that the full image is necessary.
 
 To publish a release, tag the commit on `master` and push the tag:
 

@@ -14,8 +14,8 @@ extern "C" {
 #define BUTTONS_LONG_MS     600
 
 typedef enum {
-    BUTTON_FRONT,   /* Types. StickS3: KEY1, G11, below the LCD. Dual Key: Key1, G0. */
-    BUTTON_SIDE,    /* Selects. StickS3: KEY2, G12, on the side. Dual Key: Key2, G17. */
+    BUTTON_FRONT,   /* Types. StickS3: KEY1, G11, below the LCD. Dual Key: Key1, G0. StampS3A: the button, G0. */
+    BUTTON_SIDE,    /* Selects. StickS3: KEY2, G12, on the side. Dual Key: Key2, G17. StampS3A: none. */
     BUTTON_COUNT,
 } button_t;
 
@@ -32,7 +32,10 @@ press_t buttons_poll(button_t b);
 
 /* Return the time in ms that both buttons are down together, else 0.
  * A push of both buttons gives no single events, also not at release.
- * Call one time in each poll cycle, after buttons_poll for both buttons. */
+ * Call one time in each poll cycle, after buttons_poll for both buttons.
+ * A board with one button (CONFIG_HWPASS_BUTTONS == 1): the time of a
+ * push that lasts BUTTONS_LONG_MS or longer, from its start. Such a push
+ * gives no short and no long event. */
 uint32_t buttons_both_ms(void);
 
 /* Return true if a button went down since the last call. Its action comes

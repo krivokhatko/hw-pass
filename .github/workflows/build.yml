@@ -22,7 +22,7 @@ jobs:
       fail-fast: false
       matrix:
         # One name for each file in boards/.
-        board: [sticks3, dualkey]
+        board: [sticks3, dualkey, stamps3a]
     steps:
       - uses: actions/checkout@v7
         with:
@@ -82,7 +82,7 @@ jobs:
           cat > notes.md <<EOF
           ## Install
 
-          The device must be in the download mode: type "dfu" on the serial port, or hold the power button (StickS3), or hold Key1 while you connect the cable (Chain Dual Key). See docs/dev-setup.md.
+          The device must be in the download mode: type "dfu" on the serial port, or hold the power button (StickS3), or hold Key1 (Chain Dual Key) or the button (StampS3A) while you connect the cable. See docs/dev-setup.md.
 
           A new device (the firmware of M5Stack): erase the flash, then write the full image. The full image also writes 0xFF over the "nvs" partition: the settings and the pairings reset. The entries in the "vault" partition stay.
 

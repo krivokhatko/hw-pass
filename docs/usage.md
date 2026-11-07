@@ -2,7 +2,7 @@
 
 hw-pass is a USB keyboard that types stored passwords. Select an entry with the buttons. The device types the password into the focused window. The device is also a Bluetooth keyboard for a computer without a cable. See "Bluetooth computer".
 
-The firmware runs on two boards. This guide describes the M5Stack StickS3, with a screen and a speaker. The M5Stack Chain Dual Key has two keys and two LEDs instead: "Chain Dual Key" tells what differs. All commands of the serial port, the Wi-Fi setup mode, the keypad, the Bluetooth computer, and the mouse mover work the same on both boards.
+The firmware runs on three boards. This guide describes the M5Stack StickS3, with a screen and a speaker. The M5Stack Chain Dual Key has two keys and two LEDs instead, and the M5Stack StampS3A has one button and one LED: "Chain Dual Key" and "StampS3A" tell what differs. All commands of the serial port, the Wi-Fi setup mode, the keypad, the Bluetooth computer, and the mouse mover work the same on all boards.
 
 ## Buttons
 
@@ -104,6 +104,46 @@ PIN with the keys: push Key2 as many times as the digit. For 0, push it ten time
 The power switch has three positions. "BLE" and "USB": the device is on, also on battery. The position does not change where the keys go: the Bluetooth computer gets them while it is connected, else the USB host. Middle: the device is off on battery and on with USB power. The board has no reset button: disconnect the cable and connect it again. `info` shows the battery level, the USB power, and the charge state.
 
 To flash the board, see "First flash of a new device" in [dev-setup.md](dev-setup.md).
+
+## StampS3A
+
+The StampS3A is a module with one button and one RGB LED next to the USB-C port. It has no screen, no speaker, and no battery: it runs on USB power. The one button does all:
+
+| Push | Action |
+|---|---|
+| Tap | Type the password of the selected entry. |
+| Hold 0.6 s, then release | Select the next entry. After the last entry comes the first. The LED shows the color of the entry. |
+| Hold 2 s, then release | Wi-Fi setup mode. |
+| Hold 5 s, then release | Pair a keypad. |
+| Hold 8 s, then release | Pair a computer over Bluetooth. |
+
+After 0.6 s the LED turns amber and gets brighter: release now for the next entry. After 2 s it turns cyan, after 5 s blue, after 8 s purple: the color of the mode that a release starts. There is no "type, then Enter" and no "previous entry" on this board. A tap by accident types the password: keep the focus on a safe window, or set a PIN.
+
+The LED shows the state:
+
+| Color | Meaning |
+|---|---|
+| A color | The selected entry, and a computer gets the keys. The entries have eight colors in the order of the list: amber, yellow, green, cyan, blue, purple, pink, white. Entry 9 has the color of entry 1 again. |
+| A color, with a blue tick every 2 s | The same, and the Bluetooth computer gets the keys, not the USB host. |
+| Green | No entries. The USB host gets the keys. |
+| Blue | No entries. The Bluetooth computer gets the keys. |
+| Blue, blinks | A computer is paired, but not connected, and no USB host is ready. |
+| Red | No computer is ready. |
+| Amber, blinks | The device is locked. Enter the PIN. |
+| Red, blinks | Wrong PINs. Wait before the next try. |
+| Amber, gets brighter | You hold the button. After 2 s cyan, after 5 s blue, after 8 s purple: see the table above. |
+| Green, steady, after an action | An action is complete: the password is typed, a key got an entry, a pairing is complete. |
+| Red, steady, after an action | Error: no computer, wrong PIN, typing failed. The serial port shows the cause. |
+| Cyan, blinks | Wi-Fi setup mode. Steady cyan: a phone or a computer is on the network. |
+| Blue, blinks, after a hold of 5 s | Pairing of a keypad. Steady blue: type the passkey on the keypad. |
+| Purple, blinks | Pairing of a computer. Steady purple: type the passkey on the computer. |
+| Dim | No activity for 60 s. A push makes it bright again and does nothing else. |
+
+Texts go to the serial port, as on the Chain Dual Key. `web` and `wireless pair` start the modes without the button.
+
+PIN with the button: tap the button as many times as the digit. For 0, tap it ten times. Then hold the button: after 0.6 s the LED stops to blink and is steady amber. Release: the digit goes in. The LED gives a white tick at each tap and at each digit. When all digits are in, hold the button until the LED is cyan (2 s), then release: the device checks the PIN. Green: unlocked. Red: wrong. A hold of 0.6 s without a tap before it deletes the last digit. The keypad and `unlock` on the serial port also enter the PIN.
+
+The board has no reset button: disconnect the cable and connect it again. The button is also the boot strap pin: hold it while you connect the cable, and the chip starts in the download mode (see "First flash of a new device" in [dev-setup.md](dev-setup.md)).
 
 ## PIN
 

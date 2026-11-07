@@ -2,9 +2,10 @@
  * file implements it for each kind of board (CMakeLists.txt picks it):
  *
  *   view_lcd.c   The LCD of the StickS3, with the tilt sensor.
- *   view_led.c   The two RGB key LEDs of the Chain Dual Key. Texts that
- *                the user must read (a passkey, the Wi-Fi password) go
- *                to the serial port.
+ *   view_led.c   The RGB LEDs: the two key LEDs of the Chain Dual Key, or
+ *                the one LED of the StampS3A. Texts that the user must
+ *                read (a passkey, the Wi-Fi password) go to the serial
+ *                port.
  *
  * ui.c calls the view from the UI task only. The view reads the modules
  * (vault, keypad, hid, ...) itself; ui.c gives it the state that only
@@ -33,7 +34,7 @@
 
 typedef struct {
     int sel;                /* The selected entry */
-    uint32_t hold_ms;       /* Both buttons are down for this time, else 0 */
+    uint32_t hold_ms;       /* Both buttons are down for this time, else 0. One button: its push lasts this time, after 0.6 s. */
     uint8_t kp_key;         /* The keypad key that is down, or 0 */
     uint32_t kp_held;       /* Its hold time, in steps of UI_HOLD_STEP_MS */
     int pin_len;            /* PIN digits so far */

@@ -20,12 +20,36 @@ menu "hw-pass"
             bool "M5Stack Chain Dual Key"
             select HWPASS_LEDS
             select HWPASS_BATTERY
+
+        config HWPASS_BOARD_STAMPS3A
+            bool "M5Stack StampS3A"
+            select HWPASS_LEDS
     endchoice
 
     config HWPASS_BOARD_NAME
         string
         default "sticks3" if HWPASS_BOARD_STICKS3
         default "dualkey" if HWPASS_BOARD_DUALKEY
+        default "stamps3a" if HWPASS_BOARD_STAMPS3A
+
+    config HWPASS_BUTTONS
+        int
+        default 1 if HWPASS_BOARD_STAMPS3A
+        default 2
+        help
+            The number of buttons. With two, the side button selects and
+            the front button types. With one, a tap types, and a hold
+            selects the next entry or starts a mode (components/buttons,
+            components/ui/ui.c).
+
+    config HWPASS_LED_COUNT
+        int
+        default 1 if HWPASS_BOARD_STAMPS3A
+        default 2
+        help
+            The number of RGB LEDs of HWPASS_LEDS. With two, one LED shows
+            the link and the other the entry. With one, the LED shows the
+            entry while a computer gets the keys (components/ui/view_led.c).
 
     # The parts of the board. The board selects them; the code checks
     # them, not the board name.

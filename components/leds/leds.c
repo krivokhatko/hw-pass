@@ -13,15 +13,30 @@
 #include "leds.h"
 
 #if CONFIG_HWPASS_LEDS
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "driver/gpio.h"
 #include "driver/rmt_tx.h"
 #include "driver/rmt_encoder.h"
 
+#if CONFIG_HWPASS_BOARD_STAMPS3A
+/* StampS3A: one WS2812B-2020 on G21. G38 is the enable of the load switch
+ * that powers the LED and the backlight of the optional LCD: push-pull,
+ * high is on (schematic v0.3.3). */
+#define LEDS_PIN            21
+#define LEDS_POWER_PIN      38
+#define LEDS_POWER_MODE     GPIO_MODE_OUTPUT
+#define LEDS_POWER_ON       1
+#else
 /* Chain Dual Key: two WS2812B-2020 on G21, LED 0 under Key2, LED 1 under
  * Key1. G40 is the gate of the power switch of the LEDs: open drain, low
  * is on (schematic V1.5 and the factory firmware). */
-#define LEDS_PIN        21
-#define LEDS_POWER_PIN  40
+#define LEDS_PIN            21
+#define LEDS_POWER_PIN      40
+#define LEDS_POWER_MODE     GPIO_MODE_OUTPUT_OD
+#define LEDS_POWER_ON       0
+#endif
+#define POWER_UP_MS     5           /* The switch is on and the LEDs are ready after this time. */
 #define RMT_HZ          10000000    /* 0.1 us for each tick */
 #define T0H             3
 #define T0L             9
@@ -50,11 +65,12 @@ esp_err_t leds_init(void)
     rmt_copy_encoder_config_t copy = {};
     gpio_config_t power = {
         .pin_bit_mask = 1ULL << LEDS_POWER_PIN,
-        .mode = GPIO_MODE_OUTPUT_OD,
+        .mode = LEDS_POWER_MODE,
     };
 
     ESP_RETURN_ON_ERROR(gpio_config(&power), TAG, "power pin");
-    ESP_RETURN_ON_ERROR(gpio_set_level(LEDS_POWER_PIN, 0), TAG, "power on");
+    ESP_RETURN_ON_ERROR(gpio_set_level(LEDS_POWER_PIN, LEDS_POWER_ON), TAG, "power on");
+    vTaskDelay(pdMS_TO_TICKS(POWER_UP_MS));
     ESP_RETURN_ON_ERROR(rmt_new_tx_channel(&chan, &s_chan), TAG, "channel");
     ESP_RETURN_ON_ERROR(rmt_new_copy_encoder(&copy, &s_encoder), TAG, "encoder");
     ESP_RETURN_ON_ERROR(rmt_enable(s_chan), TAG, "enable");

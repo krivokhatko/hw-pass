@@ -93,9 +93,31 @@ The Chain Dual Key comes with the firmware "Chain DualKey User Demo" (`303a:8000
 
 After this, `tools/flash.sh` works as on the StickS3. `sdkconfig` keeps the board: `idf.py build` builds the Chain Dual Key until you delete it.
 
+### StampS3A
+
+The StampS3A comes with a factory demo (Arduino, ESP-IDF v4.4.7) on the USB Serial/JTAG port (`303a:1001`, the port prints dots). esptool resets the chip through this port: no button is necessary.
+
+1. Connect the module with a USB-C cable. On WSL2, attach it (see below).
+2. Save the factory firmware, if you want it back one day (8 MB, about 2 minutes; on WSL2 read it in pieces of 1 MB, see "Device is attached, but no data"):
+   ```
+   esptool.py --chip esp32s3 -p /dev/ttyACM0 read_flash 0 0x800000 stamps3a-factory.bin
+   ```
+3. Erase the flash, build with the board file, and flash:
+   ```
+   get_idf
+   idf.py -p /dev/ttyACM0 erase-flash
+   rm sdkconfig
+   idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;boards/stamps3a.defaults" build
+   idf.py -p /dev/ttyACM0 flash
+   ```
+   Or write the full image of a release: `hw-pass-<version>-stamps3a.bin` at `0x0`.
+4. The firmware starts: the LED is green (no entries, USB host ready). On WSL2, bind and attach the identity `303a:4005` too.
+
+If the chip does not answer esptool (other firmware without a serial port, or a firmware that does not start), hold the button while you connect the cable: the chip starts in the ROM download mode. After a flash from this state, the chip stays in the download mode: do the watchdog reset of step 5 in "Chain Dual Key", or disconnect the cable and connect it again.
+
 ## Windows with WSL2
 
-The StickS3 connects to Windows through USB. [usbipd-win](https://github.com/dorssel/usbipd-win) forwards the device to WSL2.
+The device connects to Windows through USB. [usbipd-win](https://github.com/dorssel/usbipd-win) forwards the device to WSL2.
 
 ### One-time setup
 
@@ -116,7 +138,7 @@ The StickS3 connects to Windows through USB. [usbipd-win](https://github.com/dor
 The device has two USB identities (see "USB identities"). Windows sees each identity as a different device. Bind both one time, in an administrator PowerShell:
 
 1. Start the hw-pass firmware. Run `usbipd list` and find `303a:4005`. Run `usbipd bind --busid <BUSID>`.
-2. Put the device in download mode (`dfu` command, or hold the power button; Chain Dual Key: hold Key1 while you connect the cable). Find `303a:1001` and bind it.
+2. Put the device in download mode (`dfu` command, or hold the power button; Chain Dual Key: hold Key1 while you connect the cable; StampS3A: hold the button while you connect the cable). Find `303a:1001` and bind it.
 
 Then run:
 
@@ -178,6 +200,7 @@ The USB Serial/JTAG controller uses the DTR and RTS lines to reset the chip.
 | hw-pass firmware (after start-up) | `303a:4005` | hw-pass password typer |
 | UIFlow2 | `303a:832b` | StickS3(UiFlow2) |
 | Chain DualKey User Demo (factory firmware of the Chain Dual Key) | `303a:8000` | Chain DualKey |
+| Factory demo of the StampS3A (Arduino) | `303a:1001` | USB JTAG/serial debug unit: the built-in port, as the ROM |
 
 ## Download mode
 
@@ -188,9 +211,10 @@ Three ways put the chip in the ROM download mode:
 | `dfu` on the hw-pass serial port | hw-pass | `tools/flash.sh` does this. |
 | Hold the power button | StickS3, any firmware, also a device that does not start | The power chip resets the chip into the download mode. |
 | Hold Key1 while you connect the cable | Chain Dual Key, any firmware | Key1 is the boot strap pin (G0). The power switch in the middle position. |
+| Hold the button while you connect the cable | StampS3A, any firmware | The button is the boot strap pin (G0). |
 | `machine.bootloader()` in the UIFlow2 REPL | UIFlow2 | See below. |
 
-If the device stays in download mode after a flash: StickS3, push the power button one time. Chain Dual Key, do the watchdog reset of step 5 in "Chain Dual Key", or disconnect the cable and connect it again.
+If the device stays in download mode after a flash: StickS3, push the power button one time. Chain Dual Key and StampS3A, do the watchdog reset of step 5 in "Chain Dual Key", or disconnect the cable and connect it again.
 
 ### From the UIFlow2 REPL
 

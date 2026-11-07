@@ -345,6 +345,32 @@ static void pin_buttons(press_t side, press_t front)
         pin_char('\n');
     }
 }
+#elif CONFIG_HWPASS_BUTTONS == 1
+/* One button, no screen: the user counts. Tap the button as many times
+ * as the digit (ten times for 0), then hold it 0.6 s and release: the
+ * digit goes in. The same hold without a tap deletes the last digit.
+ * Hold 2 s and release: the device checks the PIN. ui_run gives the
+ * holds as pushes of the side button: short before UI_BOTH_MS, long
+ * after it. pin_cur counts the taps, 1 to 10; the eleventh tap starts
+ * again at 1. */
+static void pin_buttons(press_t side, press_t front)
+{
+    if (front == PRESS_SHORT) {
+        s_v.pin_cur = s_v.pin_cur % 10 + 1;
+        sound_play(SOUND_CLICK);
+    }
+    if (side == PRESS_SHORT) {
+        if (s_v.pin_cur > 0) {
+            pin_char('0' + s_v.pin_cur % 10);
+        } else {
+            pin_char('\b');
+        }
+        s_v.pin_cur = 0;
+    } else if (side == PRESS_LONG) {
+        s_v.pin_cur = 0;
+        pin_char('\n');
+    }
+}
 #else
 /* Without a screen, the user counts: push the side key as many times as
  * the digit (ten times for 0), then push the front key: the digit goes
@@ -704,6 +730,17 @@ void ui_run(void)
             web = !both_used && s_v.hold_ms >= UI_BOTH_MS && s_v.hold_ms < UI_PAIR_MS;
             pair = !both_used && s_v.hold_ms >= UI_PAIR_MS && s_v.hold_ms < UI_HOST_MS;
             pair_pc = !both_used && s_v.hold_ms >= UI_HOST_MS;
+#if CONFIG_HWPASS_BUTTONS == 1
+            /* One button: a hold is a push of the side button. Released
+             * before 2 s, a short push: the next entry, or a PIN digit.
+             * Locked and released after 2 s, a long push: the PIN check.
+             * Unlocked, the release after 2 s starts a mode. */
+            if (!both_used && s_v.hold_ms > 0 && s_v.hold_ms < UI_BOTH_MS) {
+                side = PRESS_SHORT;
+            } else if (locked && !both_used && s_v.hold_ms >= UI_BOTH_MS) {
+                side = PRESS_LONG;
+            }
+#endif
             both_used = false;
         } else if (!both_used) {
             hold = both;
@@ -711,7 +748,9 @@ void ui_run(void)
         if (locked) {
             /* No modes while locked: the page and a pairing need the entries. */
             web = pair = pair_pc = false;
-            hold = 0;
+#if CONFIG_HWPASS_BUTTONS != 1
+            hold = 0;   /* One button: the PIN entry has holds, and the view shows them. */
+#endif
             s_web_start = s_pair_request = false;
         }
         s_web_stop = false;     /* The mode is off. */

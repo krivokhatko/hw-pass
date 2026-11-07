@@ -1,5 +1,9 @@
 /* Two buttons, active low. Debounce by sampling, detect short and long
- * presses, and pushes of both buttons together. */
+ * presses, and pushes of both buttons together. A board with one button
+ * (CONFIG_HWPASS_BUTTONS == 1) has the front button only: a tap is a
+ * short push, and a longer push is a hold, as a hold of both buttons.
+ * ui.c takes a release of the hold before UI_BOTH_MS as a push of the
+ * side button. */
 #include <stdbool.h>
 #include <stdint.h>
 #include "sdkconfig.h"
@@ -14,6 +18,10 @@
  * the board (schematic). G0 is also the boot strap pin: a hold at power
  * on starts the download mode. */
 static const gpio_num_t s_pin[BUTTON_COUNT] = { [BUTTON_FRONT] = GPIO_NUM_0, [BUTTON_SIDE] = GPIO_NUM_17 };
+#elif CONFIG_HWPASS_BOARD_STAMPS3A
+/* StampS3A: the one button, G0, with a pull-up on the board (schematic
+ * v0.3.3). Also the boot strap pin. No side button. */
+static const gpio_num_t s_pin[BUTTON_COUNT] = { [BUTTON_FRONT] = GPIO_NUM_0, [BUTTON_SIDE] = GPIO_NUM_NC };
 #else
 /* StickS3: KEY1 below the LCD, KEY2 on the side. */
 static const gpio_num_t s_pin[BUTTON_COUNT] = { [BUTTON_FRONT] = GPIO_NUM_11, [BUTTON_SIDE] = GPIO_NUM_12 };
@@ -31,17 +39,26 @@ static bool s_pushed;
 esp_err_t buttons_init(void)
 {
     gpio_config_t cfg = {
-        .pin_bit_mask = (1ULL << s_pin[BUTTON_FRONT]) | (1ULL << s_pin[BUTTON_SIDE]),
         .mode = GPIO_MODE_INPUT,
         .pull_up_en = GPIO_PULLUP_ENABLE,
     };
+
+    for (int b = 0; b < BUTTON_COUNT; b++) {
+        if (s_pin[b] != GPIO_NUM_NC) {
+            cfg.pin_bit_mask |= 1ULL << s_pin[b];
+        }
+    }
     return gpio_config(&cfg);
 }
 
 press_t buttons_poll(button_t b)
 {
-    bool raw = gpio_get_level(s_pin[b]) == 0;
+    bool raw;
 
+    if (s_pin[b] == GPIO_NUM_NC) {
+        return PRESS_NONE;
+    }
+    raw = gpio_get_level(s_pin[b]) == 0;
     if (raw == s_btn[b].down) {
         s_btn[b].changes = 0;
     } else if (++s_btn[b].changes >= DEBOUNCE_SAMPLES) {
@@ -65,7 +82,11 @@ press_t buttons_poll(button_t b)
         s_btn[b].held_ms += BUTTONS_POLL_MS;
         if (s_btn[b].held_ms >= BUTTONS_LONG_MS) {
             s_btn[b].long_sent = true;
+#if CONFIG_HWPASS_BUTTONS == 1
+            return PRESS_NONE;      /* The push is a hold: buttons_both_ms gives its time. */
+#else
             return PRESS_LONG;
+#endif
         }
     }
     return PRESS_NONE;
@@ -73,12 +94,23 @@ press_t buttons_poll(button_t b)
 
 uint32_t buttons_both_ms(void)
 {
+#if CONFIG_HWPASS_BUTTONS == 1
+    /* One button: a push that lasts BUTTONS_LONG_MS or longer is a hold.
+     * The time counts from the start of the push. */
+    if (s_btn[BUTTON_FRONT].down) {
+        s_both_ms += BUTTONS_POLL_MS;
+        return s_both_ms >= BUTTONS_LONG_MS ? s_both_ms : 0;
+    }
+    s_both_ms = 0;
+    return 0;
+#else
     if (s_btn[BUTTON_FRONT].down && s_btn[BUTTON_SIDE].down) {
         s_both_ms += BUTTONS_POLL_MS;
     } else {
         s_both_ms = 0;
     }
     return s_both_ms;
+#endif
 }
 
 bool buttons_pushed(void)
@@ -92,7 +124,7 @@ bool buttons_pushed(void)
 void buttons_consume(void)
 {
     for (int b = 0; b < BUTTON_COUNT; b++) {
-        s_btn[b].down = gpio_get_level(s_pin[b]) == 0;
+        s_btn[b].down = s_pin[b] != GPIO_NUM_NC && gpio_get_level(s_pin[b]) == 0;
         s_btn[b].long_sent = true;
         s_btn[b].changes = 0;
     }

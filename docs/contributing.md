@@ -46,6 +46,15 @@ The M5Stack Chain Dual Key (SKU C147) wires these parts to the ESP32-S3FN8. The 
 | Two HY2.0-4P Chain ports | UART1 on G47 and G48, UART2 on G5 and G6, 5 V and GND. Not used. | - |
 | USB-C | USB Serial/JTAG in the ROM, TinyUSB in the firmware | `usbdev` |
 
+The M5Stack StampS3A (SKU S007-V033) wires these parts to the ESP32-S3FN8. The values are from the schematic v0.3.3.
+
+| Part | Connection | Module |
+|---|---|---|
+| The button | G0, 10 kΩ pull-up on the board, active low. Also the boot strap pin: a hold while the cable goes in starts the ROM download mode. | `buttons` (front: a tap types, a hold selects or starts a mode) |
+| One WS2812B-2020 LED | Data on G21. Power from an AW35122 load switch, enable on G38: push-pull, high is on. The switch also powers the backlight of the optional LCD on the FPC connector. | `leds`, `ui` (`view_led.c`) |
+| JW5712 step-down converter | 5 V from USB or the 5V pin to 3.3 V. No battery. | - |
+| USB-C | USB Serial/JTAG in the ROM, TinyUSB in the firmware | `usbdev` |
+
 The board has no screen, no speaker, no tilt sensor, and no reset button.
 
 The USB vendor ID is the Espressif ID, and the product ID is the TinyUSB example ID for CDC and HID (`components/usbdev/include/usbdev.h`). The Bluetooth link reports the same IDs. For a product that you sell, get your own IDs.
@@ -106,7 +115,7 @@ Words:
 
 | Word | Meaning |
 |---|---|
-| the device | hw-pass, the StickS3 or the Chain Dual Key with this firmware |
+| the device | hw-pass, the StickS3, the Chain Dual Key, or the StampS3A with this firmware |
 | the view | the part of the UI that shows the state: the screen, or the key LEDs with the serial port |
 | entry | a stored label and password |
 | label | the name of an entry |

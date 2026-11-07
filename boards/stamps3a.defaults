@@ -1,0 +1,6 @@
+# M5Stack StampS3A: ESP32-S3FN8 with one button and one RGB LED. No
+# screen, no speaker, no tilt sensor, no battery. The LED and the serial
+# port show the state (components/ui/view_led.c). A tap of the button
+# types, a hold selects the next entry or starts a mode (docs/usage.md).
+# idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;boards/stamps3a.defaults" build
+CONFIG_HWPASS_BOARD_STAMPS3A=y

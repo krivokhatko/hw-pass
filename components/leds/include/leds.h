@@ -1,17 +1,18 @@
 #pragma once
 
 #include <stdint.h>
+#include "sdkconfig.h"
 #include "esp_err.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* The RGB LEDs under the keys of the Chain Dual Key: one WS2812 for each
- * key, on one data line. LED 0 is under Key2 (select), LED 1 under Key1
- * (type). Call from one task only. */
+/* The RGB LEDs of the board: WS2812 on one data line. Chain Dual Key: one
+ * under each key, LED 0 under Key2 (select), LED 1 under Key1 (type).
+ * StampS3A: one LED. Call from one task only. */
 
-#define LEDS_COUNT  2
+#define LEDS_COUNT  CONFIG_HWPASS_LED_COUNT
 
 /* Turn on the power of the LEDs and start the data line. The LEDs are
  * off after this. */

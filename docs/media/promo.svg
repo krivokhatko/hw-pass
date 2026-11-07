@@ -1,0 +1,433 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" width="960" height="540" role="img" aria-label="hw-pass: a hardware password typer. The device types a password over USB, locks with a PIN, works over Bluetooth LE, and keeps the computer awake.">
+<style>
+@keyframes m-hop{0.0000%{transform:translateY(0)}0.5000%{transform:translateY(0);animation-timing-function:ease-out}1.2333%{transform:translateY(-26px);animation-timing-function:ease-in-out}2.3333%{transform:translateY(0)}100.0000%{transform:translateY(0)}}
+@keyframes blink{0.0000%{transform:scaleY(1)}5.3333%{transform:scaleY(1);animation-timing-function:ease-in}5.5467%{transform:scaleY(0.08);animation-timing-function:ease-in-out}5.8667%{transform:scaleY(1)}18.0000%{transform:scaleY(1);animation-timing-function:ease-in}18.2133%{transform:scaleY(0.08);animation-timing-function:ease-in-out}18.5333%{transform:scaleY(1)}31.0000%{transform:scaleY(1);animation-timing-function:ease-in}31.2133%{transform:scaleY(0.08);animation-timing-function:ease-in-out}31.5333%{transform:scaleY(1)}45.3333%{transform:scaleY(1);animation-timing-function:ease-in}45.5467%{transform:scaleY(0.08);animation-timing-function:ease-in-out}45.8667%{transform:scaleY(1)}63.0000%{transform:scaleY(1);animation-timing-function:ease-in}63.2133%{transform:scaleY(0.08);animation-timing-function:ease-in-out}63.5333%{transform:scaleY(1)}74.6667%{transform:scaleY(1);animation-timing-function:ease-in}74.8800%{transform:scaleY(0.08);animation-timing-function:ease-in-out}75.2000%{transform:scaleY(1)}87.0000%{transform:scaleY(1);animation-timing-function:ease-in}87.2133%{transform:scaleY(0.08);animation-timing-function:ease-in-out}87.5333%{transform:scaleY(1)}100.0000%{transform:scaleY(1)}}
+@keyframes wink{0.0000%{transform:scaleY(1)}93.3333%{transform:scaleY(1)}93.6667%{transform:scaleY(0.08)}96.0000%{transform:scaleY(0.08)}96.3333%{transform:scaleY(1)}100.0000%{transform:scaleY(1)}}
+@keyframes look{0.0000%{transform:translate(0,0)}12.0000%{transform:translate(0,0)}13.3333%{transform:translate(5px,0)}90.0000%{transform:translate(5px,0)}91.3333%{transform:translate(0,0)}100.0000%{transform:translate(0,0)}}
+@keyframes press{0.0000%{transform:scale(1)}20.6667%{transform:scale(1);animation-timing-function:ease-in}21.1333%{transform:scale(0.86);animation-timing-function:ease-in-out}21.8333%{transform:scale(1)}50.6667%{transform:scale(1);animation-timing-function:ease-in}51.1333%{transform:scale(0.86);animation-timing-function:ease-in-out}51.8333%{transform:scale(1)}66.0000%{transform:scale(1);animation-timing-function:ease-in}66.4667%{transform:scale(0.86);animation-timing-function:ease-in-out}67.1667%{transform:scale(1)}100.0000%{transform:scale(1)}}
+@keyframes press-ring{0.0000%{transform:scale(1);opacity:0}20.6667%{transform:scale(1);opacity:0}20.8333%{transform:scale(1);opacity:0.9}22.6667%{transform:scale(2);opacity:0}50.6667%{transform:scale(1);opacity:0}50.8333%{transform:scale(1);opacity:0.9}52.6667%{transform:scale(2);opacity:0}66.0000%{transform:scale(1);opacity:0}66.1667%{transform:scale(1);opacity:0.9}68.0000%{transform:scale(2);opacity:0}100.0000%{transform:scale(1);opacity:0}}
+@keyframes sparkle{0.0000%{transform:scale(1) rotate(0deg);opacity:1}50.0000%{transform:scale(0.7) rotate(25deg);opacity:0.5}100.0000%{transform:scale(1) rotate(0deg);opacity:1}}
+@keyframes note-0{0.0000%{opacity:0;transform:translateY(0)}21.6667%{opacity:0;transform:translateY(0)}22.1667%{opacity:1;transform:translateY(-6px)}26.0000%{opacity:0;transform:translateY(-34px)}51.5000%{opacity:0;transform:translateY(0)}52.0000%{opacity:1;transform:translateY(-6px)}54.8333%{opacity:0;transform:translateY(-34px)}67.0000%{opacity:0;transform:translateY(0)}67.5000%{opacity:1;transform:translateY(-6px)}70.3333%{opacity:0;transform:translateY(-34px)}100.0000%{opacity:0;transform:translateY(0)}}
+@keyframes note-1{0.0000%{opacity:0;transform:translateY(0)}22.6667%{opacity:0;transform:translateY(0)}23.1667%{opacity:1;transform:translateY(-6px)}27.0000%{opacity:0;transform:translateY(-34px)}52.5000%{opacity:0;transform:translateY(0)}53.0000%{opacity:1;transform:translateY(-6px)}55.8333%{opacity:0;transform:translateY(-34px)}68.0000%{opacity:0;transform:translateY(0)}68.5000%{opacity:1;transform:translateY(-6px)}71.3333%{opacity:0;transform:translateY(-34px)}100.0000%{opacity:0;transform:translateY(0)}}
+@keyframes note-2{0.0000%{opacity:0;transform:translateY(0)}23.6667%{opacity:0;transform:translateY(0)}24.1667%{opacity:1;transform:translateY(-6px)}28.0000%{opacity:0;transform:translateY(-34px)}53.5000%{opacity:0;transform:translateY(0)}54.0000%{opacity:1;transform:translateY(-6px)}56.8333%{opacity:0;transform:translateY(-34px)}69.0000%{opacity:0;transform:translateY(0)}69.5000%{opacity:1;transform:translateY(-6px)}72.3333%{opacity:0;transform:translateY(-34px)}100.0000%{opacity:0;transform:translateY(0)}}
+@keyframes title{0.0000%{opacity:0}0.1667%{opacity:0}1.5000%{opacity:1}10.6667%{opacity:1}12.0000%{opacity:0}100.0000%{opacity:0}}
+@keyframes endcard{0.0000%{opacity:0}91.0000%{opacity:0}92.3333%{opacity:1}97.6667%{opacity:1}99.0000%{opacity:0}100.0000%{opacity:0}}
+@keyframes title-in{0.0000%{transform:translateX(24px)}2.0000%{transform:translateX(0)}100.0000%{transform:translateX(0)}}
+@keyframes laptop{0.0000%{opacity:0}12.3333%{opacity:0}13.6667%{opacity:1}89.3333%{opacity:1}90.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes cable{0.0000%{stroke-dashoffset:1}13.6667%{stroke-dashoffset:1;animation-timing-function:ease-in-out}16.6667%{stroke-dashoffset:0}57.3333%{stroke-dashoffset:0;animation-timing-function:ease-in}59.0000%{stroke-dashoffset:1}100.0000%{stroke-dashoffset:1}}
+@keyframes bubble{0.0000%{opacity:0}13.3333%{opacity:0}13.8333%{opacity:1}56.5000%{opacity:1}57.0000%{opacity:0}100.0000%{opacity:0}}
+@keyframes bubble-pop{0.0000%{transform:scale(0)}13.3333%{transform:scale(0);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}14.8333%{transform:scale(1)}56.0000%{transform:scale(1);animation-timing-function:ease-in}57.0000%{transform:scale(0)}100.0000%{transform:scale(0)}}
+@keyframes ui-list{0.0000%{opacity:0}13.3333%{opacity:0}13.3400%{opacity:1}36.6600%{opacity:1}36.6667%{opacity:0}50.0000%{opacity:0}50.0067%{opacity:1}56.9933%{opacity:1}57.0000%{opacity:0}100.0000%{opacity:0}}
+@keyframes ui-pin{0.0000%{opacity:0}36.6667%{opacity:0}36.6733%{opacity:1}47.3267%{opacity:1}47.3333%{opacity:0}100.0000%{opacity:0}}
+@keyframes ui-ok{0.0000%{opacity:0}47.3333%{opacity:0}47.3400%{opacity:1}49.9933%{opacity:1}50.0000%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-star-0{0.0000%{opacity:0}38.9000%{opacity:0}38.9067%{opacity:1}47.3267%{opacity:1}47.3333%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-star-1{0.0000%{opacity:0}41.0333%{opacity:0}41.0400%{opacity:1}47.3267%{opacity:1}47.3333%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-star-2{0.0000%{opacity:0}43.1667%{opacity:0}43.1733%{opacity:1}47.3267%{opacity:1}47.3333%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-star-3{0.0000%{opacity:0}45.3000%{opacity:0}45.3067%{opacity:1}47.3267%{opacity:1}47.3333%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-cursor{0.0000%{transform:translateX(49px)}37.3333%{transform:translateX(49px);animation-timing-function:steps(1,end)}39.4667%{transform:translateX(107.5px);animation-timing-function:steps(1,end)}41.6000%{transform:translateX(166px);animation-timing-function:steps(1,end)}43.7333%{transform:translateX(10px);animation-timing-function:steps(1,end)}45.8667%{transform:translateX(224.5px);animation-timing-function:steps(1,end)}100.0000%{transform:translateX(224.5px)}}
+@keyframes pin-pick{0.0000%{opacity:0}38.7333%{opacity:0}38.7667%{opacity:0.9}39.2667%{opacity:0}40.8667%{opacity:0}40.9000%{opacity:0.9}41.4000%{opacity:0}43.0000%{opacity:0}43.0333%{opacity:0.9}43.5333%{opacity:0}45.1333%{opacity:0}45.1667%{opacity:0.9}45.6667%{opacity:0}47.2667%{opacity:0}47.3000%{opacity:0.9}47.8000%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-pick-x{0.0000%{transform:translateX(49px)}37.3333%{transform:translateX(49px);animation-timing-function:steps(1,end)}39.4667%{transform:translateX(107.5px);animation-timing-function:steps(1,end)}41.6000%{transform:translateX(166px);animation-timing-function:steps(1,end)}43.7333%{transform:translateX(10px);animation-timing-function:steps(1,end)}45.8667%{transform:translateX(224.5px);animation-timing-function:steps(1,end)}100.0000%{transform:translateX(224.5px)}}
+@keyframes lock{0.0000%{opacity:0}37.3333%{opacity:0}38.3333%{opacity:1}55.6667%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes lock-pop{0.0000%{transform:scale(1)}47.3333%{transform:scale(1);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}48.5000%{transform:scale(1.18)}49.6667%{transform:scale(1)}100.0000%{transform:scale(1)}}
+@keyframes lock-body{0.0000%{fill:#E62828}47.3333%{fill:#E62828}48.3333%{fill:#00C850}100.0000%{fill:#00C850}}
+@keyframes shackle{0.0000%{transform:translateY(0) rotate(0)}47.3333%{transform:translateY(0) rotate(0);animation-timing-function:ease-out}48.6667%{transform:translateY(-7px) rotate(-28deg)}100.0000%{transform:translateY(-7px) rotate(-28deg)}}
+@keyframes lock-glow{0.0000%{opacity:0;transform:scale(0.5)}47.3333%{opacity:0;transform:scale(0.5)}47.6667%{opacity:0.5;transform:scale(0.6)}50.0000%{opacity:0;transform:scale(1.4)}100.0000%{opacity:0;transform:scale(0.5)}}
+@keyframes lp-login{0.0000%{opacity:0}12.0000%{opacity:0}12.6667%{opacity:1}36.0000%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes usb-dot-0{0.0000%{opacity:0}21.6667%{opacity:0}21.6733%{opacity:1}36.6600%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes usb-dot-1{0.0000%{opacity:0}22.0000%{opacity:0}22.0067%{opacity:1}36.6600%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes usb-dot-2{0.0000%{opacity:0}22.3333%{opacity:0}22.3400%{opacity:1}36.6600%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes usb-dot-3{0.0000%{opacity:0}22.6667%{opacity:0}22.6733%{opacity:1}36.6600%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes usb-dot-4{0.0000%{opacity:0}23.0000%{opacity:0}23.0067%{opacity:1}36.6600%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes usb-dot-5{0.0000%{opacity:0}23.3333%{opacity:0}23.3400%{opacity:1}36.6600%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes usb-dot-6{0.0000%{opacity:0}23.6667%{opacity:0}23.6733%{opacity:1}36.6600%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes usb-dot-7{0.0000%{opacity:0}24.0000%{opacity:0}24.0067%{opacity:1}36.6600%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes usb-dot-8{0.0000%{opacity:0}24.3333%{opacity:0}24.3400%{opacity:1}36.6600%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes usb-dot-9{0.0000%{opacity:0}24.6667%{opacity:0}24.6733%{opacity:1}36.6600%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes usb-dot-10{0.0000%{opacity:0}25.0000%{opacity:0}25.0067%{opacity:1}36.6600%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes usb-dot-11{0.0000%{opacity:0}25.3333%{opacity:0}25.3400%{opacity:1}36.6600%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes btn-blue{0.0000%{opacity:0}12.0000%{opacity:0}12.3333%{opacity:1}27.3333%{opacity:1}27.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes btn-green{0.0000%{opacity:0}27.6667%{opacity:0}28.0000%{opacity:1}36.3333%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes usb-caret{0.0000%{opacity:0}12.0000%{opacity:0}12.0067%{opacity:1}13.6600%{opacity:1}13.6667%{opacity:0}15.3333%{opacity:0}15.3400%{opacity:1}16.9933%{opacity:1}17.0000%{opacity:0}18.6667%{opacity:0}18.6733%{opacity:1}20.3267%{opacity:1}20.3333%{opacity:0}100.0000%{opacity:0}}
+@keyframes lp-term{0.0000%{opacity:0}36.6667%{opacity:0}37.3333%{opacity:1}76.0000%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes term-pin{0.0000%{opacity:0}36.6667%{opacity:0}36.6733%{opacity:1}56.6600%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes term-caret-a{0.0000%{opacity:0}36.6667%{opacity:0}36.6733%{opacity:1}38.3267%{opacity:1}38.3333%{opacity:0}40.0000%{opacity:0}40.0067%{opacity:1}41.6600%{opacity:1}41.6667%{opacity:0}43.3333%{opacity:0}43.3400%{opacity:1}44.9933%{opacity:1}45.0000%{opacity:0}46.6667%{opacity:0}46.6733%{opacity:1}48.3267%{opacity:1}48.3333%{opacity:0}50.0000%{opacity:0}50.0067%{opacity:1}51.4933%{opacity:1}51.5000%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-dot-0{0.0000%{opacity:0}51.5000%{opacity:0}51.5067%{opacity:1}56.6600%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-dot-1{0.0000%{opacity:0}51.8000%{opacity:0}51.8067%{opacity:1}56.6600%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-dot-2{0.0000%{opacity:0}52.1000%{opacity:0}52.1067%{opacity:1}56.6600%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-dot-3{0.0000%{opacity:0}52.4000%{opacity:0}52.4067%{opacity:1}56.6600%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-dot-4{0.0000%{opacity:0}52.7000%{opacity:0}52.7067%{opacity:1}56.6600%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-dot-5{0.0000%{opacity:0}53.0000%{opacity:0}53.0067%{opacity:1}56.6600%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-dot-6{0.0000%{opacity:0}53.3000%{opacity:0}53.3067%{opacity:1}56.6600%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-dot-7{0.0000%{opacity:0}53.6000%{opacity:0}53.6067%{opacity:1}56.6600%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-dot-8{0.0000%{opacity:0}53.9000%{opacity:0}53.9067%{opacity:1}56.6600%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-dot-9{0.0000%{opacity:0}54.2000%{opacity:0}54.2067%{opacity:1}56.6600%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes term-pin-done{0.0000%{opacity:0}55.1667%{opacity:0}55.5000%{opacity:1}56.3333%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes term-ble{0.0000%{opacity:0}56.6667%{opacity:0}56.6733%{opacity:1}76.6600%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes term-caret-b{0.0000%{opacity:0}56.6667%{opacity:0}56.6733%{opacity:1}58.3267%{opacity:1}58.3333%{opacity:0}60.0000%{opacity:0}60.0067%{opacity:1}61.6600%{opacity:1}61.6667%{opacity:0}63.3333%{opacity:0}63.3400%{opacity:1}64.9933%{opacity:1}65.0000%{opacity:0}66.6667%{opacity:0}66.6733%{opacity:1}66.9933%{opacity:1}67.0000%{opacity:0}100.0000%{opacity:0}}
+@keyframes ble-dot-0{0.0000%{opacity:0}67.0000%{opacity:0}67.0067%{opacity:1}76.6600%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes ble-dot-1{0.0000%{opacity:0}67.3000%{opacity:0}67.3067%{opacity:1}76.6600%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes ble-dot-2{0.0000%{opacity:0}67.6000%{opacity:0}67.6067%{opacity:1}76.6600%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes ble-dot-3{0.0000%{opacity:0}67.9000%{opacity:0}67.9067%{opacity:1}76.6600%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes ble-dot-4{0.0000%{opacity:0}68.2000%{opacity:0}68.2067%{opacity:1}76.6600%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes ble-dot-5{0.0000%{opacity:0}68.5000%{opacity:0}68.5067%{opacity:1}76.6600%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes ble-dot-6{0.0000%{opacity:0}68.8000%{opacity:0}68.8067%{opacity:1}76.6600%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes ble-dot-7{0.0000%{opacity:0}69.1000%{opacity:0}69.1067%{opacity:1}76.6600%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes ble-dot-8{0.0000%{opacity:0}69.4000%{opacity:0}69.4067%{opacity:1}76.6600%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes ble-dot-9{0.0000%{opacity:0}69.7000%{opacity:0}69.7067%{opacity:1}76.6600%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes term-ble-done{0.0000%{opacity:0}71.6667%{opacity:0}72.0000%{opacity:1}76.3333%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes lp-toast{0.0000%{opacity:0}62.0000%{opacity:0}62.8333%{opacity:1}75.8333%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes lp-mm{0.0000%{opacity:0}76.6667%{opacity:0}77.3333%{opacity:1}89.3333%{opacity:1}90.0000%{opacity:0}100.0000%{opacity:0}}
+@keyframes mm-toast{0.0000%{opacity:0}83.0000%{opacity:0}83.6667%{opacity:1}89.3333%{opacity:1}90.0000%{opacity:0}100.0000%{opacity:0}}
+@keyframes mm-cursor{0.0000%{transform:translate(130px,92px)}77.6667%{transform:translate(130px,92px);animation-timing-function:ease-in-out}79.4000%{transform:translate(172px,84px);animation-timing-function:ease-in-out}81.1333%{transform:translate(186px,118px);animation-timing-function:ease-in-out}82.8667%{transform:translate(150px,134px);animation-timing-function:ease-in-out}84.6000%{transform:translate(116px,116px);animation-timing-function:ease-in-out}86.3333%{transform:translate(130px,92px);animation-timing-function:ease-in-out}88.0667%{transform:translate(172px,84px);animation-timing-function:ease-in-out}100.0000%{transform:translate(130px,92px)}}
+@keyframes waves{0.0000%{opacity:0}59.3333%{opacity:0}60.3333%{opacity:1}75.6667%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes wave-0{0.0000%{opacity:0;transform:scale(0.85)}59.3333%{opacity:0;transform:scale(0.85)}60.0000%{opacity:1;transform:scale(0.95)}62.3333%{opacity:0;transform:scale(1.08)}63.0000%{opacity:0;transform:scale(0.85)}63.6667%{opacity:1;transform:scale(0.95)}66.0000%{opacity:0;transform:scale(1.08)}66.6667%{opacity:0;transform:scale(0.85)}67.3333%{opacity:1;transform:scale(0.95)}69.6667%{opacity:0;transform:scale(1.08)}70.3333%{opacity:0;transform:scale(0.85)}71.0000%{opacity:1;transform:scale(0.95)}73.3333%{opacity:0;transform:scale(1.08)}74.0000%{opacity:0;transform:scale(0.85)}74.6667%{opacity:1;transform:scale(0.95)}77.0000%{opacity:0;transform:scale(1.08)}100.0000%{opacity:0;transform:scale(0.85)}}
+@keyframes wave-1{0.0000%{opacity:0;transform:scale(0.85)}60.0667%{opacity:0;transform:scale(0.85)}60.7333%{opacity:1;transform:scale(0.95)}63.0667%{opacity:0;transform:scale(1.08)}63.7333%{opacity:0;transform:scale(0.85)}64.4000%{opacity:1;transform:scale(0.95)}66.7333%{opacity:0;transform:scale(1.08)}67.4000%{opacity:0;transform:scale(0.85)}68.0667%{opacity:1;transform:scale(0.95)}70.4000%{opacity:0;transform:scale(1.08)}71.0667%{opacity:0;transform:scale(0.85)}71.7333%{opacity:1;transform:scale(0.95)}74.0667%{opacity:0;transform:scale(1.08)}74.7333%{opacity:0;transform:scale(0.85)}75.4000%{opacity:1;transform:scale(0.95)}77.7333%{opacity:0;transform:scale(1.08)}100.0000%{opacity:0;transform:scale(0.85)}}
+@keyframes wave-2{0.0000%{opacity:0;transform:scale(0.85)}60.8000%{opacity:0;transform:scale(0.85)}61.4667%{opacity:1;transform:scale(0.95)}63.8000%{opacity:0;transform:scale(1.08)}64.4667%{opacity:0;transform:scale(0.85)}65.1333%{opacity:1;transform:scale(0.95)}67.4667%{opacity:0;transform:scale(1.08)}68.1333%{opacity:0;transform:scale(0.85)}68.8000%{opacity:1;transform:scale(0.95)}71.1333%{opacity:0;transform:scale(1.08)}71.8000%{opacity:0;transform:scale(0.85)}72.4667%{opacity:1;transform:scale(0.95)}74.8000%{opacity:0;transform:scale(1.08)}75.4667%{opacity:0;transform:scale(0.85)}76.1333%{opacity:1;transform:scale(0.95)}78.4667%{opacity:0;transform:scale(1.08)}100.0000%{opacity:0;transform:scale(0.85)}}
+@keyframes cap-usb{0.0000%{opacity:0}12.3333%{opacity:0}13.5000%{opacity:1}35.5000%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes cap-usb-in{0.0000%{transform:translateY(10px)}12.3333%{transform:translateY(10px);animation-timing-function:ease-out}14.0000%{transform:translateY(0)}100.0000%{transform:translateY(0)}}
+@keyframes cap-pin{0.0000%{opacity:0}37.0000%{opacity:0}38.1667%{opacity:1}55.5000%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes cap-pin-in{0.0000%{transform:translateY(10px)}37.0000%{transform:translateY(10px);animation-timing-function:ease-out}38.6667%{transform:translateY(0)}100.0000%{transform:translateY(0)}}
+@keyframes cap-ble{0.0000%{opacity:0}57.0000%{opacity:0}58.1667%{opacity:1}75.5000%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes cap-ble-in{0.0000%{transform:translateY(10px)}57.0000%{transform:translateY(10px);animation-timing-function:ease-out}58.6667%{transform:translateY(0)}100.0000%{transform:translateY(0)}}
+@keyframes cap-mm{0.0000%{opacity:0}77.0000%{opacity:0}78.1667%{opacity:1}88.8333%{opacity:1}90.0000%{opacity:0}100.0000%{opacity:0}}
+@keyframes cap-mm-in{0.0000%{transform:translateY(10px)}77.0000%{transform:translateY(10px);animation-timing-function:ease-out}78.6667%{transform:translateY(0)}100.0000%{transform:translateY(0)}}
+@keyframes sdot-0{0.0000%{opacity:1}11.3333%{opacity:1}12.0000%{opacity:0}100.0000%{opacity:0}}
+@keyframes sdot-1{0.0000%{opacity:0}12.0000%{opacity:0}12.6667%{opacity:1}36.0000%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes sdot-2{0.0000%{opacity:0}36.6667%{opacity:0}37.3333%{opacity:1}56.0000%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes sdot-3{0.0000%{opacity:0}56.6667%{opacity:0}57.3333%{opacity:1}76.0000%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
+@keyframes sdot-4{0.0000%{opacity:0}76.6667%{opacity:0}77.3333%{opacity:1}89.3333%{opacity:1}90.0000%{opacity:0}100.0000%{opacity:0}}
+@keyframes sdot-5{0.0000%{opacity:0}90.0000%{opacity:0}90.6667%{opacity:1}100.0000%{opacity:1}}
+@keyframes progress{0.0000%{transform:scaleX(0)}100.0000%{transform:scaleX(1)}}
+.m-hop{animation:m-hop 30s linear infinite;transform-box:fill-box;transform-origin:center;}
+.blink{animation:blink 30s linear infinite;transform-box:fill-box;transform-origin:center;}
+.wink{animation:wink 30s linear infinite;transform-box:fill-box;transform-origin:center}
+.look{animation:look 30s ease-in-out infinite;}
+.press{animation:press 30s linear infinite;transform-box:fill-box;transform-origin:center;}
+.press-ring{animation:press-ring 30s linear infinite;transform-box:fill-box;transform-origin:center;opacity:0}
+.sparkle{animation:sparkle 30s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+.note-0{animation:note-0 30s ease-out infinite;opacity:0}
+.note-1{animation:note-1 30s ease-out infinite;opacity:0}
+.note-2{animation:note-2 30s ease-out infinite;opacity:0}
+.title{opacity:0;animation:title 30s linear infinite;}
+.endcard{opacity:0;animation:endcard 30s linear infinite;}
+.title-in{animation:title-in 30s ease-out infinite;}
+.laptop{opacity:0;animation:laptop 30s linear infinite;}
+.cable{animation:cable 30s linear infinite;stroke-dasharray:1;stroke-dashoffset:1}
+.bubble{opacity:0;animation:bubble 30s linear infinite;}
+.bubble-pop{animation:bubble-pop 30s linear infinite;transform-box:fill-box;transform-origin:8% 100%}
+.ui-list{opacity:0;animation:ui-list 30s linear infinite;}
+.ui-pin{opacity:0;animation:ui-pin 30s linear infinite;}
+.ui-ok{opacity:0;animation:ui-ok 30s linear infinite;}
+.pin-star-0{opacity:0;animation:pin-star-0 30s linear infinite;}
+.pin-star-1{opacity:0;animation:pin-star-1 30s linear infinite;}
+.pin-star-2{opacity:0;animation:pin-star-2 30s linear infinite;}
+.pin-star-3{opacity:0;animation:pin-star-3 30s linear infinite;}
+.pin-cursor{animation:pin-cursor 30s linear infinite;}
+.pin-pick{animation:pin-pick 30s linear infinite;opacity:0}
+.pin-pick-x{animation:pin-pick-x 30s linear infinite;}
+.lock{opacity:0;animation:lock 30s linear infinite;}
+.lock-pop{animation:lock-pop 30s linear infinite;}
+.lock-body{animation:lock-body 30s linear infinite;}
+.shackle{animation:shackle 30s linear infinite;}
+.lock-glow{animation:lock-glow 30s ease-out infinite;opacity:0;transform-box:fill-box;transform-origin:center}
+.lp-login{opacity:0;animation:lp-login 30s linear infinite;}
+.usb-dot-0{opacity:0;animation:usb-dot-0 30s linear infinite;}
+.usb-dot-1{opacity:0;animation:usb-dot-1 30s linear infinite;}
+.usb-dot-2{opacity:0;animation:usb-dot-2 30s linear infinite;}
+.usb-dot-3{opacity:0;animation:usb-dot-3 30s linear infinite;}
+.usb-dot-4{opacity:0;animation:usb-dot-4 30s linear infinite;}
+.usb-dot-5{opacity:0;animation:usb-dot-5 30s linear infinite;}
+.usb-dot-6{opacity:0;animation:usb-dot-6 30s linear infinite;}
+.usb-dot-7{opacity:0;animation:usb-dot-7 30s linear infinite;}
+.usb-dot-8{opacity:0;animation:usb-dot-8 30s linear infinite;}
+.usb-dot-9{opacity:0;animation:usb-dot-9 30s linear infinite;}
+.usb-dot-10{opacity:0;animation:usb-dot-10 30s linear infinite;}
+.usb-dot-11{opacity:0;animation:usb-dot-11 30s linear infinite;}
+.btn-blue{opacity:0;animation:btn-blue 30s linear infinite;}
+.btn-green{opacity:0;animation:btn-green 30s linear infinite;}
+.usb-caret{opacity:0;animation:usb-caret 30s linear infinite;}
+.lp-term{opacity:0;animation:lp-term 30s linear infinite;}
+.term-pin{opacity:0;animation:term-pin 30s linear infinite;}
+.term-caret-a{opacity:0;animation:term-caret-a 30s linear infinite;}
+.pin-dot-0{opacity:0;animation:pin-dot-0 30s linear infinite;}
+.pin-dot-1{opacity:0;animation:pin-dot-1 30s linear infinite;}
+.pin-dot-2{opacity:0;animation:pin-dot-2 30s linear infinite;}
+.pin-dot-3{opacity:0;animation:pin-dot-3 30s linear infinite;}
+.pin-dot-4{opacity:0;animation:pin-dot-4 30s linear infinite;}
+.pin-dot-5{opacity:0;animation:pin-dot-5 30s linear infinite;}
+.pin-dot-6{opacity:0;animation:pin-dot-6 30s linear infinite;}
+.pin-dot-7{opacity:0;animation:pin-dot-7 30s linear infinite;}
+.pin-dot-8{opacity:0;animation:pin-dot-8 30s linear infinite;}
+.pin-dot-9{opacity:0;animation:pin-dot-9 30s linear infinite;}
+.term-pin-done{opacity:0;animation:term-pin-done 30s linear infinite;}
+.term-ble{opacity:0;animation:term-ble 30s linear infinite;}
+.term-caret-b{opacity:0;animation:term-caret-b 30s linear infinite;}
+.ble-dot-0{opacity:0;animation:ble-dot-0 30s linear infinite;}
+.ble-dot-1{opacity:0;animation:ble-dot-1 30s linear infinite;}
+.ble-dot-2{opacity:0;animation:ble-dot-2 30s linear infinite;}
+.ble-dot-3{opacity:0;animation:ble-dot-3 30s linear infinite;}
+.ble-dot-4{opacity:0;animation:ble-dot-4 30s linear infinite;}
+.ble-dot-5{opacity:0;animation:ble-dot-5 30s linear infinite;}
+.ble-dot-6{opacity:0;animation:ble-dot-6 30s linear infinite;}
+.ble-dot-7{opacity:0;animation:ble-dot-7 30s linear infinite;}
+.ble-dot-8{opacity:0;animation:ble-dot-8 30s linear infinite;}
+.ble-dot-9{opacity:0;animation:ble-dot-9 30s linear infinite;}
+.term-ble-done{opacity:0;animation:term-ble-done 30s linear infinite;}
+.lp-toast{opacity:0;animation:lp-toast 30s linear infinite;}
+.lp-mm{opacity:0;animation:lp-mm 30s linear infinite;}
+.mm-toast{opacity:0;animation:mm-toast 30s linear infinite;}
+.mm-cursor{animation:mm-cursor 30s linear infinite;}
+.waves{opacity:0;animation:waves 30s linear infinite;}
+.wave-0{animation:wave-0 30s ease-out infinite;opacity:0}
+.wave-1{animation:wave-1 30s ease-out infinite;opacity:0}
+.wave-2{animation:wave-2 30s ease-out infinite;opacity:0}
+.cap-usb{opacity:0;animation:cap-usb 30s linear infinite;}
+.cap-usb-in{animation:cap-usb-in 30s linear infinite;}
+.cap-pin{opacity:0;animation:cap-pin 30s linear infinite;}
+.cap-pin-in{animation:cap-pin-in 30s linear infinite;}
+.cap-ble{opacity:0;animation:cap-ble 30s linear infinite;}
+.cap-ble-in{animation:cap-ble-in 30s linear infinite;}
+.cap-mm{opacity:0;animation:cap-mm 30s linear infinite;}
+.cap-mm-in{animation:cap-mm-in 30s linear infinite;}
+.sdot-0{opacity:1;animation:sdot-0 30s linear infinite;}
+.sdot-1{opacity:0;animation:sdot-1 30s linear infinite;}
+.sdot-2{opacity:0;animation:sdot-2 30s linear infinite;}
+.sdot-3{opacity:0;animation:sdot-3 30s linear infinite;}
+.sdot-4{opacity:0;animation:sdot-4 30s linear infinite;}
+.sdot-5{opacity:0;animation:sdot-5 30s linear infinite;}
+.progress{animation:progress 30s linear infinite;transform-origin:0 0}
+@media (prefers-reduced-motion: reduce){ *{animation:none !important} .title{opacity:1 !important} .m-hop,.press,.blink{transform:none} }
+</style>
+<defs>
+  
+    <linearGradient id="p-body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF9F1C"/>
+      <stop offset="1" stop-color="#F3811A"/>
+    </linearGradient>
+    <radialGradient id="p-btn" cx="0.35" cy="0.3" r="0.8">
+      <stop offset="0" stop-color="#FFE9A8"/>
+      <stop offset="1" stop-color="#FFD166"/>
+    </radialGradient>
+    <clipPath id="p-screen"><rect x="-80" y="-146" width="160" height="200" rx="18"/></clipPath>
+  <linearGradient id="desk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#EEF2F6"/><stop offset="1" stop-color="#D9E0E8"/></linearGradient>
+  <radialGradient id="glow" cx="0.2" cy="0.3" r="0.7"><stop offset="0" stop-color="#FFB000" stop-opacity="0.16"/><stop offset="1" stop-color="#FFB000" stop-opacity="0"/></radialGradient>
+  <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="12" cy="12" r="1" fill="#fff" opacity="0.07"/></pattern>
+  <clipPath id="card"><rect width="960" height="540" rx="24"/></clipPath>
+  <clipPath id="scr"><rect width="286" height="190" rx="5"/></clipPath>
+</defs>
+<g clip-path="url(#card)">
+  <rect width="960" height="540" fill="#0F1115"/>
+  <rect width="960" height="540" fill="url(#grid)"/>
+  <rect width="960" height="540" fill="url(#glow)"/>
+
+  <!-- header -->
+  <text x="40" y="46" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="20" font-weight="700" fill="#FFB000">hw-pass<tspan dx="12" font-size="14" font-weight="400" fill="#9AA0A6">hardware password typer · M5Stack StickS3</tspan></text>
+  <g><circle cx="842" cy="40" r="4" fill="#fff" opacity="0.15"/><circle class="sdot-0" cx="842" cy="40" r="4" fill="#FFB000"/><circle cx="858" cy="40" r="4" fill="#fff" opacity="0.15"/><circle class="sdot-1" cx="858" cy="40" r="4" fill="#FFB000"/><circle cx="874" cy="40" r="4" fill="#fff" opacity="0.15"/><circle class="sdot-2" cx="874" cy="40" r="4" fill="#FFB000"/><circle cx="890" cy="40" r="4" fill="#fff" opacity="0.15"/><circle class="sdot-3" cx="890" cy="40" r="4" fill="#FFB000"/><circle cx="906" cy="40" r="4" fill="#fff" opacity="0.15"/><circle class="sdot-4" cx="906" cy="40" r="4" fill="#FFB000"/><circle cx="922" cy="40" r="4" fill="#fff" opacity="0.15"/><circle class="sdot-5" cx="922" cy="40" r="4" fill="#FFB000"/></g>
+  <rect class="progress" x="0" y="536" width="960" height="4" fill="#FFB000" opacity="0.7"/>
+
+  <!-- title -->
+  <g class="title"><g class="title-in">
+    <text x="360" y="236" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="66" font-weight="800" fill="#E8E8E8" text-anchor="start" >hw-pass</text>
+    <text x="362" y="284" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="28" font-weight="700" fill="#FFB000" text-anchor="start" >Your passwords. One button.</text>
+    <text x="362" y="320" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="17" font-weight="400" fill="#9AA0A6" text-anchor="start" >A USB and Bluetooth LE keyboard that types your stored passwords.</text>
+    <text x="362" y="346" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="17" font-weight="400" fill="#9AA0A6" text-anchor="start" >Firmware for the ESP32-S3 (M5Stack StickS3).</text>
+  </g></g>
+
+  <!-- end card -->
+  <g class="endcard">
+    <text x="360" y="232" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="54" font-weight="800" fill="#E8E8E8" text-anchor="start" >Open source.</text>
+    <text x="362" y="274" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="18" font-weight="400" fill="#9AA0A6" text-anchor="start" >MIT license · ESP32-S3 · ESP-IDF v5.5 · M5Stack StickS3</text>
+    <text x="362" y="322" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="24" font-weight="700" fill="#FFB000" text-anchor="start" >github.com/krivokhatko/hw-pass</text>
+  </g>
+
+  <!-- cable from the device to the laptop -->
+  <path class="cable" pathLength="1" d="M 190 403.4 C 190 436, 290 440, 400 434 C 500 428, 560 420, 600 342" fill="none" stroke="#7F8894" stroke-width="7" stroke-linecap="round"/>
+
+  
+  <g class="laptop">
+    <rect x="620" y="118" width="310" height="212" rx="12" fill="#2A2E36" stroke="#444A56" stroke-width="2"/>
+    <rect x="632" y="128" width="286" height="190" rx="5" fill="#E7EBF0"/>
+    <circle cx="775" cy="123" r="1.6" fill="#1a1d22"/>
+    <path d="M 596 330 H 954 L 944 352 H 606 Z" fill="#2A2E36" stroke="#444A56" stroke-width="2" stroke-linejoin="round"/>
+    <rect x="739" y="331" width="72" height="6" rx="3" fill="#1a1d22"/>
+    <g transform="translate(632 128)"><g clip-path="url(#scr)"><rect width="286" height="190" fill="url(#desk)"/><rect width="286" height="18" fill="#ffffff" opacity="0.75"/><circle cx="10" cy="9" r="4" fill="#FFB000"/><text x="278" y="13" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="10" font-weight="600" fill="#333" text-anchor="end" >21:45</text><g class="lp-login">
+    <rect x="48" y="36" width="190" height="126" rx="8" fill="#fff" stroke="#cfd5dd"/>
+    <text x="58" y="58" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="14" font-weight="700" fill="#1f2328" text-anchor="start" >Sign in</text>
+    <rect x="58" y="68" width="170" height="22" rx="4" fill="#f6f8fa" stroke="#d0d7de"/>
+    <text x="66" y="83" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="11" font-weight="400" fill="#1f2328" text-anchor="start" >me</text>
+    <rect x="58" y="98" width="170" height="22" rx="4" fill="#f6f8fa" stroke="#d0d7de"/>
+    <circle class="usb-dot-0" cx="68" cy="109" r="2.8" fill="#222"/><circle class="usb-dot-1" cx="76.6" cy="109" r="2.8" fill="#222"/><circle class="usb-dot-2" cx="85.2" cy="109" r="2.8" fill="#222"/><circle class="usb-dot-3" cx="93.8" cy="109" r="2.8" fill="#222"/><circle class="usb-dot-4" cx="102.4" cy="109" r="2.8" fill="#222"/><circle class="usb-dot-5" cx="111" cy="109" r="2.8" fill="#222"/><circle class="usb-dot-6" cx="119.6" cy="109" r="2.8" fill="#222"/><circle class="usb-dot-7" cx="128.2" cy="109" r="2.8" fill="#222"/><circle class="usb-dot-8" cx="136.8" cy="109" r="2.8" fill="#222"/><circle class="usb-dot-9" cx="145.39999999999998" cy="109" r="2.8" fill="#222"/><circle class="usb-dot-10" cx="154" cy="109" r="2.8" fill="#222"/><circle class="usb-dot-11" cx="162.6" cy="109" r="2.8" fill="#222"/>
+    <rect class="usb-caret" x="66" y="103" width="1.5" height="12" fill="#1f2328"/>
+    <g class="btn-blue"><rect x="58" y="128" width="170" height="24" rx="5" fill="#1f6feb"/><text x="143" y="144" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="11.5" font-weight="600" fill="#fff" text-anchor="middle" >Sign in</text></g>
+    <g class="btn-green"><rect x="58" y="128" width="170" height="24" rx="5" fill="#1a7f37"/><text x="143" y="144" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="11.5" font-weight="600" fill="#fff" text-anchor="middle" >Signed in</text><path d="M 196 140 l 4 4 l 7 -8" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+  </g><g class="lp-term">
+    <rect x="22" y="30" width="242" height="134" rx="7" fill="#1b1e24" stroke="#30353f"/>
+    <rect x="22" y="30" width="242" height="18" rx="7" fill="#2b303a"/>
+    <rect x="22" y="40" width="242" height="8" fill="#2b303a"/>
+    <circle cx="34" cy="39" r="3.5" fill="#ff5f57"/><circle cx="46" cy="39" r="3.5" fill="#febc2e"/><circle cx="58" cy="39" r="3.5" fill="#28c840"/>
+    <g class="term-pin">
+      <text x="32" y="70" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="10.5" font-weight="400" fill="#d8dee9" text-anchor="start" >$ sudo apt upgrade</text>
+      <text x="32" y="88" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="10.5" font-weight="400" fill="#d8dee9" text-anchor="start" >[sudo] password:</text>
+      <circle class="pin-dot-0" cx="146" cy="84" r="2.3" fill="#d8dee9"/><circle class="pin-dot-1" cx="153.5" cy="84" r="2.3" fill="#d8dee9"/><circle class="pin-dot-2" cx="161" cy="84" r="2.3" fill="#d8dee9"/><circle class="pin-dot-3" cx="168.5" cy="84" r="2.3" fill="#d8dee9"/><circle class="pin-dot-4" cx="176" cy="84" r="2.3" fill="#d8dee9"/><circle class="pin-dot-5" cx="183.5" cy="84" r="2.3" fill="#d8dee9"/><circle class="pin-dot-6" cx="191" cy="84" r="2.3" fill="#d8dee9"/><circle class="pin-dot-7" cx="198.5" cy="84" r="2.3" fill="#d8dee9"/><circle class="pin-dot-8" cx="206" cy="84" r="2.3" fill="#d8dee9"/><circle class="pin-dot-9" cx="213.5" cy="84" r="2.3" fill="#d8dee9"/>
+      <rect class="term-caret-a" x="142" y="77" width="6" height="12" fill="#d8dee9"/>
+      <g class="term-pin-done"><text x="32" y="108" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="10.5" font-weight="400" fill="#8a93a0" text-anchor="start" >Reading package lists... Done</text></g>
+    </g>
+    <g class="term-ble">
+      <text x="32" y="70" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="10.5" font-weight="400" fill="#d8dee9" text-anchor="start" >$ ssh home-server</text>
+      <text x="32" y="88" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="10.5" font-weight="400" fill="#d8dee9" text-anchor="start" >password:</text>
+      <circle class="ble-dot-0" cx="102" cy="84" r="2.3" fill="#d8dee9"/><circle class="ble-dot-1" cx="109.5" cy="84" r="2.3" fill="#d8dee9"/><circle class="ble-dot-2" cx="117" cy="84" r="2.3" fill="#d8dee9"/><circle class="ble-dot-3" cx="124.5" cy="84" r="2.3" fill="#d8dee9"/><circle class="ble-dot-4" cx="132" cy="84" r="2.3" fill="#d8dee9"/><circle class="ble-dot-5" cx="139.5" cy="84" r="2.3" fill="#d8dee9"/><circle class="ble-dot-6" cx="147" cy="84" r="2.3" fill="#d8dee9"/><circle class="ble-dot-7" cx="154.5" cy="84" r="2.3" fill="#d8dee9"/><circle class="ble-dot-8" cx="162" cy="84" r="2.3" fill="#d8dee9"/><circle class="ble-dot-9" cx="169.5" cy="84" r="2.3" fill="#d8dee9"/>
+      <rect class="term-caret-b" x="98" y="77" width="6" height="12" fill="#d8dee9"/>
+      <g class="term-ble-done"><text x="32" y="108" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="10.5" font-weight="400" fill="#00C850" text-anchor="start" >Welcome back.</text></g>
+    </g>
+  </g><g class="lp-toast">
+    <rect x="142" y="26" width="136" height="30" rx="7" fill="#fff" stroke="#cfd5dd"/>
+    <path transform="translate(150 32) scale(1)" d="M 0 3 L 10 13 L 5 18 L 5 -2 L 10 3 L 0 13" fill="none" stroke="#3C8CFF" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+    <text x="170" y="46" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="11.5" font-weight="700" fill="#1f2328" text-anchor="start" >hw-pass</text>
+    <g transform="translate(222 35)">
+    <rect x="0" y="0" width="22" height="11" rx="2.5" fill="none" stroke="#555" stroke-width="1.5"/>
+    <rect x="23.5" y="3" width="2.5" height="5" rx="1" fill="#555"/>
+    <rect x="2" y="2" width="15.299999999999999" height="7" rx="1.5" fill="#00C850"/>
+  </g>
+    <text x="274" y="46" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="9" font-weight="600" fill="#1f2328" text-anchor="end" >85%</text>
+  </g><g class="lp-mm">
+    <rect x="30" y="34" width="226" height="128" rx="7" fill="#fff" stroke="#cfd5dd"/>
+    <rect x="30" y="34" width="226" height="16" rx="7" fill="#eef1f5"/>
+    <rect x="44" y="62" width="150" height="5" rx="2.5" fill="#d9dee5"/><rect x="44" y="76" width="190" height="5" rx="2.5" fill="#d9dee5"/><rect x="44" y="90" width="120" height="5" rx="2.5" fill="#d9dee5"/><rect x="44" y="104" width="170" height="5" rx="2.5" fill="#d9dee5"/><rect x="44" y="118" width="90" height="5" rx="2.5" fill="#d9dee5"/><rect x="44" y="132" width="140" height="5" rx="2.5" fill="#d9dee5"/>
+    <g class="mm-toast">
+      <rect x="166" y="138" width="112" height="26" rx="7" fill="#1f2328"/>
+      <g transform="translate(180 151)"><circle r="4.5" fill="#FFB000"/><line x1="6.50" y1="0.00" x2="9.00" y2="0.00" stroke="#FFB000" stroke-width="1.6" stroke-linecap="round"/><line x1="4.60" y1="4.60" x2="6.36" y2="6.36" stroke="#FFB000" stroke-width="1.6" stroke-linecap="round"/><line x1="0.00" y1="6.50" x2="0.00" y2="9.00" stroke="#FFB000" stroke-width="1.6" stroke-linecap="round"/><line x1="-4.60" y1="4.60" x2="-6.36" y2="6.36" stroke="#FFB000" stroke-width="1.6" stroke-linecap="round"/><line x1="-6.50" y1="0.00" x2="-9.00" y2="0.00" stroke="#FFB000" stroke-width="1.6" stroke-linecap="round"/><line x1="-4.60" y1="-4.60" x2="-6.36" y2="-6.36" stroke="#FFB000" stroke-width="1.6" stroke-linecap="round"/><line x1="-0.00" y1="-6.50" x2="-0.00" y2="-9.00" stroke="#FFB000" stroke-width="1.6" stroke-linecap="round"/><line x1="4.60" y1="-4.60" x2="6.36" y2="-6.36" stroke="#FFB000" stroke-width="1.6" stroke-linecap="round"/></g>
+      <text x="194" y="155" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="10.5" font-weight="600" fill="#fff" text-anchor="start" >Stays awake</text>
+    </g>
+    <g class="mm-cursor"><path d="M 0 0 L 0 15 L 4 11.5 L 7 17.5 L 9.5 16.5 L 6.5 10.5 L 11.5 10 Z" fill="#111" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/></g>
+  </g></g></g>
+  </g>
+
+  <g class="waves"><path class="wave-0" d="M 320.6 247.4 A 44 44 0 0 1 320.6 316.8" fill="none" stroke="#3C8CFF" stroke-width="5" stroke-linecap="round" style="transform-box:fill-box;transform-origin:left center"/><path class="wave-1" d="M 340.3 222.2 A 76 76 0 0 1 340.3 342.0" fill="none" stroke="#3C8CFF" stroke-width="5" stroke-linecap="round" style="transform-box:fill-box;transform-origin:left center"/><path class="wave-2" d="M 360.0 197.0 A 108 108 0 0 1 360.0 367.2" fill="none" stroke="#3C8CFF" stroke-width="5" stroke-linecap="round" style="transform-box:fill-box;transform-origin:left center"/><g transform="translate(309.5 268.1)"><path transform="translate(0 0) scale(1.4)" d="M 0 3 L 10 13 L 5 18 L 5 -2 L 10 3 L 0 13" fill="none" stroke="#3C8CFF" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/></g></g>
+  
+  <g class="lock" transform="translate(468 300)">
+    <g class="lock-pop" style="transform-box:fill-box;transform-origin:center">
+      <circle class="lock-glow" r="40" fill="#00C850"/>
+      <g class="shackle" style="transform-box:fill-box;transform-origin:left bottom">
+        <path d="M -12 -2 V -16 a 12 12 0 0 1 24 0 V -2" fill="none" stroke="#D8DEE9" stroke-width="6" stroke-linecap="round"/>
+      </g>
+      <rect class="lock-body" x="-21" y="-4" width="42" height="34" rx="6" fill="#E62828" stroke="#2B1D0E" stroke-width="3"/>
+      <circle cx="0" cy="11" r="4" fill="#2B1D0E"/>
+      <rect x="-1.5" y="12" width="3" height="8" rx="1" fill="#2B1D0E"/>
+      <text x="0" y="50" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="12" font-weight="700" fill="#9AA0A6" text-anchor="middle" class="lock-label" >PIN</text>
+    </g>
+  </g>
+
+  <!-- the device, with the notes of the typing melody -->
+  <g transform="translate(190 292) scale(0.62)"><g class="m-hop">
+    
+  <g class="mascot">
+    <!-- arms: an outline stroke under a body-color stroke -->
+    <g class="arm arm-l">
+      <path d="M -90 40 C -128 58 -150 92 -146 124" fill="none" stroke="#2B1D0E" stroke-width="24" stroke-linecap="round"/>
+      <path d="M -90 40 C -128 58 -150 92 -146 124" fill="none" stroke="#F3811A" stroke-width="12" stroke-linecap="round"/>
+      <circle cx="-148" cy="128" r="18" fill="#FF9F1C" stroke="#2B1D0E" stroke-width="7"/>
+    </g>
+    <g class="arm arm-r">
+      <path d="M 90 40 C 128 40 148 10 152 -14" fill="none" stroke="#2B1D0E" stroke-width="24" stroke-linecap="round"/>
+      <path d="M 90 40 C 128 40 148 10 152 -14" fill="none" stroke="#F3811A" stroke-width="12" stroke-linecap="round"/>
+      <g transform="translate(154 -72)">
+  <g class="key" transform="scale(1.15)">
+    <rect x="-8" y="10" width="16" height="92" rx="5" fill="#FFD166" stroke="#2B1D0E" stroke-width="6"/>
+    <rect x="4" y="66" width="18" height="11" rx="3" fill="#FFD166" stroke="#2B1D0E" stroke-width="6"/>
+    <rect x="4" y="84" width="14" height="11" rx="3" fill="#FFD166" stroke="#2B1D0E" stroke-width="6"/>
+    <circle cx="0" cy="0" r="22" fill="#FFD166" stroke="#2B1D0E" stroke-width="7"/>
+    <circle cx="0" cy="-2" r="7" fill="#2B1D0E"/>
+  </g></g>
+      <circle cx="154" cy="-16" r="18" fill="#FF9F1C" stroke="#2B1D0E" stroke-width="7"/>
+      <g class="sparkle"><path d="M 200 -117 L 203.52 -109.52 L 211 -106 L 203.52 -102.48 L 200 -95 L 196.48 -102.48 L 189 -106 L 196.48 -109.52 Z" fill="#FFB000"/><path d="M 122 -119 L 124.24 -114.24 L 129 -112 L 124.24 -109.76 L 122 -105 L 119.76 -109.76 L 115 -112 L 119.76 -114.24 Z" fill="#FFB000"/><path d="M 210 -50 L 211.92 -45.92 L 216 -44 L 211.92 -42.08 L 210 -38 L 208.08 -42.08 L 204 -44 L 208.08 -45.92 Z" fill="#FFB000"/></g>
+    </g>
+
+    <!-- shadow and feet -->
+    <ellipse cx="0" cy="190" rx="96" ry="9" fill="#2B1D0E" opacity="0.14"/>
+    <rect x="-64" y="160" width="46" height="30" rx="11" fill="#2B1D0E"/>
+    <rect x="18" y="160" width="46" height="30" rx="11" fill="#2B1D0E"/>
+
+    <!-- Grove port on the top edge -->
+    <rect x="-24" y="-186" width="48" height="24" rx="6" fill="#2B1D0E"/>
+
+    <!-- side buttons: power on the left, side button on the right -->
+    <rect x="-116" y="-72" width="22" height="40" rx="7" fill="#D96C00" stroke="#2B1D0E" stroke-width="6"/>
+    <rect x="94" y="-84" width="22" height="48" rx="7" fill="#D96C00" stroke="#2B1D0E" stroke-width="6"/>
+
+    <!-- body -->
+    <rect x="-100" y="-170" width="200" height="340" rx="44" fill="url(#p-body)" stroke="#2B1D0E" stroke-width="8"/>
+    <rect x="-86" y="-150" width="16" height="110" rx="8" fill="#FFFFFF" opacity="0.28"/>
+
+    <!-- screen -->
+    <rect x="-80" y="-146" width="160" height="200" rx="18" fill="#141414" stroke="#2B1D0E" stroke-width="6"/>
+    <g clip-path="url(#p-screen)">
+      <rect x="-80" y="-146" width="160" height="200" fill="#FFFFFF" opacity="0.04"/>
+      <rect x="-66" y="-134" width="132" height="5" rx="2.5" fill="#FFB000"/>
+      
+  <g class="face">
+    <g class="eyes blink">
+      <g transform="translate(-34 -62)"><g class="eye eye-l">
+        <ellipse rx="24" ry="28" fill="#FFFFFF"/>
+        <g class="pupil look"><circle cx="3" cy="5" r="12" fill="#1B1B1B"/><circle cx="-1" cy="0" r="4.5" fill="#FFFFFF"/></g>
+      </g></g>
+      <g transform="translate(34 -62)"><g class="eye eye-r wink">
+        <ellipse rx="24" ry="28" fill="#FFFFFF"/>
+        <g class="pupil look"><circle cx="3" cy="5" r="12" fill="#1B1B1B"/><circle cx="-1" cy="0" r="4.5" fill="#FFFFFF"/></g>
+      </g></g>
+    </g>
+    <ellipse cx="-54" cy="-12" rx="11" ry="7" fill="#FF7A59" opacity="0.7"/>
+    <ellipse cx="54" cy="-12" rx="11" ry="7" fill="#FF7A59" opacity="0.7"/>
+    <path class="mouth" d="M -30 -4 Q 0 28 30 -4" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round"/>
+  </g>
+      
+    </g>
+
+    <!-- front button -->
+    <circle class="press-ring" cx="0" cy="102" r="29" fill="none" stroke="#FFB000" stroke-width="5"/><g class="front-button press">
+      <circle cx="0" cy="102" r="29" fill="url(#p-btn)" stroke="#2B1D0E" stroke-width="7"/>
+      <circle cx="0" cy="102" r="17" fill="none" stroke="#F3811A" stroke-width="4" opacity="0.8"/>
+    </g>
+  </g>
+  </g></g>
+  <g transform="translate(120 164)"><g class="note-0" style="transform-box:fill-box;transform-origin:center">
+    <ellipse cx="0" cy="0" rx="7" ry="5" transform="rotate(-20)" fill="#FFB000"/>
+    <rect x="4.5" y="-24" width="3" height="25" fill="#FFB000"/>
+    <path d="M 7.5 -24 q 9 3 8 12" fill="none" stroke="#FFB000" stroke-width="3" stroke-linecap="round"/>
+  </g></g>
+  <g transform="translate(154 142) scale(0.8)"><g class="note-1" style="transform-box:fill-box;transform-origin:center">
+    <ellipse cx="0" cy="0" rx="7" ry="5" transform="rotate(-20)" fill="#FFB000"/>
+    <rect x="4.5" y="-24" width="3" height="25" fill="#FFB000"/>
+    <path d="M 7.5 -24 q 9 3 8 12" fill="none" stroke="#FFB000" stroke-width="3" stroke-linecap="round"/>
+  </g></g>
+  <g transform="translate(188 158) scale(0.7)"><g class="note-2" style="transform-box:fill-box;transform-origin:center">
+    <ellipse cx="0" cy="0" rx="7" ry="5" transform="rotate(-20)" fill="#FFB000"/>
+    <rect x="4.5" y="-24" width="3" height="25" fill="#FFB000"/>
+    <path d="M 7.5 -24 q 9 3 8 12" fill="none" stroke="#FFB000" stroke-width="3" stroke-linecap="round"/>
+  </g></g>
+
+  <!-- the bubble: a zoom of the device screen -->
+  <g transform="translate(322 62)"><g class="bubble"><g class="bubble-pop">
+    <path d="M 16 0 H 268 a 16 16 0 0 1 16 16 V 150 a 16 16 0 0 1 -16 16 H 60 L 22 196 L 34 166 H 16 A 16 16 0 0 1 0 150 V 16 A 16 16 0 0 1 16 0 Z" fill="#1E2229" stroke="#3A3F4A" stroke-width="2"/>
+    <rect x="18" y="12" width="248" height="143" rx="6" fill="#000" stroke="#2B1D0E" stroke-width="3"/>
+    <g transform="translate(22 16)">
+      <g class="ui-list"><rect width="240" height="135" fill="#000"/><text x="4" y="13" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="12" font-weight="700" fill="#FFB000" text-anchor="start" >hw-pass</text><text x="84" y="13" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="12" font-weight="400" fill="#FFFFFF" text-anchor="start" >1/3</text><text x="236" y="13" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="12" font-weight="700" fill="#00C850" text-anchor="end" >USB</text><rect x="4" y="29" width="4" height="22" fill="#FFB000"/><text x="16" y="46" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="17" font-weight="400" fill="#FFFFFF" text-anchor="start" >GitHub</text><text x="228" y="46" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="15" font-weight="400" fill="#828282" text-anchor="end" >1</text><text x="16" y="72" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="17" font-weight="400" fill="#828282" text-anchor="start" >Mail</text><text x="16" y="98" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="17" font-weight="400" fill="#828282" text-anchor="start" >Bank</text><text x="228" y="98" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="15" font-weight="400" fill="#828282" text-anchor="end" >2</text><line x1="0" y1="112" x2="240" y2="112" stroke="#3C3C3C" stroke-width="1.5"/><text x="4" y="128" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="10.5" font-weight="400" fill="#828282" text-anchor="start" >Side: next  Front: type</text><text x="236" y="128" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="10.5" font-weight="400" fill="#828282" text-anchor="end" >21:45</text></g>
+      <g class="ui-pin"><rect width="240" height="135" fill="#000"/><text x="120" y="36" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="15" font-weight="400" fill="#FFFFFF" text-anchor="middle" >Enter the PIN</text><g class="pin-star-0"><path d="M 90 57 L 92.24 61.76 L 97 64 L 92.24 66.24 L 90 71 L 87.76 66.24 L 83 64 L 87.76 61.76 Z" fill="#FFB000"/></g><g class="pin-star-1"><path d="M 110 57 L 112.24 61.76 L 117 64 L 112.24 66.24 L 110 71 L 107.76 66.24 L 103 64 L 107.76 61.76 Z" fill="#FFB000"/></g><g class="pin-star-2"><path d="M 130 57 L 132.24 61.76 L 137 64 L 132.24 66.24 L 130 71 L 127.76 66.24 L 123 64 L 127.76 61.76 Z" fill="#FFB000"/></g><g class="pin-star-3"><path d="M 150 57 L 152.24 61.76 L 157 64 L 152.24 66.24 L 150 71 L 147.76 66.24 L 143 64 L 147.76 61.76 Z" fill="#FFB000"/></g><rect class="pin-cursor" x="-9" y="90" width="18" height="21" rx="3" fill="none" stroke="#FFB000" stroke-width="2"/><g class="pin-pick-x"><rect class="pin-pick" x="-9" y="90" width="18" height="21" rx="3" fill="#FFB000"/></g><text x="10" y="106" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="14" font-weight="400" fill="#FFFFFF" text-anchor="middle" >0</text><text x="29.5" y="106" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="14" font-weight="400" fill="#FFFFFF" text-anchor="middle" >1</text><text x="49" y="106" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="14" font-weight="400" fill="#FFFFFF" text-anchor="middle" >2</text><text x="68.5" y="106" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="14" font-weight="400" fill="#FFFFFF" text-anchor="middle" >3</text><text x="88" y="106" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="14" font-weight="400" fill="#FFFFFF" text-anchor="middle" >4</text><text x="107.5" y="106" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="14" font-weight="400" fill="#FFFFFF" text-anchor="middle" >5</text><text x="127" y="106" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="14" font-weight="400" fill="#FFFFFF" text-anchor="middle" >6</text><text x="146.5" y="106" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="14" font-weight="400" fill="#FFFFFF" text-anchor="middle" >7</text><text x="166" y="106" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="14" font-weight="400" fill="#FFFFFF" text-anchor="middle" >8</text><text x="185.5" y="106" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="14" font-weight="400" fill="#FFFFFF" text-anchor="middle" >9</text><text x="205" y="106" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="14" font-weight="400" fill="#FFFFFF" text-anchor="middle" >&lt;</text><text x="224.5" y="106" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="11" font-weight="400" fill="#FFFFFF" text-anchor="middle" >OK</text></g>
+      <g class="ui-ok"><rect width="240" height="135" fill="#000"/><circle cx="120" cy="56" r="24" fill="none" stroke="#00C850" stroke-width="4"/><path d="M 108 57 L 117 66 L 133 48" fill="none" stroke="#00C850" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><text x="120" y="108" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="16" font-weight="700" fill="#00C850" text-anchor="middle" >Unlocked</text></g>
+    </g>
+  </g></g></g>
+
+  <g class="cap-usb"><g class="cap-usb-in" style="transform-box:fill-box;transform-origin:center">
+    <text x="480" y="470" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="26" font-weight="700" fill="#E8E8E8" text-anchor="middle" >Push the button. The device types the password.</text>
+    <text x="480" y="502" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="16.5" font-weight="400" fill="#9AA0A6" text-anchor="middle" >A USB keyboard. Nothing to install on the computer.</text>
+  </g></g><g class="cap-pin"><g class="cap-pin-in" style="transform-box:fill-box;transform-origin:center">
+    <text x="480" y="470" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="26" font-weight="700" fill="#E8E8E8" text-anchor="middle" >A PIN locks the device.</text>
+    <text x="480" y="502" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="16.5" font-weight="400" fill="#9AA0A6" text-anchor="middle" >The entries are encrypted in flash. Nothing types until you enter the PIN.</text>
+  </g></g><g class="cap-ble"><g class="cap-ble-in" style="transform-box:fill-box;transform-origin:center">
+    <text x="480" y="470" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="26" font-weight="700" fill="#E8E8E8" text-anchor="middle" >No cable? Bluetooth LE.</text>
+    <text x="480" y="502" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="16.5" font-weight="400" fill="#9AA0A6" text-anchor="middle" >Keyboard and mouse over Bluetooth. The computer sees the battery level.</text>
+  </g></g><g class="cap-mm"><g class="cap-mm-in" style="transform-box:fill-box;transform-origin:center">
+    <text x="480" y="470" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="26" font-weight="700" fill="#E8E8E8" text-anchor="middle" >Mouse mover.</text>
+    <text x="480" y="502" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="16.5" font-weight="400" fill="#9AA0A6" text-anchor="middle" >Keeps the computer awake, by hand or on a schedule. The time comes from NTP.</text>
+  </g></g>
+</g>
+</svg>

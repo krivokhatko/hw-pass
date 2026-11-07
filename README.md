@@ -1,6 +1,20 @@
-# hw-pass
+<p align="center">
+  <img src="docs/media/logo.svg" width="170" alt="The hw-pass mascot: a smiling M5Stack StickS3 with a key in its hand">
+</p>
 
-Hardware password typer. Firmware for the M5Stack StickS3 (ESP32-S3).
+<h1 align="center">hw-pass</h1>
+
+<p align="center"><b>Hardware password typer. Firmware for the M5Stack StickS3 (ESP32-S3).</b></p>
+
+<p align="center">
+  <a href="https://github.com/krivokhatko/hw-pass/actions/workflows/build.yml"><img src="https://github.com/krivokhatko/hw-pass/actions/workflows/build.yml/badge.svg" alt="Build"></a>
+  <a href="https://github.com/krivokhatko/hw-pass/releases/latest"><img src="https://img.shields.io/github/v/release/krivokhatko/hw-pass?label=release&color=ffb000" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-3c8cff" alt="MIT license"></a>
+</p>
+
+<p align="center">
+  <img src="docs/media/promo.svg" width="100%" alt="Animation: the device types a password over USB, locks with a PIN, works over Bluetooth LE, and keeps the computer awake.">
+</p>
 
 The device is a USB keyboard that types stored passwords. The side button selects an entry. The front button types its password into the focused window.
 
@@ -86,7 +100,7 @@ boards/               One file for each board: the options that differ from sdkc
 partitions.csv        Flash partition table for 8 MB flash.
 main/                 Application entry point (app_main) and the project options (Kconfig.projbuild). Keep it small.
 components/           Project modules. One directory for each module.
-docs/                 User and developer documentation.
+docs/                 User and developer documentation. docs/media/ has the logo and the promo animation of this page.
 tools/                Host scripts: flash.sh flashes the device, psf2c.py makes the font file.
 .github/workflows/    CI: build.yml builds each board, and publishes a release for a tag.
 ```

@@ -4,7 +4,7 @@
 
 <h1 align="center">hw-pass</h1>
 
-<p align="center"><b>Hardware password typer. Firmware for the M5Stack StickS3 (ESP32-S3).</b><br>
+<p align="center"><b>Hardware password typer. Firmware for the M5Stack StickS3 and Chain Dual Key (ESP32-S3).</b><br>
 Free and open source. Your donations keep the development going.</p>
 
 <p align="center">
@@ -53,6 +53,7 @@ Donatello takes a card from any country, or cryptocurrency, and pays out in Ukra
 | Item | Note |
 |---|---|
 | M5Stack StickS3 | ESP32-S3-PICO-1 with 8 MB flash, a 240 × 135 LCD, two buttons, a speaker, a tilt sensor, a battery, and USB-C. No change to the hardware. |
+| M5Stack Chain Dual Key (SKU C147) | Instead of the StickS3. ESP32-S3FN8 with 8 MB flash, two mechanical keys with an RGB LED under each key, a battery, a power switch, and USB-C. No screen and no speaker: the LEDs show the state, and the serial port shows the texts. See "Chain Dual Key" in [docs/usage.md](docs/usage.md). |
 | USB-C cable | A data cable, not a charge-only cable. |
 | Bluetooth LE keypad (optional) | Tested: A4Tech FBK21C. Other keyboards with HID over GATT are not tested. |
 | Computer with Bluetooth LE (optional) | For the wireless mode. Tested with Linux (BlueZ). |
@@ -66,31 +67,33 @@ Donatello takes a card from any country, or cryptocurrency, and pays out in Ukra
    idf.py build
    ```
    Or take the full image of the [latest release](https://github.com/krivokhatko/hw-pass/releases/latest), without a build. See "Releases".
-3. Flash. A new device comes with UIFlow2: hold the power button until the computer sees the download mode, then run `idf.py -p /dev/ttyACM0 erase-flash` and `idf.py -p /dev/ttyACM0 flash`. A device with hw-pass: `tools/flash.sh`. For a release image, use the esptool commands of "Releases".
+3. Flash. A new device comes with the firmware of M5Stack: put it in the download mode (StickS3: hold the power button; Chain Dual Key: hold Key1 while you connect the cable), then run `idf.py -p /dev/ttyACM0 erase-flash` and `idf.py -p /dev/ttyACM0 flash`. A device with hw-pass: `tools/flash.sh`. For a release image, use the esptool commands of "Releases". For the Chain Dual Key, build with its board file first: see "Boards".
 4. Open the command line with `picocom /dev/ttyACM0` and push Enter. Add an entry:
    ```
    add GitHub
    ```
    The device asks for the password two times.
-5. Put the focus on a text editor and push the front button. The device types the password.
+5. Put the focus on a text editor and push the front button (Chain Dual Key: Key1, the key far from the lanyard hole). The device types the password.
 
 Then set a PIN (`pin`), add entries on the web page, pair a keypad, or pair a laptop. The user guide tells how: [docs/usage.md](docs/usage.md).
 
 ## Target
 
-| Item | Value |
-|---|---|
-| Board | M5Stack StickS3 |
-| SoC | ESP32-S3-PICO-1, revision v0.2 |
-| Flash | 8 MB, quad |
-| PSRAM | 8 MB, not enabled |
-| Console | USB Serial/JTAG. UART0 is not connected to USB. |
+| Item | StickS3 | Chain Dual Key |
+|---|---|---|
+| SoC | ESP32-S3-PICO-1, revision v0.2 | ESP32-S3FN8 |
+| Flash | 8 MB, quad | 8 MB, quad, in the chip |
+| PSRAM | 8 MB, not enabled | None |
+| Console | USB Serial/JTAG. UART0 is not connected to USB. | The same. |
+| Input | Two buttons | Two mechanical keys |
+| Output | LCD, speaker | Two RGB LEDs, the serial port |
 
 ## Boards
 
 | Board | File | Status |
 |---|---|---|
 | M5Stack StickS3 | `boards/sticks3.defaults` | The default board. Tested. |
+| M5Stack Chain Dual Key | `boards/dualkey.defaults` | Builds. The test on the device is in progress. |
 
 `sdkconfig.defaults` is the build for the StickS3, and `idf.py build` builds it. A board file comes after it and changes the options that differ:
 
@@ -98,7 +101,7 @@ Then set a PIN (`pin`), add entries on the web page, pair a keypad, or pair a la
 idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;boards/<name>.defaults" build
 ```
 
-The board file selects the board in Kconfig (`CONFIG_HWPASS_BOARD_*`, `main/Kconfig.projbuild`). The code of a board goes behind `#if CONFIG_HWPASS_BOARD_*`. The "Board" line of `info` shows the name. The CI builds each board of `.github/workflows/build.yml`. To add a board, see "Add a board" in [docs/contributing.md](docs/contributing.md).
+The board file selects the board in Kconfig (`CONFIG_HWPASS_BOARD_*`, `main/Kconfig.projbuild`). The board selects its parts: `CONFIG_HWPASS_LCD`, `HWPASS_IMU`, `HWPASS_SPEAKER`, `HWPASS_BATTERY`, `HWPASS_PM1`, `HWPASS_LEDS`. The code checks the parts, and the pins of a board go behind `#if CONFIG_HWPASS_BOARD_*`. The "Board" line of `info` shows the name. The CI builds each board of `.github/workflows/build.yml`. To add a board, see "Add a board" in [docs/contributing.md](docs/contributing.md).
 
 ## Toolchain
 
@@ -112,12 +115,12 @@ For the setup, refer to [docs/dev-setup.md](docs/dev-setup.md).
 ```
 CMakeLists.txt        Project file.
 sdkconfig.defaults    Project configuration for the StickS3. Edit this file, not sdkconfig.
-boards/               One file for each board: the options that differ from sdkconfig.defaults.
+boards/               One file for each board: sticks3.defaults, dualkey.defaults. The options that differ from sdkconfig.defaults.
 partitions.csv        Flash partition table for 8 MB flash.
 main/                 Application entry point (app_main) and the project options (Kconfig.projbuild). Keep it small.
 components/           Project modules. One directory for each module.
 docs/                 User and developer documentation. docs/media/ has the logo, the promo animation, and the coffee mascot of this page.
-tools/                Host scripts: flash.sh flashes the device, psf2c.py makes the font file, supporters.py updates the supporter list from Donatello.
+tools/                Host scripts: flash.sh flashes the device (with a build directory for a second board), psf2c.py makes the font file, supporters.py updates the supporter list from Donatello.
 .github/workflows/    CI: build.yml builds each board, and publishes a release for a tag. supporters.yml updates the supporter list once a day; its commit skips the build.
 .github/FUNDING.yml   The "Sponsor" button of the repository page: the Donatello page.
 ```
@@ -126,13 +129,14 @@ tools/                Host scripts: flash.sh flashes the device, psf2c.py makes 
 
 | Module | Function |
 |---|---|
-| `pm1` | M5PM1 power chip: watchdog off, LCD power on, speaker amplifier on and off, battery voltage, USB power and charge state. It owns the internal I2C bus. |
-| `battery` | Battery of the device: the voltage from `pm1` every 20 s, and the level in % from a discharge curve. `blehid` reports the level to the computer; `info` shows it. |
-| `display` | ST7789 LCD, backlight, panel sleep while the screen is dark, frame buffer, and text. |
-| `sound` | ES8311 audio codec on I2S, and the AW8737 speaker amplifier: short tones and the typing melody for `ui`. |
-| `clock` | Time in the system clock (UTC) and the time zone: kept across a restart, lost at a power loss. The board has no clock chip. |
-| `imu` | BMI270 accelerometer on the internal I2C bus: which edge of the screen is up. The chip loads its 8 KB configuration file at each start (`bmi270_config.c`, from the Bosch BMI270 Sensor API, BSD-3-Clause). |
-| `buttons` | Front and side buttons: debounce, short and long push, push of both. |
+| `pm1` | StickS3: M5PM1 power chip: watchdog off, LCD power on, speaker amplifier on and off, battery voltage, USB power and charge state. It owns the internal I2C bus. |
+| `battery` | Battery of the device: the voltage every 20 s from `pm1` (StickS3) or from the ADC (Chain Dual Key), and the level in % from a discharge curve. `blehid` reports the level to the computer; `info` shows it. |
+| `display` | StickS3: ST7789 LCD, backlight, panel sleep while the screen is dark, frame buffer, and text. |
+| `sound` | StickS3: ES8311 audio codec on I2S, and the AW8737 speaker amplifier: short tones and the typing melody for `ui`. On a board without a speaker, the sounds go nowhere. |
+| `clock` | Time in the system clock (UTC) and the time zone: kept across a restart, lost at a power loss. The boards have no clock chip. |
+| `imu` | StickS3: BMI270 accelerometer on the internal I2C bus: which edge of the screen is up. The chip loads its 8 KB configuration file at each start (`bmi270_config.c`, from the Bosch BMI270 Sensor API, BSD-3-Clause). |
+| `buttons` | Front and side buttons (the two keys of the Chain Dual Key): debounce, short and long push, push of both. |
+| `leds` | Chain Dual Key: the two WS2812 LEDs under the keys, on an RMT channel. |
 | `vault` | Password entries in the `vault` NVS partition. With a PIN, the entries are one AES-256-GCM blob: the key comes from PBKDF2 of the PIN, and from the eFuse HMAC key when the chip has one. The lock state, the wrong-PIN counter, and the wait times. |
 | `kdf` | PBKDF2-HMAC-SHA512 on the SHA hardware, for `vault` and `backup`. |
 | `rng` | Random passwords. Selects the entropy source: ADC noise or radio. |
@@ -146,10 +150,10 @@ tools/                Host scripts: flash.sh flashes the device, psf2c.py makes 
 | `ble` | Bluetooth LE host (NimBLE), shared by `keypad` and `blehid`: the start, the pairing method, and the bonding keys in NVS. |
 | `blehid` | Bluetooth LE keyboard and mouse for a computer (HID over GATT): the services, the advertising, the pairing with a passkey, the key and mouse reports, and the battery level. One paired computer in NVS. |
 | `keypad` | Bluetooth LE keypad: NimBLE central, pairing, HID over GATT client, battery level, and key changes for `ui`. `hidmap.c` reads the HID report map. |
-| `ui` | Screen content and button actions. The PIN screen, and the lock when the USB connection stops. |
+| `ui` | Button actions, the modes, the PIN entry, and the lock when the USB connection stops (`ui.c`). The view shows the state: `view_lcd.c` draws the screen of the StickS3, `view_led.c` sets the key LEDs of the Chain Dual Key and prints the texts on the serial port. |
 | `sysinfo` | Chip information in the log. |
 
-`main.c` starts the modules in this order: power chip, battery, display, sound, tilt sensor, vault, random numbers, clock, USB, Bluetooth host, Bluetooth computer link, keyboard output, mouse mover, keypad, time sync, command line. Then it runs the UI. A module that fails to start logs an error, and the device goes on: the serial port must stay available for the next flash.
+`main.c` starts the modules in this order: power chip, battery, display, sound, tilt sensor, vault, random numbers, clock, USB, Bluetooth host, Bluetooth computer link, keyboard output, mouse mover, keypad, time sync, command line. Then it runs the UI. It does not start the modules of the parts that the board does not have (`CONFIG_HWPASS_*`); the linker removes their code. A module that fails to start logs an error, and the device goes on: the serial port must stay available for the next flash.
 
 Threads: `ui_run` runs in the main task. `cli` has its own task. TinyUSB has its own task. In the Wi-Fi setup mode, the web server, the DNS server, and the Wi-Fi driver have their own tasks. `ui_run` starts and stops this mode. `keypad` has its own task, and the NimBLE host has a task after the first Bluetooth start (`ble`). `blehid` has no task: the host task runs the events of the computer link. `sound` has its own task. The mouse mover, its schedule, and the battery measurement run in the `esp_timer` task. `ntp` has its own task; the Wi-Fi setup mode holds it while the mode runs. `vault`, `rng`, `hid`, `blehid`, `mover`, `ntp`, and the serial port in `usbdev` have locks.
 
@@ -181,7 +185,7 @@ tools/flash.sh
 
 If the device runs other firmware with USB Serial/JTAG, use `idf.py -p /dev/ttyACM0 flash`.
 
-If the firmware does not start the serial port, push and hold the power button. The power chip starts the ROM download mode.
+If the firmware does not start the serial port, push and hold the power button: the power chip starts the ROM download mode (StickS3). On the Chain Dual Key, hold Key1 while you connect the cable.
 
 To open the command line: `picocom /dev/ttyACM0`. `idf.py monitor` also works, but it cannot show the start-up log.
 
@@ -202,7 +206,7 @@ Each push to `master` and each pull request builds every board (`.github/workflo
 esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash 0x10000 hw-pass-v1.0.0-sticks3-app.bin
 ```
 
-The device must be in the download mode: `dfu` on the serial port, or hold the power button. Without ESP-IDF, `pip install esptool` gives `esptool.py`. When a release changes the partition table or the bootloader, its notes say that the full image is necessary.
+The device must be in the download mode: `dfu` on the serial port, or hold the power button (StickS3), or hold Key1 while you connect the cable (Chain Dual Key). Without ESP-IDF, `pip install esptool` gives `esptool.py`. When a release changes the partition table or the bootloader, its notes say that the full image is necessary.
 
 To publish a release, tag the commit on `master` and push the tag:
 
@@ -230,7 +234,7 @@ Wi-Fi and Bluetooth can run at the same time. Both need much internal RAM: the W
 The device has no current measurement. These measures keep the use low on battery:
 
 - CPU: `CONFIG_PM_ENABLE` and `esp_pm_configure` in `main.c`. The CPU runs at 80 MHz while all tasks wait, and at 160 MHz while a task runs. The APB clock stays at 80 MHz: the peripherals see no change. No light sleep: USB, the backlight PWM, and the Bluetooth controller would need more work.
-- Screen: the backlight is the largest user. The screen goes dark after 60 s on USB power, after 20 s on battery (`ui`). While it is dark, the panel sleeps (`display_backlight(0)`).
+- Screen: the backlight is the largest user. The screen goes dark after 60 s on USB power, after 20 s on battery (`ui`). While it is dark, the panel sleeps (`display_backlight(0)`). The key LEDs of the Chain Dual Key dim after the same times.
 - Keypad link (`keypad`): the device scans for the sleeping keypad 10 % of the time (30 ms in 300 ms), and uses a connection interval of 30 ms.
 - Computer link (`blehid`): after the encryption, the device asks for a connection interval of 15 to 30 ms with a latency of 30 events. The computer can refuse. Key reports go at the next event in both cases.
 - Advertising for the paired computer: 100 to 150 ms. A slower rate would save little and make the connection of the computer slow.

@@ -1,6 +1,7 @@
-/* Battery of the device. The M5PM1 power chip measures the voltage of the
- * battery; a discharge curve gives the level in %. The measurement runs
- * in the esp_timer task every BATTERY_PERIOD_S.
+/* Battery of the device. The M5PM1 power chip (StickS3) or the ADC (Chain
+ * Dual Key) measures the voltage of the battery; a discharge curve gives
+ * the level in %. The measurement runs in the esp_timer task every
+ * BATTERY_PERIOD_S.
  *
  * The level moves in steps of STEP %: a small change of the voltage does
  * not change the level, and the computer does not get a notification for
@@ -8,11 +9,13 @@
  * the level is high while the battery charges. */
 #include <stdbool.h>
 #include <stdlib.h>
+#include "sdkconfig.h"
 #include "esp_check.h"
 #include "esp_log.h"
-#include "esp_timer.h"
-#include "pm1.h"
 #include "battery.h"
+
+#if CONFIG_HWPASS_BATTERY
+#include "esp_timer.h"
 
 #define STEP        2       /* Smallest change of the level in % */
 
@@ -26,6 +29,109 @@ static const struct {
 };
 
 static const char *TAG = "battery";
+
+/* ---- The source of the values: the power chip, or the ADC ---- */
+
+#if CONFIG_HWPASS_PM1
+#include "pm1.h"
+
+static esp_err_t source_init(void)
+{
+    return ESP_OK;
+}
+
+/* mv 0: no battery. */
+static esp_err_t source_read(int *mv, bool *usb, bool *charging)
+{
+    ESP_RETURN_ON_ERROR(pm1_battery_mv(mv), TAG, "pm1");
+    if (pm1_power(usb, charging) != ESP_OK) {
+        *usb = false;
+        *charging = false;
+    }
+    return ESP_OK;
+}
+
+#else   /* The ADC of the Chain Dual Key */
+#include "esp_adc/adc_cali.h"
+#include "esp_adc/adc_cali_scheme.h"
+#include "esp_adc/adc_oneshot.h"
+#include "rng.h"
+
+/* Chain Dual Key (schematic V1.5): the battery goes through 510 k and
+ * 1 M to G10, the USB voltage through 51 k and 100 k to G2. The pin sees
+ * the voltage divided by 1.51. G9 has the state of the TP4057 charger
+ * through a resistor network: about 1.65 V while it charges, 2.2 V when
+ * the battery is full, 3.3 V without a charge (factory firmware). */
+#define CH_BAT          ADC_CHANNEL_9   /* G10 */
+#define CH_VBUS         ADC_CHANNEL_1   /* G2 */
+#define CH_CHARGE       ADC_CHANNEL_8   /* G9 */
+#define DIVIDER_X100    151             /* The voltage is the pin voltage times 1.51. */
+#define SAMPLES         8               /* Readings for one value */
+#define BAT_MIN_MV      2500            /* Below this: no battery. */
+#define USB_MIN_MV      4000            /* USB power above this (factory firmware) */
+#define CHARGE_MIN_MV   1400            /* The charger charges between these pin voltages. */
+#define CHARGE_MAX_MV   1900
+
+static adc_oneshot_unit_handle_t s_adc;
+static adc_cali_handle_t s_cali;
+
+static esp_err_t source_init(void)
+{
+    adc_oneshot_unit_init_cfg_t unit = { .unit_id = ADC_UNIT_1 };
+    adc_oneshot_chan_cfg_t chan = { .atten = ADC_ATTEN_DB_12, .bitwidth = ADC_BITWIDTH_DEFAULT };
+    adc_cali_curve_fitting_config_t cali = {
+        .unit_id = ADC_UNIT_1,
+        .atten = ADC_ATTEN_DB_12,
+        .bitwidth = ADC_BITWIDTH_DEFAULT,
+    };
+
+    ESP_RETURN_ON_ERROR(adc_oneshot_new_unit(&unit, &s_adc), TAG, "adc");
+    ESP_RETURN_ON_ERROR(adc_oneshot_config_channel(s_adc, CH_BAT, &chan), TAG, "battery pin");
+    ESP_RETURN_ON_ERROR(adc_oneshot_config_channel(s_adc, CH_VBUS, &chan), TAG, "USB pin");
+    ESP_RETURN_ON_ERROR(adc_oneshot_config_channel(s_adc, CH_CHARGE, &chan), TAG, "charge pin");
+    return adc_cali_create_scheme_curve_fitting(&cali, &s_cali);
+}
+
+/* The mean of SAMPLES readings, in mV at the pin. */
+static esp_err_t read_pin(adc_channel_t ch, int *mv)
+{
+    int sum = 0, raw, v;
+
+    for (int i = 0; i < SAMPLES; i++) {
+        ESP_RETURN_ON_ERROR(adc_oneshot_read(s_adc, ch, &raw), TAG, "read");
+        ESP_RETURN_ON_ERROR(adc_cali_raw_to_voltage(s_cali, raw, &v), TAG, "cali");
+        sum += v;
+    }
+    *mv = sum / SAMPLES;
+    return ESP_OK;
+}
+
+/* mv 0: no battery. The ADC noise source of rng must not run now. */
+static esp_err_t source_read(int *mv, bool *usb, bool *charging)
+{
+    int bat = 0, vbus = 0, charge = 0;
+    esp_err_t err;
+
+    rng_adc_lock();
+    err = read_pin(CH_BAT, &bat);
+    if (err == ESP_OK) {
+        err = read_pin(CH_VBUS, &vbus);
+    }
+    if (err == ESP_OK) {
+        err = read_pin(CH_CHARGE, &charge);
+    }
+    rng_adc_unlock();
+    ESP_RETURN_ON_ERROR(err, TAG, "adc");
+    *mv = bat * DIVIDER_X100 / 100;
+    if (*mv < BAT_MIN_MV) {
+        *mv = 0;
+    }
+    *usb = vbus * DIVIDER_X100 / 100 >= USB_MIN_MV;
+    *charging = charge >= CHARGE_MIN_MV && charge <= CHARGE_MAX_MV;
+    return ESP_OK;
+}
+#endif  /* CONFIG_HWPASS_PM1 */
+
 static esp_timer_handle_t s_timer;
 static volatile int s_level = -1;
 static volatile int s_mv;
@@ -55,14 +161,12 @@ static void measure(void)
     int mv = 0, level, old = s_level;
     bool usb = false, charging = false;
 
-    if (pm1_battery_mv(&mv) != ESP_OK || mv <= 0) {
+    if (source_read(&mv, &usb, &charging) != ESP_OK || mv <= 0) {
         s_mv = 0;
         s_level = -1;
+        s_usb = usb;
+        s_charging = charging;
         return;
-    }
-    if (pm1_power(&usb, &charging) != ESP_OK) {
-        usb = false;
-        charging = false;
     }
     s_mv = mv;
     s_usb = usb;
@@ -89,6 +193,7 @@ esp_err_t battery_init(void)
         .name = "battery",
     };
 
+    ESP_RETURN_ON_ERROR(source_init(), TAG, "source");
     ESP_RETURN_ON_ERROR(esp_timer_create(&timer_args, &s_timer), TAG, "timer");
     measure();
     return esp_timer_start_periodic(s_timer, (uint64_t)BATTERY_PERIOD_S * 1000000);
@@ -122,3 +227,45 @@ esp_err_t battery_on_change(battery_cb_t cb)
     s_cb = cb;
     return ESP_OK;
 }
+
+#else   /* CONFIG_HWPASS_BATTERY */
+
+/* A board without a battery runs on USB power. There is no level: the
+ * Bluetooth battery service reports "unknown". */
+static battery_cb_t s_cb;
+
+esp_err_t battery_init(void)
+{
+    return ESP_OK;
+}
+
+int battery_level(void)
+{
+    return -1;
+}
+
+int battery_mv(void)
+{
+    return 0;
+}
+
+bool battery_usb(void)
+{
+    return true;
+}
+
+bool battery_charging(void)
+{
+    return false;
+}
+
+esp_err_t battery_on_change(battery_cb_t cb)
+{
+    if (s_cb && cb) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    s_cb = cb;
+    return ESP_OK;
+}
+
+#endif  /* CONFIG_HWPASS_BATTERY */

@@ -22,7 +22,7 @@ jobs:
       fail-fast: false
       matrix:
         # One name for each file in boards/.
-        board: [sticks3]
+        board: [sticks3, dualkey]
     steps:
       - uses: actions/checkout@v7
         with:
@@ -82,9 +82,9 @@ jobs:
           cat > notes.md <<EOF
           ## Install
 
-          The device must be in the download mode: type "dfu" on the serial port, or hold the power button. See docs/dev-setup.md.
+          The device must be in the download mode: type "dfu" on the serial port, or hold the power button (StickS3), or hold Key1 while you connect the cable (Chain Dual Key). See docs/dev-setup.md.
 
-          A new device (UIFlow2): erase the flash, then write the full image. The full image also writes 0xFF over the "nvs" partition: the settings and the pairings reset. The entries in the "vault" partition stay.
+          A new device (the firmware of M5Stack): erase the flash, then write the full image. The full image also writes 0xFF over the "nvs" partition: the settings and the pairings reset. The entries in the "vault" partition stay.
 
               esptool.py --chip esp32s3 -p /dev/ttyACM0 erase_flash
               esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash 0x0 hw-pass-$TAG-<board>.bin

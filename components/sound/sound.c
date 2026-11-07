@@ -6,6 +6,10 @@
 #include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include "sdkconfig.h"
+#include "sound.h"
+
+#if CONFIG_HWPASS_SPEAKER
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
@@ -14,7 +18,6 @@
 #include "esp_check.h"
 #include "esp_log.h"
 #include "pm1.h"
-#include "sound.h"
 
 #define PIN_MCLK        18
 #define PIN_BCLK        17
@@ -434,3 +437,44 @@ bool sound_ready(void)
 {
     return s_ready;
 }
+
+#else   /* CONFIG_HWPASS_SPEAKER */
+
+/* A board without a speaker: the sounds go nowhere. The LEDs of the
+ * board show the state instead (components/ui/view_led.c). */
+esp_err_t sound_init(void)
+{
+    return ESP_OK;
+}
+
+void sound_play(sound_t s)
+{
+}
+
+void sound_prepare(void)
+{
+}
+
+void sound_melody_start(const char *text)
+{
+}
+
+void sound_melody_stop(void)
+{
+}
+
+void sound_enable(bool on)
+{
+}
+
+bool sound_enabled(void)
+{
+    return false;
+}
+
+bool sound_ready(void)
+{
+    return false;
+}
+
+#endif  /* CONFIG_HWPASS_SPEAKER */

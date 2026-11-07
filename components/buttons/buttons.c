@@ -2,12 +2,22 @@
  * presses, and pushes of both buttons together. */
 #include <stdbool.h>
 #include <stdint.h>
+#include "sdkconfig.h"
 #include "driver/gpio.h"
 #include "buttons.h"
 
 #define DEBOUNCE_SAMPLES    3
 
-static const gpio_num_t s_pin[BUTTON_COUNT] = { GPIO_NUM_11, GPIO_NUM_12 };
+#if CONFIG_HWPASS_BOARD_DUALKEY
+/* Chain Dual Key: Key1 (G0, the key far from the lanyard hole) types,
+ * Key2 (G17, next to the lanyard hole) selects. Both have a pull-up on
+ * the board (schematic). G0 is also the boot strap pin: a hold at power
+ * on starts the download mode. */
+static const gpio_num_t s_pin[BUTTON_COUNT] = { [BUTTON_FRONT] = GPIO_NUM_0, [BUTTON_SIDE] = GPIO_NUM_17 };
+#else
+/* StickS3: KEY1 below the LCD, KEY2 on the side. */
+static const gpio_num_t s_pin[BUTTON_COUNT] = { [BUTTON_FRONT] = GPIO_NUM_11, [BUTTON_SIDE] = GPIO_NUM_12 };
+#endif
 
 static struct {
     bool down;          /* Debounced state */

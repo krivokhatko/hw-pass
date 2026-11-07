@@ -1,7 +1,11 @@
 #!/bin/sh
 # Restart hw-pass into ROM download mode, then flash the firmware.
-# Run "get_idf" first. Usage: tools/flash.sh
+# Run "get_idf" first. Usage: tools/flash.sh [build-dir]
+# The build directory is "build", or the one of "idf.py -B <dir>" for
+# a second board (see "Add a board" in docs/contributing.md).
 set -eu
+
+BUILD_DIR="${1:-build}"
 
 APP_ID="303a:4005"  # hw-pass firmware (TinyUSB)
 ROM_ID="303a:1001"  # ROM download mode (USB Serial/JTAG)
@@ -41,4 +45,4 @@ until port=$(find_port "$ROM_ID"); do
     sleep 0.5
 done
 echo "Flash through $port."
-idf.py -p "$port" flash
+idf.py -B "$BUILD_DIR" -p "$port" flash

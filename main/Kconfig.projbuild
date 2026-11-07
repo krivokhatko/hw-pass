@@ -10,11 +10,59 @@ menu "hw-pass"
 
         config HWPASS_BOARD_STICKS3
             bool "M5Stack StickS3"
+            select HWPASS_PM1
+            select HWPASS_LCD
+            select HWPASS_IMU
+            select HWPASS_SPEAKER
+            select HWPASS_BATTERY
+
+        config HWPASS_BOARD_DUALKEY
+            bool "M5Stack Chain Dual Key"
+            select HWPASS_LEDS
+            select HWPASS_BATTERY
     endchoice
 
     config HWPASS_BOARD_NAME
         string
         default "sticks3" if HWPASS_BOARD_STICKS3
+        default "dualkey" if HWPASS_BOARD_DUALKEY
+
+    # The parts of the board. The board selects them; the code checks
+    # them, not the board name.
+    config HWPASS_LCD
+        bool
+        help
+            A screen with the tilt sensor view (components/ui/view_lcd.c).
+            Without it, the key LEDs show the state (view_led.c).
+
+    config HWPASS_IMU
+        bool
+        help
+            A tilt sensor: the screen turns with the device.
+
+    config HWPASS_SPEAKER
+        bool
+        help
+            A speaker with the audio codec (components/sound). Without
+            it, the sound module builds, but it makes no sound.
+
+    config HWPASS_PM1
+        bool
+        help
+            The M5PM1 power chip of the StickS3 (components/pm1): the LCD
+            power, the speaker amplifier, and the battery measurement.
+
+    config HWPASS_BATTERY
+        bool
+        help
+            A battery (components/battery). The power chip measures it
+            when the board has one, else the ADC. Without a battery, the
+            device runs on USB power only.
+
+    config HWPASS_LEDS
+        bool
+        help
+            RGB LEDs under the keys (components/leds).
 
     config HWPASS_WEB
         bool "Wi-Fi setup mode with a web page"

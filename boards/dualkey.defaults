@@ -1,0 +1,5 @@
+# M5Stack Chain Dual Key: ESP32-S3 with two mechanical keys and an RGB
+# LED under each key. No screen, no speaker, no tilt sensor, no battery.
+# The key LEDs and the serial port show the state (components/ui/view_led.c).
+# idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;boards/dualkey.defaults" build
+CONFIG_HWPASS_BOARD_DUALKEY=y

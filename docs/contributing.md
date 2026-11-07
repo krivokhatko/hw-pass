@@ -34,6 +34,20 @@ The M5Stack StickS3 wires these parts to the ESP32-S3. The values are from the c
 
 `pm1` owns the internal I2C bus. The other modules get the bus from it.
 
+The M5Stack Chain Dual Key (SKU C147) wires these parts to the ESP32-S3FN8. The values are from the schematic V1.5 and the factory firmware ([M5DualKey-UserDemo](https://github.com/m5stack/M5DualKey-UserDemo)).
+
+| Part | Connection | Module |
+|---|---|---|
+| Key1, the key far from the lanyard hole | G0, pull-up on the board, active low. Also the boot strap pin: a hold while the cable goes in starts the ROM download mode. | `buttons` (front: types) |
+| Key2, the key next to the lanyard hole | G17, pull-up on the board, active low | `buttons` (side: selects) |
+| Two WS2812B-2020 LEDs | Data on G21. LED 0 is under Key2, LED 1 under Key1. Power switch on G40: open drain, low is on. | `leds`, `ui` (`view_led.c`) |
+| Battery, 350 mAh, TP4057 charger | ADC1: battery voltage on G10 and USB voltage on G2, both divided by 1.51. The charge state on G9: about 1.65 V while it charges. | `battery` |
+| Power switch, three positions | BLE: G8 high. USB: G7 high. Middle: off without USB power. Never drive G7 or G8 high: they hold the power on. The firmware does not use them. | - |
+| Two HY2.0-4P Chain ports | UART1 on G47 and G48, UART2 on G5 and G6, 5 V and GND. Not used. | - |
+| USB-C | USB Serial/JTAG in the ROM, TinyUSB in the firmware | `usbdev` |
+
+The board has no screen, no speaker, no tilt sensor, and no reset button.
+
 The USB vendor ID is the Espressif ID, and the product ID is the TinyUSB example ID for CDC and HID (`components/usbdev/include/usbdev.h`). The Bluetooth link reports the same IDs. For a product that you sell, get your own IDs.
 
 ## Code
@@ -92,7 +106,8 @@ Words:
 
 | Word | Meaning |
 |---|---|
-| the device | hw-pass, the StickS3 with this firmware |
+| the device | hw-pass, the StickS3 or the Chain Dual Key with this firmware |
+| the view | the part of the UI that shows the state: the screen, or the key LEDs with the serial port |
 | entry | a stored label and password |
 | label | the name of an entry |
 | the PIN | the digits that unlock the device |
@@ -200,17 +215,22 @@ The build includes only the components that `main` needs (`MINIMAL_BUILD`). A mo
 
 The StickS3 is the default board: `sdkconfig.defaults` and the values in the code are its values. A new board changes only what differs.
 
-1. Add `HWPASS_BOARD_<NAME>` to the `HWPASS_BOARD` choice in `main/Kconfig.projbuild`, and its name to `HWPASS_BOARD_NAME`. The name is short and in lower case: it is in the file names of the release.
+1. Add `HWPASS_BOARD_<NAME>` to the `HWPASS_BOARD` choice in `main/Kconfig.projbuild`, and its name to `HWPASS_BOARD_NAME`. The name is short and in lower case: it is in the file names of the release. The board selects its parts: `HWPASS_LCD`, `HWPASS_IMU`, `HWPASS_SPEAKER`, `HWPASS_BATTERY`, `HWPASS_PM1`, `HWPASS_LEDS`. Add a part option for a new kind of part.
 2. Make `boards/<name>.defaults` with `CONFIG_HWPASS_BOARD_<NAME>=y` and the ESP-IDF options that differ from `sdkconfig.defaults`: the flash size, the partition table, the console.
-3. Put the pins and the parts of the board behind `#if CONFIG_HWPASS_BOARD_<NAME>` in the modules. A board without a part (a screen, a tilt sensor, a speaker) leaves the module out of the build for that board, and the callers check the option.
-4. Build with the board file, and delete `sdkconfig` before it:
+3. Put the pins of the board behind `#if CONFIG_HWPASS_BOARD_<NAME>` in the modules (`buttons.c`, `leds.c`, `battery.c`). The code that depends on a part checks the part option, not the board: `#if CONFIG_HWPASS_LCD`.
+4. All modules are in the build for each board: ESP-IDF reads the component requirements before it has the configuration, thus a requirement cannot depend on an option. `main.c` does not start the modules of the parts that the board does not have, and the linker removes their code. A module that many modules call (`sound`, `battery`, `leds`) builds a version without the part: its functions do nothing, and its status functions say so.
+5. The view shows the state: `components/ui/view.h`. A board with a screen uses `view_lcd.c`; a board with key LEDs uses `view_led.c` (`components/ui/CMakeLists.txt` picks the file). A new kind of output is a new view file. `ui.c` has the logic that is the same for all boards; only the PIN entry with the buttons differs (`pin_buttons`).
+6. Build with the board file, and delete `sdkconfig` before it:
    ```
    rm sdkconfig
    idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;boards/<name>.defaults" build
    ```
-   Then build the StickS3 again (`rm sdkconfig`, `idf.py build`): both builds must give no warnings.
-5. Add the name to the `board` list in `.github/workflows/build.yml`. The CI builds it, and a release gets its files.
-6. Add the board to the "Boards" table in `README.md`, and its parts to the "Hardware map" in this document. Flash the board and do the tests of "Test a change" on it.
+   Then build the StickS3 again (`rm sdkconfig`, `idf.py build`): both builds must give no warnings. For two boards side by side, give the second build its own directory and its own `sdkconfig`, and flash it with `tools/flash.sh build-<name>`:
+   ```
+   idf.py -B build-<name> -DSDKCONFIG=build-<name>/sdkconfig -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;boards/<name>.defaults" build
+   ```
+7. Add the name to the `board` list in `.github/workflows/build.yml`. The CI builds it, and a release gets its files.
+8. Add the board to the "Boards" table in `README.md`, its parts to the "Hardware map" in this document, and its use to `docs/usage.md` and the download mode to `docs/dev-setup.md`. Flash the board and do the tests of "Test a change" on it.
 
 ## External components
 

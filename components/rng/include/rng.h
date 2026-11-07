@@ -37,6 +37,11 @@ typedef enum {
 void rng_radio_lock(void);
 void rng_radio_unlock(rng_radio_t radio, bool on);
 
+/* The ADC noise source and a measurement with the ADC must not run at
+ * the same time. Hold the lock during the measurement. */
+void rng_adc_lock(void);
+void rng_adc_unlock(void);
+
 #ifdef __cplusplus
 }
 #endif

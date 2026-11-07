@@ -2,6 +2,8 @@
 
 hw-pass is a USB keyboard that types stored passwords. Select an entry with the buttons. The device types the password into the focused window. The device is also a Bluetooth keyboard for a computer without a cable. See "Bluetooth computer".
 
+The firmware runs on two boards. This guide describes the M5Stack StickS3, with a screen and a speaker. The M5Stack Chain Dual Key has two keys and two LEDs instead: "Chain Dual Key" tells what differs. All commands of the serial port, the Wi-Fi setup mode, the keypad, the Bluetooth computer, and the mouse mover work the same on both boards.
+
 ## Buttons
 
 | Button | Short push | Long push (0.6 s) |
@@ -64,6 +66,44 @@ The device makes a short sound after each action, and plays a melody while it ty
 | Two low beeps | Error. The screen shows the cause. A keypad key without an entry also makes this sound. |
 
 To turn the sounds on or off, type `sound` on the serial port. The device keeps the setting. The default is on.
+
+## Chain Dual Key
+
+The Chain Dual Key has two mechanical keys with an RGB LED under each key, a battery, and a power switch. It has no screen and no speaker. Hold it with the power switch toward you: the lanyard hole is at the left.
+
+| Key | Short push | Long push (0.6 s) |
+|---|---|---|
+| Key2, left, next to the lanyard hole ("side") | Select the next entry | Select the previous entry |
+| Key1, right, far from the lanyard hole ("front") | Type the password | Type the password, then push Enter |
+| Both together | - | As on the StickS3: hold 2 s, then release: Wi-Fi setup mode. 5 s: pair a keypad. 8 s: pair a computer. |
+
+The LEDs show the state:
+
+| LED | Color | Meaning |
+|---|---|---|
+| Left (Key2) | Green | The USB host gets the keys. |
+| Left | Blue | The Bluetooth computer gets the keys. |
+| Left | Blue, blinks | A computer is paired, but not connected. |
+| Left | Red | No computer is ready. |
+| Right (Key1) | A color | The selected entry. The entries have eight colors in the order of the list: amber, yellow, green, cyan, blue, purple, pink, white. Entry 9 has the color of entry 1 again. |
+| Right | Off | No entries. |
+| Right | Amber, blinks | The device is locked. Enter the PIN. |
+| Right | Red, blinks | Wrong PINs. Wait before the next try. |
+| Both | Amber, gets brighter | You hold both keys. After 2 s, the color changes to cyan: release now for the Wi-Fi setup mode. After 5 s, blue: release to pair a keypad. After 8 s, purple: release to pair a computer. |
+| Both | Green | An action is complete: the password is typed, a key got an entry, a pairing is complete. |
+| Both | Red | Error: no computer, wrong PIN, typing failed. The serial port shows the cause. |
+| Both | Cyan, blinks | Wi-Fi setup mode. Steady cyan: a phone or a computer is on the network. |
+| Both | Blue, blinks | Pairing of a keypad. Steady blue: type the passkey on the keypad. |
+| Both | Purple, blinks | Pairing of a computer. Steady purple: type the passkey on the computer. |
+| Both | Dim | No activity for 60 s, or 20 s on battery. A push makes them bright again and does nothing else. |
+
+Texts go to the serial port (`picocom /dev/ttyACM0`): the passkey of a pairing, the name and the password of the Wi-Fi network, the result of an action. For the Wi-Fi setup mode and the pairing of a computer, the serial port is also the start: `web` and `wireless pair`. Both work without the keys.
+
+PIN with the keys: push Key2 as many times as the digit. For 0, push it ten times. Then push Key1: the digit goes in. The left LED gives a white tick at each push, both LEDs at each digit. When all digits are in, hold Key1 for 0.6 s: the device checks the PIN. Green: unlocked. Red: wrong. Hold Key2 for 0.6 s: the last digit goes out. The keypad and `unlock` on the serial port also enter the PIN.
+
+The power switch has three positions. "BLE" and "USB": the device is on, also on battery. The position does not change where the keys go: the Bluetooth computer gets them while it is connected, else the USB host. Middle: the device is off on battery and on with USB power. The board has no reset button: disconnect the cable and connect it again. `info` shows the battery level, the USB power, and the charge state.
+
+To flash the board, see "First flash of a new device" in [dev-setup.md](dev-setup.md).
 
 ## PIN
 

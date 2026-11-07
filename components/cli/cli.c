@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_app_desc.h"
@@ -16,9 +17,7 @@
 #include "battery.h"
 #include "blehid.h"
 #include "clock.h"
-#include "display.h"
 #include "hid.h"
-#include "imu.h"
 #include "keypad.h"
 #include "mover.h"
 #include "ntp.h"
@@ -29,6 +28,12 @@
 #include "vault.h"
 #include "web.h"
 #include "cli.h"
+#if CONFIG_HWPASS_LCD
+#include "display.h"
+#endif
+#if CONFIG_HWPASS_IMU
+#include "imu.h"
+#endif
 
 #define LINE_SIZE       160
 #define FOREVER         UINT32_MAX
@@ -914,6 +919,7 @@ static void cmd_ntp(char *arg)
     }
 }
 
+#if CONFIG_HWPASS_SPEAKER
 static void cmd_sound(char *arg)
 {
     bool on = !sound_enabled();
@@ -924,12 +930,15 @@ static void cmd_sound(char *arg)
         out("The speaker does not work: the audio codec did not start.\n");
     }
 }
+#endif
 
+#if CONFIG_HWPASS_LCD
 static void cmd_rotate(char *arg)
 {
     ui_flip();
     out("The screen turns 180 degrees. It holds until you turn the device.\n");
 }
+#endif
 
 static void cmd_info(char *arg)
 {
@@ -939,7 +948,6 @@ static void cmd_info(char *arg)
     char name[KEYPAD_NAME_MAX + 1], battery[24] = "", next[MOVER_NEXT_TEXT], times[80], text[40];
     char tz[CLOCK_TZ_MAX + 1], ssid[NTP_SSID_MAX + 1], server[NTP_SERVER_MAX + 1], result[NTP_RESULT_TEXT];
     int level = keypad_battery();
-    float g[3];
 
     nvs_get_stats("vault", &stats);
     out("Firmware:  %s %s (ESP-IDF %s)\n", app->project_name, app->version, app->idf_ver);
@@ -966,12 +974,14 @@ static void cmd_info(char *arg)
     out("NVS:       %u of %u slots used\n", (unsigned)stats.used_entries, (unsigned)stats.total_entries);
     out("USB host:  %s, Caps Lock %s\n", usbdev_ready() ? "ready" : "not ready",
         usbdev_caps_lock() ? "on" : "off");
+#if CONFIG_HWPASS_BATTERY
     if (battery_level() >= 0) {
         out("Battery:   %d %%, %.2f V%s%s\n", battery_level(), battery_mv() / 1000.0,
             battery_usb() ? ", USB power" : "", battery_charging() ? ", charging" : "");
     } else {
         out("Battery:   no measurement%s\n", battery_usb() ? ", USB power" : "");
     }
+#endif
     blehid_name(name, sizeof(name));
     switch (blehid_state()) {
     case BLEHID_NONE:
@@ -1019,7 +1029,9 @@ static void cmd_info(char *arg)
     } else if (result[0]) {
         out("Last sync: %s\n", result);
     }
+#if CONFIG_HWPASS_SPEAKER
     out("Sound:     %s%s\n", sound_enabled() ? "on" : "off", sound_ready() ? "" : ", audio codec error");
+#endif
     out("Wi-Fi:     %s\n", ntp_busy() ? "on, time sync" : !web_active() ? "off" :
         web_connected() ? "on, 1 device" : "on, no device");
     keypad_name(name, sizeof(name));
@@ -1039,7 +1051,12 @@ static void cmd_info(char *arg)
     }
     out("Heap:      %u bytes free, %u minimum\n", (unsigned)esp_get_free_heap_size(),
         (unsigned)esp_get_minimum_free_heap_size());
+#if CONFIG_HWPASS_LCD
     out("LCD:       power mode 0x%02X (0x9C is correct)\n", display_power_mode());
+#endif
+#if CONFIG_HWPASS_IMU
+    float g[3];
+
     if (imu_read(g) == ESP_OK) {
         imu_up_t up = imu_up();
 
@@ -1049,6 +1066,7 @@ static void cmd_info(char *arg)
     } else {
         out("Tilt:      no sensor\n");
     }
+#endif
 }
 
 /* The Wi-Fi password is not a vault secret. It is new at each start. */
@@ -1116,8 +1134,12 @@ static const struct {
     { "tz", "[zone]", "Show or set the time zone (POSIX TZ).", cmd_tz },
     { "wifi", "[<name>|off]", "Network of the time sync. Asks for the password.", cmd_wifi },
     { "ntp", "[on|off|server x]", "Sync the time now, or set the automatic sync.", cmd_ntp },
+#if CONFIG_HWPASS_SPEAKER
     { "sound", "", "Turn the sounds on or off.", cmd_sound },
+#endif
+#if CONFIG_HWPASS_LCD
     { "rotate", "", "Turn the screen 180 degrees, for a device that lies flat.", cmd_rotate },
+#endif
     { "info", "", "Show the device status.", cmd_info },
     { "dfu", "", "Restart into download mode for flashing.", cmd_dfu },
 };

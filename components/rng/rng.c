@@ -44,6 +44,16 @@ void rng_radio_unlock(rng_radio_t radio, bool on)
     xSemaphoreGive(s_lock);
 }
 
+void rng_adc_lock(void)
+{
+    xSemaphoreTake(s_lock, portMAX_DELAY);
+}
+
+void rng_adc_unlock(void)
+{
+    xSemaphoreGive(s_lock);
+}
+
 static void begin(void)
 {
     xSemaphoreTake(s_lock, portMAX_DELAY);

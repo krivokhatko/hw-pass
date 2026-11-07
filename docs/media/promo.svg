@@ -238,7 +238,7 @@
     <text x="360" y="232" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="54" font-weight="800" fill="#E8E8E8" text-anchor="start" >Open source.</text>
     <text x="362" y="274" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="18" font-weight="400" fill="#9AA0A6" text-anchor="start" >MIT license · ESP32-S3 · ESP-IDF v5.5 · M5Stack StickS3</text>
     <text x="362" y="322" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="24" font-weight="700" fill="#FFB000" text-anchor="start" >github.com/krivokhatko/hw-pass</text>
-    <text x="362" y="366" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="18" fill="#9AA0A6">Free. If it saves your time: <tspan font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-weight="700" fill="#FFB000">donatello.to/krivokhatko</tspan></text>
+    <text x="362" y="366" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="18" fill="#9AA0A6">Free. If it saves your time: <tspan font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-weight="700" fill="#FFB000">donatello.to/hw-pass</tspan></text>
   </g>
 
   <!-- cable from the device to the laptop -->

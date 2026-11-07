@@ -95,7 +95,7 @@ Then set a PIN (`pin`), add entries on the web page, pair a keypad, or pair a la
 |---|---|---|
 | M5Stack StickS3 | `boards/sticks3.defaults` | The default board. Tested. |
 | M5Stack Chain Dual Key | `boards/dualkey.defaults` | Tested. |
-| M5Stack StampS3A | `boards/stamps3a.defaults` | Builds and flashes. The test of the button and the LED on the device is pending. |
+| M5Stack StampS3A | `boards/stamps3a.defaults` | Tested. |
 
 `sdkconfig.defaults` is the build for the StickS3, and `idf.py build` builds it. A board file comes after it and changes the options that differ:
 

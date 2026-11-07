@@ -1,5 +1,21 @@
 menu "hw-pass"
 
+    choice HWPASS_BOARD
+        prompt "Board"
+        default HWPASS_BOARD_STICKS3
+        help
+            The hardware that runs the firmware. Each board has a file
+            boards/<name>.defaults that selects it. The CI builds a
+            release for each board. "info" shows the board name.
+
+        config HWPASS_BOARD_STICKS3
+            bool "M5Stack StickS3"
+    endchoice
+
+    config HWPASS_BOARD_NAME
+        string
+        default "sticks3" if HWPASS_BOARD_STICKS3
+
     config HWPASS_WEB
         bool "Wi-Fi setup mode with a web page"
         default y

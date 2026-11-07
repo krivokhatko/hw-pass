@@ -1,0 +1,5 @@
+# M5Stack StickS3: the first board of the project. sdkconfig.defaults
+# has its settings, and a build without a board file is a build for it.
+# A board file comes after sdkconfig.defaults and changes what differs:
+# idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;boards/<name>.defaults" build
+CONFIG_HWPASS_BOARD_STICKS3=y

@@ -4,12 +4,12 @@ This document tells how the code is organized, how to write code and text in the
 
 ## Workflow
 
-1. Build the current `main` branch and flash it. Check that the "Firmware" line of `info` on the serial port shows your commit. See [dev-setup.md](dev-setup.md).
+1. Build the current `master` branch and flash it. Check that the "Firmware" line of `info` on the serial port shows your commit. See [dev-setup.md](dev-setup.md).
 2. Make a branch for your change.
 3. Change the code. Update the documents in the same change (see "Documents").
 4. Build without warnings, flash, and test by hand (see "Test a change").
 5. Commit with a message in the project format (see "Commit messages").
-6. Send a pull request, or send the patch.
+6. Send a pull request, or send the patch. The CI builds a pull request for each board (`.github/workflows/build.yml`).
 
 A change should do one thing. Two unrelated changes go in two commits.
 
@@ -117,7 +117,7 @@ The documents are part of the change. A pull request that changes what the user 
 
 | Document | Content | Change it when |
 |---|---|---|
-| `README.md` | What the device does, the modules, the threads, the USB layout, the build, the configuration, the battery measures | A new module, a new task or lock, a new USB interface, a new configuration option, a change of the battery use |
+| `README.md` | What the device does, the boards, the modules, the threads, the USB layout, the build, the releases, the configuration, the battery measures | A new board, a new module, a new task or lock, a new USB interface, a new configuration option, a change of the battery use or of the release files |
 | `docs/usage.md` | The user guide: the buttons, the screen, each function, each command, the limits, "Security" | A new or changed function, command, screen text, limit, or security property |
 | `docs/dev-setup.md` | The toolchain, the USB link, download mode, the factory firmware | A change of the toolchain or the flash process |
 | `docs/contributing.md` | This document | A change of a rule |
@@ -152,7 +152,7 @@ The project has no automatic tests on the device. Test by hand. Each test needs 
 
 Always:
 
-1. `idf.py build` gives no warnings.
+1. `idf.py build` gives no warnings. The CI fails on a warning.
 2. The start-up log has no `E (` lines. The device shows the list, and `info` works.
 3. `info` shows a "Heap" line like the one before the change. A minimum below 80 KB needs a look.
 4. Type an entry with the front button into a text editor on the USB host. `kbtest` shows no difference.
@@ -193,6 +193,22 @@ esp_log_level_set("keypad", ESP_LOG_DEBUG);
 5. Add a row to the module table in `README.md`. If the module has a task or a lock, add it to the threads paragraph.
 
 The build includes only the components that `main` needs (`MINIMAL_BUILD`). A module that no component requires is not built.
+
+## Add a board
+
+The StickS3 is the default board: `sdkconfig.defaults` and the values in the code are its values. A new board changes only what differs.
+
+1. Add `HWPASS_BOARD_<NAME>` to the `HWPASS_BOARD` choice in `main/Kconfig.projbuild`, and its name to `HWPASS_BOARD_NAME`. The name is short and in lower case: it is in the file names of the release.
+2. Make `boards/<name>.defaults` with `CONFIG_HWPASS_BOARD_<NAME>=y` and the ESP-IDF options that differ from `sdkconfig.defaults`: the flash size, the partition table, the console.
+3. Put the pins and the parts of the board behind `#if CONFIG_HWPASS_BOARD_<NAME>` in the modules. A board without a part (a screen, a tilt sensor, a speaker) leaves the module out of the build for that board, and the callers check the option.
+4. Build with the board file, and delete `sdkconfig` before it:
+   ```
+   rm sdkconfig
+   idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;boards/<name>.defaults" build
+   ```
+   Then build the StickS3 again (`rm sdkconfig`, `idf.py build`): both builds must give no warnings.
+5. Add the name to the `board` list in `.github/workflows/build.yml`. The CI builds it, and a release gets its files.
+6. Add the board to the "Boards" table in `README.md`, and its parts to the "Hardware map" in this document. Flash the board and do the tests of "Test a change" on it.
 
 ## External components
 

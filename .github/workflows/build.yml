@@ -1,0 +1,94 @@
+# Build the firmware for each board. A tag v* also publishes a release
+# with the flash images. See "Boards" and "Releases" in README.md.
+name: Build
+
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.board }}
+    runs-on: ubuntu-latest
+    # The ESP-IDF version of the project, with its toolchain.
+    container: espressif/idf:v5.5.5
+    strategy:
+      fail-fast: false
+      matrix:
+        # One name for each file in boards/.
+        board: [sticks3]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The firmware version is "git describe": it needs the history and the tags.
+          fetch-depth: 0
+
+      - name: Build
+        shell: bash
+        run: |
+          . "$IDF_PATH/export.sh"
+          idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;boards/${{ matrix.board }}.defaults" build 2>&1 | tee build.log
+          if grep -q "warning:" build.log; then
+              echo "::error::The build has warnings"
+              exit 1
+          fi
+          idf.py merge-bin -o full.bin
+
+      - name: Name the files
+        shell: bash
+        run: |
+          version=$(git describe --always --tags --dirty)
+          mkdir out
+          cp build/full.bin "out/hw-pass-$version-${{ matrix.board }}.bin"
+          cp build/hw_pass.bin "out/hw-pass-$version-${{ matrix.board }}-app.bin"
+          ls -l out
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: hw-pass-${{ matrix.board }}
+          path: out/
+
+  release:
+    name: Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: out
+          merge-multiple: true
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          cd out
+          sha256sum *.bin > SHA256SUMS
+          cat > notes.md <<EOF
+          ## Install
+
+          The device must be in the download mode: type "dfu" on the serial port, or hold the power button. See docs/dev-setup.md.
+
+          A new device (UIFlow2): erase the flash, then write the full image. The full image also writes 0xFF over the "nvs" partition: the settings and the pairings reset. The entries in the "vault" partition stay.
+
+              esptool.py --chip esp32s3 -p /dev/ttyACM0 erase_flash
+              esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash 0x0 hw-pass-$TAG-<board>.bin
+
+          A device with hw-pass: write the application only. The settings, the pairings, and the entries stay.
+
+              esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash 0x10000 hw-pass-$TAG-<board>-app.bin
+
+          Check the files with "sha256sum -c SHA256SUMS". After the start, the "Firmware" line of "info" shows $TAG, and the "Board" line shows the board.
+          EOF
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "hw-pass $TAG" \
+              --verify-tag --notes-file notes.md --generate-notes *.bin SHA256SUMS

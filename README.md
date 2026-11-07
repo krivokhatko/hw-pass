@@ -35,7 +35,8 @@ The device is a USB keyboard that types stored passwords. The side button select
    get_idf
    idf.py build
    ```
-3. Flash. A new device comes with UIFlow2: hold the power button until the computer sees the download mode, then run `idf.py -p /dev/ttyACM0 erase-flash` and `idf.py -p /dev/ttyACM0 flash`. A device with hw-pass: `tools/flash.sh`.
+   Or take the full image of the [latest release](https://github.com/krivokhatko/hw-pass/releases/latest), without a build. See "Releases".
+3. Flash. A new device comes with UIFlow2: hold the power button until the computer sees the download mode, then run `idf.py -p /dev/ttyACM0 erase-flash` and `idf.py -p /dev/ttyACM0 flash`. A device with hw-pass: `tools/flash.sh`. For a release image, use the esptool commands of "Releases".
 4. Open the command line with `picocom /dev/ttyACM0` and push Enter. Add an entry:
    ```
    add GitHub
@@ -55,9 +56,23 @@ Then set a PIN (`pin`), add entries on the web page, pair a keypad, or pair a la
 | PSRAM | 8 MB, not enabled |
 | Console | USB Serial/JTAG. UART0 is not connected to USB. |
 
+## Boards
+
+| Board | File | Status |
+|---|---|---|
+| M5Stack StickS3 | `boards/sticks3.defaults` | The default board. Tested. |
+
+`sdkconfig.defaults` is the build for the StickS3, and `idf.py build` builds it. A board file comes after it and changes the options that differ:
+
+```
+idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;boards/<name>.defaults" build
+```
+
+The board file selects the board in Kconfig (`CONFIG_HWPASS_BOARD_*`, `main/Kconfig.projbuild`). The code of a board goes behind `#if CONFIG_HWPASS_BOARD_*`. The "Board" line of `info` shows the name. The CI builds each board of `.github/workflows/build.yml`. To add a board, see "Add a board" in [docs/contributing.md](docs/contributing.md).
+
 ## Toolchain
 
-- ESP-IDF v5.5.5, installed in `~/esp/esp-idf`. The project is tested with this version only.
+- ESP-IDF v5.5.5, installed in `~/esp/esp-idf`. The project is tested with this version only. The CI builds in the Docker image `espressif/idf:v5.5.5`.
 - Python and the tools of ESP-IDF. No other tools.
 
 For the setup, refer to [docs/dev-setup.md](docs/dev-setup.md).
@@ -66,12 +81,14 @@ For the setup, refer to [docs/dev-setup.md](docs/dev-setup.md).
 
 ```
 CMakeLists.txt        Project file.
-sdkconfig.defaults    Project configuration. Edit this file, not sdkconfig.
+sdkconfig.defaults    Project configuration for the StickS3. Edit this file, not sdkconfig.
+boards/               One file for each board: the options that differ from sdkconfig.defaults.
 partitions.csv        Flash partition table for 8 MB flash.
 main/                 Application entry point (app_main) and the project options (Kconfig.projbuild). Keep it small.
 components/           Project modules. One directory for each module.
 docs/                 User and developer documentation.
 tools/                Host scripts: flash.sh flashes the device, psf2c.py makes the font file.
+.github/workflows/    CI: build.yml builds each board, and publishes a release for a tag.
 ```
 
 ## Modules
@@ -139,7 +156,29 @@ To open the command line: `picocom /dev/ttyACM0`. `idf.py monitor` also works, b
 
 Flashing does not erase the `vault` partition. `idf.py erase-flash` erases it.
 
-The "Firmware" line of `info` shows the commit of the build (`git describe`), with `-dirty` when the tree had changes.
+The "Firmware" line of `info` shows the version of the build (`git describe`): the tag of a release, or the commit, with `-dirty` when the tree had changes.
+
+## Releases
+
+Each push to `master` and each pull request builds every board (`.github/workflows/build.yml`). The build fails on a compiler warning. A tag `vX.Y.Z` also publishes a [release](https://github.com/krivokhatko/hw-pass/releases) with two files for each board, and `SHA256SUMS`:
+
+| File | Content | Write at |
+|---|---|---|
+| `hw-pass-<version>-<board>.bin` | The full image: bootloader, partition table, OTA data, and application. For a new device, after an erase of the flash. The gap over the `nvs` partition is 0xFF: the write resets the settings and the pairings. The `vault` partition stays. | `0x0` |
+| `hw-pass-<version>-<board>-app.bin` | The application only. For the update of a device with hw-pass: the settings, the pairings, and the entries stay. | `0x10000` |
+
+```
+esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash 0x10000 hw-pass-v1.0.0-sticks3-app.bin
+```
+
+The device must be in the download mode: `dfu` on the serial port, or hold the power button. Without ESP-IDF, `pip install esptool` gives `esptool.py`. When a release changes the partition table or the bootloader, its notes say that the full image is necessary.
+
+To publish a release, tag the commit on `master` and push the tag:
+
+```
+git tag -a v1.1.0 -m "hw-pass 1.1.0"
+git push origin v1.1.0
+```
 
 ## Configuration
 

@@ -54,6 +54,10 @@ The StickS3 comes with the UIFlow2 firmware. UIFlow2 uses a TinyUSB serial port,
    idf.py build
    idf.py -p /dev/ttyACM0 flash
    ```
+   Without a build: write the full image of a [release](https://github.com/krivokhatko/hw-pass/releases) ("Releases" in README.md):
+   ```
+   esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash 0x0 hw-pass-<version>-sticks3.bin
+   ```
 5. The firmware starts and shows the list of entries, which is empty. If the device stays in download mode, push the power button one time.
 6. Open the command line: `picocom /dev/ttyACM0`. Push Enter: the prompt shows.
 

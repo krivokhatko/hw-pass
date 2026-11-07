@@ -943,6 +943,7 @@ static void cmd_info(char *arg)
 
     nvs_get_stats("vault", &stats);
     out("Firmware:  %s %s (ESP-IDF %s)\n", app->project_name, app->version, app->idf_ver);
+    out("Board:     %s\n", CONFIG_HWPASS_BOARD_NAME);
     if (vault_locked()) {
         out("Entries:   locked\n");
     } else {

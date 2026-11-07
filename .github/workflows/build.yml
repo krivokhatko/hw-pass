@@ -29,6 +29,11 @@ jobs:
           # The firmware version is "git describe": it needs the history and the tags.
           fetch-depth: 0
 
+      - name: Trust the checkout
+        # The runner owns the files, and the container user is root: git refuses
+        # the repository, and "git describe" gives no version.
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
       - name: Build
         shell: bash
         run: |

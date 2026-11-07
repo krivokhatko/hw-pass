@@ -1,0 +1,36 @@
+# Update the supporter list of README.md and the badge data from the
+# Donatello page, once a day. See "Support the project" in README.md and
+# tools/supporters.py. The commit says [skip ci]: no firmware build for it.
+name: Supporters
+
+on:
+  schedule:
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    name: Update
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Fetch from Donatello
+        env:
+          DONATELLO_TOKEN: ${{ secrets.DONATELLO_TOKEN }}
+        run: python3 tools/supporters.py
+
+      - name: Commit the change
+        run: |
+          if git diff --quiet; then
+              echo "No change."
+              exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -a -m "Supporters: update from Donatello [skip ci]" \
+              -m "- README.md, docs/media: the supporter list and the badge data."
+          git push

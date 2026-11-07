@@ -12,6 +12,7 @@ Free and open source. Your donations keep the development going.</p>
   <a href="https://github.com/krivokhatko/hw-pass/releases/latest"><img src="https://img.shields.io/github/v/release/krivokhatko/hw-pass?label=release&color=ffb000" alt="Latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-3c8cff" alt="MIT license"></a>
   <a href="https://donatello.to/hw-pass"><img src="https://img.shields.io/badge/Donate-Donatello%20%E2%99%A5-ffb000" alt="Donate on Donatello"></a>
+  <a href="https://donatello.to/hw-pass"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fkrivokhatko%2Fhw-pass%2Fmaster%2Fdocs%2Fmedia%2Fsupporters.json" alt="Supporters"></a>
 </p>
 
 <p align="center">
@@ -42,7 +43,10 @@ hw-pass is free and open source, made in free time. If the device saves you time
 
 <a href="https://donatello.to/hw-pass"><img src="https://img.shields.io/badge/Donate%20on%20Donatello-%E2%99%A5-ffb000?style=for-the-badge&labelColor=0F1115" alt="Donate on Donatello"></a>
 
-Donatello takes a card from any country, or cryptocurrency, and pays out in Ukraine. Other ways to help: star the repository, report a problem, or tell a friend who types passwords by hand.
+<!-- supporters:start -->
+<!-- supporters:end -->
+
+Donatello takes a card from any country, or cryptocurrency, and pays out in Ukraine. The supporter count and the list above come from the Donatello page once a day (`tools/supporters.py`). Other ways to help: star the repository, report a problem, or tell a friend who types passwords by hand.
 
 ## Hardware
 
@@ -113,8 +117,8 @@ partitions.csv        Flash partition table for 8 MB flash.
 main/                 Application entry point (app_main) and the project options (Kconfig.projbuild). Keep it small.
 components/           Project modules. One directory for each module.
 docs/                 User and developer documentation. docs/media/ has the logo, the promo animation, and the coffee mascot of this page.
-tools/                Host scripts: flash.sh flashes the device, psf2c.py makes the font file.
-.github/workflows/    CI: build.yml builds each board, and publishes a release for a tag.
+tools/                Host scripts: flash.sh flashes the device, psf2c.py makes the font file, supporters.py updates the supporter list from Donatello.
+.github/workflows/    CI: build.yml builds each board, and publishes a release for a tag. supporters.yml updates the supporter list once a day; its commit skips the build.
 .github/FUNDING.yml   The "Sponsor" button of the repository page: the Donatello page.
 ```
 

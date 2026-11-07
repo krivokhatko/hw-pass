@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="hw-pass mascot with a mug of coffee">
+  <defs>
+    <linearGradient id="logo-body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF9F1C"/>
+      <stop offset="1" stop-color="#F3811A"/>
+    </linearGradient>
+    <radialGradient id="logo-btn" cx="0.35" cy="0.3" r="0.8">
+      <stop offset="0" stop-color="#FFE9A8"/>
+      <stop offset="1" stop-color="#FFD166"/>
+    </radialGradient>
+    <clipPath id="logo-screen"><rect x="-80" y="-146" width="160" height="200" rx="18"/></clipPath></defs>
+  <style>
+    @keyframes steam { 0% { transform: translateY(0); opacity: 0.1 } 35% { opacity: 0.6 } 100% { transform: translateY(-14px); opacity: 0 } }
+    .steam { animation: steam 2.4s ease-out infinite }
+    .steam-1 { animation-delay: 0.8s }
+    .steam-2 { animation-delay: 1.6s }
+    @media (prefers-reduced-motion: reduce) { .steam { animation: none } }
+  </style>
+  <g transform="translate(227.4 260.8) scale(1.1907)">
+  <g class="mascot">
+    <!-- arms: an outline stroke under a body-color stroke -->
+    <g class="arm arm-l">
+      <path d="M -90 40 C -128 58 -150 92 -146 124" fill="none" stroke="#2B1D0E" stroke-width="24" stroke-linecap="round"/>
+      <path d="M -90 40 C -128 58 -150 92 -146 124" fill="none" stroke="#F3811A" stroke-width="12" stroke-linecap="round"/>
+      <circle cx="-148" cy="128" r="18" fill="#FF9F1C" stroke="#2B1D0E" stroke-width="7"/>
+    </g>
+    <g class="arm arm-r">
+      <path d="M 90 40 C 128 40 148 10 152 -14" fill="none" stroke="#2B1D0E" stroke-width="24" stroke-linecap="round"/>
+      <path d="M 90 40 C 128 40 148 10 152 -14" fill="none" stroke="#F3811A" stroke-width="12" stroke-linecap="round"/>
+      
+      <g transform="translate(154 -70)">
+  <g class="mug">
+    <path class="steam steam-0" d="M -14 -14 C -23 -24 -5 -32 -14 -46" fill="none" stroke="#9AA3AE" stroke-width="5" stroke-linecap="round" opacity="0.6"/><path class="steam steam-1" d="M 0 -14 C -9 -24 9 -32 0 -46" fill="none" stroke="#9AA3AE" stroke-width="5" stroke-linecap="round" opacity="0.6"/><path class="steam steam-2" d="M 14 -14 C 5 -24 23 -32 14 -46" fill="none" stroke="#9AA3AE" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
+    <path d="M 26 14 C 56 14 56 46 26 46" fill="none" stroke="#2B1D0E" stroke-width="18" stroke-linecap="round"/>
+    <path d="M 26 14 C 56 14 56 46 26 46" fill="none" stroke="#F4F1EA" stroke-width="7" stroke-linecap="round"/>
+    <path d="M -28 0 V 54 Q -28 64 -18 64 H 18 Q 28 64 28 54 V 0 Z" fill="#F4F1EA" stroke="#2B1D0E" stroke-width="6" stroke-linejoin="round"/>
+    <ellipse cx="0" cy="0" rx="28" ry="8" fill="#5C3A1E" stroke="#2B1D0E" stroke-width="6"/>
+    <path d="M 0 36 C -11 27 -16 21 -10 15 C -6 11 0 14 0 18 C 0 14 6 11 10 15 C 16 21 11 27 0 36 Z" fill="#FFB000"/>
+  </g></g>
+      <circle cx="154" cy="-16" r="18" fill="#FF9F1C" stroke="#2B1D0E" stroke-width="7"/>
+      
+    </g>
+
+    <!-- shadow and feet -->
+    <ellipse cx="0" cy="190" rx="96" ry="9" fill="#2B1D0E" opacity="0.14"/>
+    <rect x="-64" y="160" width="46" height="30" rx="11" fill="#2B1D0E"/>
+    <rect x="18" y="160" width="46" height="30" rx="11" fill="#2B1D0E"/>
+
+    <!-- Grove port on the top edge -->
+    <rect x="-24" y="-186" width="48" height="24" rx="6" fill="#2B1D0E"/>
+
+    <!-- side buttons: power on the left, side button on the right -->
+    <rect x="-116" y="-72" width="22" height="40" rx="7" fill="#D96C00" stroke="#2B1D0E" stroke-width="6"/>
+    <rect x="94" y="-84" width="22" height="48" rx="7" fill="#D96C00" stroke="#2B1D0E" stroke-width="6"/>
+
+    <!-- body -->
+    <rect x="-100" y="-170" width="200" height="340" rx="44" fill="url(#logo-body)" stroke="#2B1D0E" stroke-width="8"/>
+    <rect x="-86" y="-150" width="16" height="110" rx="8" fill="#FFFFFF" opacity="0.28"/>
+
+    <!-- screen -->
+    <rect x="-80" y="-146" width="160" height="200" rx="18" fill="#141414" stroke="#2B1D0E" stroke-width="6"/>
+    <g clip-path="url(#logo-screen)">
+      <rect x="-80" y="-146" width="160" height="200" fill="#FFFFFF" opacity="0.04"/>
+      <rect x="-66" y="-134" width="132" height="5" rx="2.5" fill="#FFB000"/>
+      
+  <g class="face">
+    <g class="eyes">
+      <g transform="translate(-34 -62)"><g class="eye eye-l">
+        <ellipse rx="24" ry="28" fill="#FFFFFF"/>
+        <g class="pupil"><circle cx="3" cy="5" r="12" fill="#1B1B1B"/><circle cx="-1" cy="0" r="4.5" fill="#FFFFFF"/></g>
+      </g></g>
+      <g transform="translate(34 -62)"><g class="eye eye-r">
+        <ellipse rx="24" ry="28" fill="#FFFFFF"/>
+        <g class="pupil"><circle cx="3" cy="5" r="12" fill="#1B1B1B"/><circle cx="-1" cy="0" r="4.5" fill="#FFFFFF"/></g>
+      </g></g>
+    </g>
+    <ellipse cx="-54" cy="-12" rx="11" ry="7" fill="#FF7A59" opacity="0.7"/>
+    <ellipse cx="54" cy="-12" rx="11" ry="7" fill="#FF7A59" opacity="0.7"/>
+    <path class="mouth" d="M -30 -4 Q 0 28 30 -4" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round"/>
+  </g>
+      
+    </g>
+
+    <!-- front button -->
+    <g class="front-button">
+      <circle cx="0" cy="102" r="29" fill="url(#logo-btn)" stroke="#2B1D0E" stroke-width="7"/>
+      <circle cx="0" cy="102" r="17" fill="none" stroke="#F3811A" stroke-width="4" opacity="0.8"/>
+    </g>
+  </g></g>
+</svg>

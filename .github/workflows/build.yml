@@ -94,6 +94,10 @@ jobs:
               esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash 0x10000 hw-pass-$TAG-<board>-app.bin
 
           Check the files with "sha256sum -c SHA256SUMS". After the start, the "Firmware" line of "info" shows $TAG, and the "Board" line shows the board.
+
+          ## Support
+
+          hw-pass is free and open source. If it saves your time, buy me a coffee: https://buymeacoffee.com/krivokhatko
           EOF
           gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "hw-pass $TAG" \
               --verify-tag --notes-file notes.md --generate-notes *.bin SHA256SUMS

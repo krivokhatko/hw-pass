@@ -13,6 +13,8 @@ This document tells how the code is organized, how to write code and text in the
 
 A change should do one thing. Two unrelated changes go in two commits.
 
+You can also help without code: a donation pays for the test hardware. See "Support the project" in [README.md](../README.md).
+
 ## Hardware map
 
 The M5Stack StickS3 wires these parts to the ESP32-S3. The values are from the code.

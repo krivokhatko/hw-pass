@@ -4,12 +4,14 @@
 
 <h1 align="center">hw-pass</h1>
 
-<p align="center"><b>Hardware password typer. Firmware for the M5Stack StickS3 (ESP32-S3).</b></p>
+<p align="center"><b>Hardware password typer. Firmware for the M5Stack StickS3 (ESP32-S3).</b><br>
+Free and open source. Your donations keep the development going.</p>
 
 <p align="center">
   <a href="https://github.com/krivokhatko/hw-pass/actions/workflows/build.yml"><img src="https://github.com/krivokhatko/hw-pass/actions/workflows/build.yml/badge.svg" alt="Build"></a>
   <a href="https://github.com/krivokhatko/hw-pass/releases/latest"><img src="https://img.shields.io/github/v/release/krivokhatko/hw-pass?label=release&color=ffb000" alt="Latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-3c8cff" alt="MIT license"></a>
+  <a href="https://buymeacoffee.com/krivokhatko"><img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-ffdd00?logo=buymeacoffee&logoColor=000000" alt="Buy me a coffee"></a>
 </p>
 
 <p align="center">
@@ -31,6 +33,16 @@ The device is a USB keyboard that types stored passwords. The side button select
 | [docs/usage.md](docs/usage.md) | User guide: the buttons, the screen, each function, the commands, and the security limits. |
 | [docs/dev-setup.md](docs/dev-setup.md) | Toolchain, serial port access, the first flash of a new device, and the USB link from WSL2. |
 | [docs/contributing.md](docs/contributing.md) | Code and text style, the hardware map, how to test a change, and the commit message format. |
+
+## Support the project
+
+<a href="https://buymeacoffee.com/krivokhatko"><img src="docs/media/coffee.svg" width="150" align="right" alt="The hw-pass mascot holds a mug of coffee"></a>
+
+hw-pass is free and open source, made in free time. If the device saves you time each day, buy me a coffee. It pays for the test hardware: new boards, keypads, batteries, and cables. And it tells me that the project matters to you.
+
+<a href="https://buymeacoffee.com/krivokhatko"><img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=%E2%98%95&slug=krivokhatko&button_colour=FFB000&font_colour=000000&font_family=Inter&outline_colour=000000&coffee_colour=ffffff" height="48" alt="Buy me a coffee"></a>
+
+Other ways to help: star the repository, report a problem, or tell a friend who types passwords by hand.
 
 ## Hardware
 
@@ -100,9 +112,10 @@ boards/               One file for each board: the options that differ from sdkc
 partitions.csv        Flash partition table for 8 MB flash.
 main/                 Application entry point (app_main) and the project options (Kconfig.projbuild). Keep it small.
 components/           Project modules. One directory for each module.
-docs/                 User and developer documentation. docs/media/ has the logo and the promo animation of this page.
+docs/                 User and developer documentation. docs/media/ has the logo, the promo animation, and the coffee mascot of this page.
 tools/                Host scripts: flash.sh flashes the device, psf2c.py makes the font file.
 .github/workflows/    CI: build.yml builds each board, and publishes a release for a tag.
+.github/FUNDING.yml   The "Sponsor" button of the repository page: Buy Me a Coffee.
 ```
 
 ## Modules
@@ -224,6 +237,8 @@ Not done: light sleep between Bluetooth events (the largest possible gain), stan
 ## Contributing
 
 Changes are welcome. [docs/contributing.md](docs/contributing.md) has the rules: one module for one function, plain English in comments and documents, the documents change with the code, a commit message with one bullet for each module, and a test by hand on the device. The same document tells how to add a module, an external component, or a configuration option.
+
+No time for code? A [coffee](https://buymeacoffee.com/krivokhatko) helps too. See "Support the project".
 
 Before you store important passwords, read "Security" in [docs/usage.md](docs/usage.md): flash encryption is off, and the PIN protects the entries only within the limits that this section gives.
 

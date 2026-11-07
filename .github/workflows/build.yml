@@ -97,7 +97,7 @@ jobs:
 
           ## Support
 
-          hw-pass is free and open source. If it saves your time, buy me a coffee: https://buymeacoffee.com/krivokhatko
+          hw-pass is free and open source. If it saves your time, buy me a coffee: https://donatello.to/krivokhatko
           EOF
           gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "hw-pass $TAG" \
               --verify-tag --notes-file notes.md --generate-notes *.bin SHA256SUMS

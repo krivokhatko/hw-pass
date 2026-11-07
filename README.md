@@ -11,7 +11,7 @@ Free and open source. Your donations keep the development going.</p>
   <a href="https://github.com/krivokhatko/hw-pass/actions/workflows/build.yml"><img src="https://github.com/krivokhatko/hw-pass/actions/workflows/build.yml/badge.svg" alt="Build"></a>
   <a href="https://github.com/krivokhatko/hw-pass/releases/latest"><img src="https://img.shields.io/github/v/release/krivokhatko/hw-pass?label=release&color=ffb000" alt="Latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-3c8cff" alt="MIT license"></a>
-  <a href="https://buymeacoffee.com/krivokhatko"><img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-ffdd00?logo=buymeacoffee&logoColor=000000" alt="Buy me a coffee"></a>
+  <a href="https://donatello.to/krivokhatko"><img src="https://img.shields.io/badge/Donate-Donatello%20%E2%99%A5-ffb000" alt="Donate on Donatello"></a>
 </p>
 
 <p align="center">
@@ -36,13 +36,13 @@ The device is a USB keyboard that types stored passwords. The side button select
 
 ## Support the project
 
-<a href="https://buymeacoffee.com/krivokhatko"><img src="docs/media/coffee.svg" width="150" align="right" alt="The hw-pass mascot holds a mug of coffee"></a>
+<a href="https://donatello.to/krivokhatko"><img src="docs/media/coffee.svg" width="150" align="right" alt="The hw-pass mascot holds a mug of coffee"></a>
 
-hw-pass is free and open source, made in free time. If the device saves you time each day, buy me a coffee. It pays for the test hardware: new boards, keypads, batteries, and cables. And it tells me that the project matters to you.
+hw-pass is free and open source, made in free time. If the device saves you time each day, buy me a coffee on Donatello. It pays for the test hardware: new boards, keypads, batteries, and cables. And it tells me that the project matters to you.
 
-<a href="https://buymeacoffee.com/krivokhatko"><img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=%E2%98%95&slug=krivokhatko&button_colour=FFB000&font_colour=000000&font_family=Inter&outline_colour=000000&coffee_colour=ffffff" height="48" alt="Buy me a coffee"></a>
+<a href="https://donatello.to/krivokhatko"><img src="https://img.shields.io/badge/Donate%20on%20Donatello-%E2%99%A5-ffb000?style=for-the-badge&labelColor=0F1115" alt="Donate on Donatello"></a>
 
-Other ways to help: star the repository, report a problem, or tell a friend who types passwords by hand.
+Donatello takes a card from any country and pays out in Ukraine. Other ways to help: star the repository, report a problem, or tell a friend who types passwords by hand.
 
 ## Hardware
 
@@ -115,7 +115,7 @@ components/           Project modules. One directory for each module.
 docs/                 User and developer documentation. docs/media/ has the logo, the promo animation, and the coffee mascot of this page.
 tools/                Host scripts: flash.sh flashes the device, psf2c.py makes the font file.
 .github/workflows/    CI: build.yml builds each board, and publishes a release for a tag.
-.github/FUNDING.yml   The "Sponsor" button of the repository page: Buy Me a Coffee.
+.github/FUNDING.yml   The "Sponsor" button of the repository page: the Donatello page.
 ```
 
 ## Modules
@@ -238,7 +238,7 @@ Not done: light sleep between Bluetooth events (the largest possible gain), stan
 
 Changes are welcome. [docs/contributing.md](docs/contributing.md) has the rules: one module for one function, plain English in comments and documents, the documents change with the code, a commit message with one bullet for each module, and a test by hand on the device. The same document tells how to add a module, an external component, or a configuration option.
 
-No time for code? A [coffee](https://buymeacoffee.com/krivokhatko) helps too. See "Support the project".
+No time for code? A [coffee](https://donatello.to/krivokhatko) helps too. See "Support the project".
 
 Before you store important passwords, read "Security" in [docs/usage.md](docs/usage.md): flash encryption is off, and the PIN protects the entries only within the limits that this section gives.
 

@@ -174,6 +174,10 @@ Changes are welcome. [docs/contributing.md](docs/contributing.md) has the rules:
 
 Before you store important passwords, read "Security" in [docs/usage.md](docs/usage.md): flash encryption is off, and the PIN protects the entries only within the limits that this section gives.
 
+## License
+
+MIT, see [LICENSE](LICENSE). The third-party code below keeps its own license.
+
 ## Third-party code
 
 | Code | Use | License |

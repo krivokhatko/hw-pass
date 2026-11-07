@@ -85,7 +85,11 @@ The Chain Dual Key comes with the firmware "Chain DualKey User Demo" (`303a:8000
    idf.py -p /dev/ttyACM0 flash
    ```
    Or write the full image of a release: `hw-pass-<version>-dualkey.bin` at `0x0`.
-5. The firmware starts: the left LED shows the link, the right LED is off (no entries). After a flash, esptool resets the chip; if the device stays in download mode, disconnect the cable and connect it again.
+5. After this first flash, the chip stays in the download mode: the reset of esptool through the RTS line does not end a download mode that Key1 started. Start the firmware with a watchdog reset:
+   ```
+   esptool.py --chip esp32s3 -p /dev/ttyACM0 --before no_reset --after watchdog_reset --no-stub read_mem 0x60004038
+   ```
+   Or disconnect the cable and connect it again. The firmware starts: the left LED shows the link, the right LED is off (no entries). On WSL2, bind and attach the identity `303a:4005` too.
 
 After this, `tools/flash.sh` works as on the StickS3. `sdkconfig` keeps the board: `idf.py build` builds the Chain Dual Key until you delete it.
 
@@ -139,6 +143,21 @@ echo 0 | sudo tee /sys/devices/platform/vhci_hcd.0/detach
 
 `0` is the vhci port. `/sys/devices/platform/vhci_hcd.0/status` shows the port of each attached device. usbipd restarts the device, and `--auto-attach` attaches it again after a few seconds. If this does not help, disconnect the USB cable and connect it again.
 
+Without `sudo`, reset the USB device from user space. The udev rule of "Serial port access" gives the `plugdev` group access to the device node of the download mode (`303a:1001`):
+
+```
+python3 - <<'EOF'
+import fcntl, os
+dev = os.path.realpath("/sys/class/tty/ttyACM0/device/..")
+bus, num = (int(open(f"{dev}/{f}").read()) for f in ("busnum", "devnum"))
+fd = os.open(f"/dev/bus/usb/{bus:03d}/{num:03d}", os.O_WRONLY)
+fcntl.ioctl(fd, 0x5514)  # USBDEVFS_RESET
+os.close(fd)
+EOF
+```
+
+The device keeps its port, its identity, and the download mode. This also helps when a long transfer stops, for example `read_flash` of the full 8 MB: read the flash in pieces of 1 MB, and reset the device after a piece that stops.
+
 ### Bluetooth
 
 WSL2 has no Bluetooth of its own. For a test of the Bluetooth computer link from WSL2, attach a USB Bluetooth adapter with usbipd, and run BlueZ in WSL2 (`sudo apt-get install bluez`). The WSL2 kernel has no `uhid`: BlueZ cannot make an input device from the keyboard, but `bluetoothctl` can pair, and a program can read the HID service over GATT. For this, start the daemon as `bluetoothd -n -P hog`: with its own HID profile on, BlueZ hides the HID service from D-Bus. For a test as a keyboard, use a Linux or Windows computer with Bluetooth.
@@ -171,7 +190,7 @@ Three ways put the chip in the ROM download mode:
 | Hold Key1 while you connect the cable | Chain Dual Key, any firmware | Key1 is the boot strap pin (G0). The power switch in the middle position. |
 | `machine.bootloader()` in the UIFlow2 REPL | UIFlow2 | See below. |
 
-If the device stays in download mode after a flash, push the power button one time (StickS3), or disconnect the cable and connect it again (Chain Dual Key).
+If the device stays in download mode after a flash: StickS3, push the power button one time. Chain Dual Key, do the watchdog reset of step 5 in "Chain Dual Key", or disconnect the cable and connect it again.
 
 ### From the UIFlow2 REPL
 

@@ -61,6 +61,7 @@ void app_main(void)
         err = nvs_flash_init();
     }
     check(err, "nvs");
+    check(rng_init(), "rng");           /* Before battery_init: a battery read by ADC takes the RNG lock. */
 #if CONFIG_HWPASS_PM1
     check(pm1_init(), "pm1");
 #endif
@@ -73,7 +74,6 @@ void app_main(void)
     check(imu_init(), "imu");
 #endif
     check(vault_init(), "vault");
-    check(rng_init(), "rng");
     check(clock_init(), "clock");
     check(usbdev_init(), "usb");
     check(ble_init(), "ble");

@@ -16,7 +16,7 @@ Free and open source. Your donations keep the development going.</p>
 </p>
 
 <p align="center">
-  <img src="docs/media/promo.svg" width="100%" alt="Animation: the device types a password over USB, locks with a PIN, works over Bluetooth LE, and keeps the computer awake.">
+  <img src="docs/media/promo.svg" width="100%" alt="Animation: the device types a password over USB, locks with a PIN, works over Bluetooth LE, keeps the computer awake, and runs on three M5Stack boards.">
 </p>
 
 The device is a USB keyboard that types stored passwords. The side button selects an entry. The front button types its password into the focused window.

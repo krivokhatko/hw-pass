@@ -1,201 +1,219 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" width="960" height="540" role="img" aria-label="hw-pass: a hardware password typer. The device types a password over USB, locks with a PIN, works over Bluetooth LE, and keeps the computer awake.">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" width="960" height="540" role="img" aria-label="hw-pass: a hardware password typer. The device types a password over USB, locks with a PIN, works over Bluetooth LE, keeps the computer awake, and runs on three M5Stack boards.">
 <style>
-@keyframes m-hop{0.0000%{transform:translateY(0)}0.5000%{transform:translateY(0);animation-timing-function:ease-out}1.2333%{transform:translateY(-26px);animation-timing-function:ease-in-out}2.3333%{transform:translateY(0)}100.0000%{transform:translateY(0)}}
-@keyframes blink{0.0000%{transform:scaleY(1)}5.3333%{transform:scaleY(1);animation-timing-function:ease-in}5.5467%{transform:scaleY(0.08);animation-timing-function:ease-in-out}5.8667%{transform:scaleY(1)}18.0000%{transform:scaleY(1);animation-timing-function:ease-in}18.2133%{transform:scaleY(0.08);animation-timing-function:ease-in-out}18.5333%{transform:scaleY(1)}31.0000%{transform:scaleY(1);animation-timing-function:ease-in}31.2133%{transform:scaleY(0.08);animation-timing-function:ease-in-out}31.5333%{transform:scaleY(1)}45.3333%{transform:scaleY(1);animation-timing-function:ease-in}45.5467%{transform:scaleY(0.08);animation-timing-function:ease-in-out}45.8667%{transform:scaleY(1)}63.0000%{transform:scaleY(1);animation-timing-function:ease-in}63.2133%{transform:scaleY(0.08);animation-timing-function:ease-in-out}63.5333%{transform:scaleY(1)}74.6667%{transform:scaleY(1);animation-timing-function:ease-in}74.8800%{transform:scaleY(0.08);animation-timing-function:ease-in-out}75.2000%{transform:scaleY(1)}87.0000%{transform:scaleY(1);animation-timing-function:ease-in}87.2133%{transform:scaleY(0.08);animation-timing-function:ease-in-out}87.5333%{transform:scaleY(1)}100.0000%{transform:scaleY(1)}}
-@keyframes wink{0.0000%{transform:scaleY(1)}93.3333%{transform:scaleY(1)}93.6667%{transform:scaleY(0.08)}96.0000%{transform:scaleY(0.08)}96.3333%{transform:scaleY(1)}100.0000%{transform:scaleY(1)}}
-@keyframes look{0.0000%{transform:translate(0,0)}12.0000%{transform:translate(0,0)}13.3333%{transform:translate(5px,0)}90.0000%{transform:translate(5px,0)}91.3333%{transform:translate(0,0)}100.0000%{transform:translate(0,0)}}
-@keyframes press{0.0000%{transform:scale(1)}20.6667%{transform:scale(1);animation-timing-function:ease-in}21.1333%{transform:scale(0.86);animation-timing-function:ease-in-out}21.8333%{transform:scale(1)}50.6667%{transform:scale(1);animation-timing-function:ease-in}51.1333%{transform:scale(0.86);animation-timing-function:ease-in-out}51.8333%{transform:scale(1)}66.0000%{transform:scale(1);animation-timing-function:ease-in}66.4667%{transform:scale(0.86);animation-timing-function:ease-in-out}67.1667%{transform:scale(1)}100.0000%{transform:scale(1)}}
-@keyframes press-ring{0.0000%{transform:scale(1);opacity:0}20.6667%{transform:scale(1);opacity:0}20.8333%{transform:scale(1);opacity:0.9}22.6667%{transform:scale(2);opacity:0}50.6667%{transform:scale(1);opacity:0}50.8333%{transform:scale(1);opacity:0.9}52.6667%{transform:scale(2);opacity:0}66.0000%{transform:scale(1);opacity:0}66.1667%{transform:scale(1);opacity:0.9}68.0000%{transform:scale(2);opacity:0}100.0000%{transform:scale(1);opacity:0}}
+@keyframes m-hop{0.0000%{transform:translateY(0)}0.4412%{transform:translateY(0);animation-timing-function:ease-out}1.0882%{transform:translateY(-26px);animation-timing-function:ease-in-out}2.0588%{transform:translateY(0)}80.2941%{transform:translateY(0);animation-timing-function:ease-out}80.9412%{transform:translateY(-26px);animation-timing-function:ease-in-out}81.9118%{transform:translateY(0)}100.0000%{transform:translateY(0)}}
+@keyframes blink{0.0000%{transform:scaleY(1)}4.7059%{transform:scaleY(1);animation-timing-function:ease-in}4.8941%{transform:scaleY(0.08);animation-timing-function:ease-in-out}5.1765%{transform:scaleY(1)}15.8824%{transform:scaleY(1);animation-timing-function:ease-in}16.0706%{transform:scaleY(0.08);animation-timing-function:ease-in-out}16.3529%{transform:scaleY(1)}27.3529%{transform:scaleY(1);animation-timing-function:ease-in}27.5412%{transform:scaleY(0.08);animation-timing-function:ease-in-out}27.8235%{transform:scaleY(1)}40.0000%{transform:scaleY(1);animation-timing-function:ease-in}40.1882%{transform:scaleY(0.08);animation-timing-function:ease-in-out}40.4706%{transform:scaleY(1)}55.5882%{transform:scaleY(1);animation-timing-function:ease-in}55.7765%{transform:scaleY(0.08);animation-timing-function:ease-in-out}56.0588%{transform:scaleY(1)}65.8824%{transform:scaleY(1);animation-timing-function:ease-in}66.0706%{transform:scaleY(0.08);animation-timing-function:ease-in-out}66.3529%{transform:scaleY(1)}76.7647%{transform:scaleY(1);animation-timing-function:ease-in}76.9529%{transform:scaleY(0.08);animation-timing-function:ease-in-out}77.2353%{transform:scaleY(1)}87.0588%{transform:scaleY(1);animation-timing-function:ease-in}87.2471%{transform:scaleY(0.08);animation-timing-function:ease-in-out}87.5294%{transform:scaleY(1)}100.0000%{transform:scaleY(1)}}
+@keyframes wink{0.0000%{transform:scaleY(1)}94.1176%{transform:scaleY(1)}94.4118%{transform:scaleY(0.08)}96.4706%{transform:scaleY(0.08)}96.7647%{transform:scaleY(1)}100.0000%{transform:scaleY(1)}}
+@keyframes look{0.0000%{transform:translate(0,0)}10.5882%{transform:translate(0,0)}11.7647%{transform:translate(5px,0)}91.1765%{transform:translate(5px,0)}92.3529%{transform:translate(0,0)}100.0000%{transform:translate(0,0)}}
+@keyframes press{0.0000%{transform:scale(1)}18.2353%{transform:scale(1);animation-timing-function:ease-in}18.6471%{transform:scale(0.86);animation-timing-function:ease-in-out}19.2647%{transform:scale(1)}44.7059%{transform:scale(1);animation-timing-function:ease-in}45.1176%{transform:scale(0.86);animation-timing-function:ease-in-out}45.7353%{transform:scale(1)}58.2353%{transform:scale(1);animation-timing-function:ease-in}58.6471%{transform:scale(0.86);animation-timing-function:ease-in-out}59.2647%{transform:scale(1)}100.0000%{transform:scale(1)}}
+@keyframes press-ring{0.0000%{transform:scale(1);opacity:0}18.2353%{transform:scale(1);opacity:0}18.3824%{transform:scale(1);opacity:0.9}20.0000%{transform:scale(2);opacity:0}44.7059%{transform:scale(1);opacity:0}44.8529%{transform:scale(1);opacity:0.9}46.4706%{transform:scale(2);opacity:0}58.2353%{transform:scale(1);opacity:0}58.3824%{transform:scale(1);opacity:0.9}60.0000%{transform:scale(2);opacity:0}100.0000%{transform:scale(1);opacity:0}}
 @keyframes sparkle{0.0000%{transform:scale(1) rotate(0deg);opacity:1}50.0000%{transform:scale(0.7) rotate(25deg);opacity:0.5}100.0000%{transform:scale(1) rotate(0deg);opacity:1}}
-@keyframes note-0{0.0000%{opacity:0;transform:translateY(0)}21.6667%{opacity:0;transform:translateY(0)}22.1667%{opacity:1;transform:translateY(-6px)}26.0000%{opacity:0;transform:translateY(-34px)}51.5000%{opacity:0;transform:translateY(0)}52.0000%{opacity:1;transform:translateY(-6px)}54.8333%{opacity:0;transform:translateY(-34px)}67.0000%{opacity:0;transform:translateY(0)}67.5000%{opacity:1;transform:translateY(-6px)}70.3333%{opacity:0;transform:translateY(-34px)}100.0000%{opacity:0;transform:translateY(0)}}
-@keyframes note-1{0.0000%{opacity:0;transform:translateY(0)}22.6667%{opacity:0;transform:translateY(0)}23.1667%{opacity:1;transform:translateY(-6px)}27.0000%{opacity:0;transform:translateY(-34px)}52.5000%{opacity:0;transform:translateY(0)}53.0000%{opacity:1;transform:translateY(-6px)}55.8333%{opacity:0;transform:translateY(-34px)}68.0000%{opacity:0;transform:translateY(0)}68.5000%{opacity:1;transform:translateY(-6px)}71.3333%{opacity:0;transform:translateY(-34px)}100.0000%{opacity:0;transform:translateY(0)}}
-@keyframes note-2{0.0000%{opacity:0;transform:translateY(0)}23.6667%{opacity:0;transform:translateY(0)}24.1667%{opacity:1;transform:translateY(-6px)}28.0000%{opacity:0;transform:translateY(-34px)}53.5000%{opacity:0;transform:translateY(0)}54.0000%{opacity:1;transform:translateY(-6px)}56.8333%{opacity:0;transform:translateY(-34px)}69.0000%{opacity:0;transform:translateY(0)}69.5000%{opacity:1;transform:translateY(-6px)}72.3333%{opacity:0;transform:translateY(-34px)}100.0000%{opacity:0;transform:translateY(0)}}
-@keyframes title{0.0000%{opacity:0}0.1667%{opacity:0}1.5000%{opacity:1}10.6667%{opacity:1}12.0000%{opacity:0}100.0000%{opacity:0}}
-@keyframes endcard{0.0000%{opacity:0}91.0000%{opacity:0}92.3333%{opacity:1}97.6667%{opacity:1}99.0000%{opacity:0}100.0000%{opacity:0}}
-@keyframes title-in{0.0000%{transform:translateX(24px)}2.0000%{transform:translateX(0)}100.0000%{transform:translateX(0)}}
-@keyframes laptop{0.0000%{opacity:0}12.3333%{opacity:0}13.6667%{opacity:1}89.3333%{opacity:1}90.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes cable{0.0000%{stroke-dashoffset:1}13.6667%{stroke-dashoffset:1;animation-timing-function:ease-in-out}16.6667%{stroke-dashoffset:0}57.3333%{stroke-dashoffset:0;animation-timing-function:ease-in}59.0000%{stroke-dashoffset:1}100.0000%{stroke-dashoffset:1}}
-@keyframes bubble{0.0000%{opacity:0}13.3333%{opacity:0}13.8333%{opacity:1}56.5000%{opacity:1}57.0000%{opacity:0}100.0000%{opacity:0}}
-@keyframes bubble-pop{0.0000%{transform:scale(0)}13.3333%{transform:scale(0);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}14.8333%{transform:scale(1)}56.0000%{transform:scale(1);animation-timing-function:ease-in}57.0000%{transform:scale(0)}100.0000%{transform:scale(0)}}
-@keyframes ui-list{0.0000%{opacity:0}13.3333%{opacity:0}13.3400%{opacity:1}36.6600%{opacity:1}36.6667%{opacity:0}50.0000%{opacity:0}50.0067%{opacity:1}56.9933%{opacity:1}57.0000%{opacity:0}100.0000%{opacity:0}}
-@keyframes ui-pin{0.0000%{opacity:0}36.6667%{opacity:0}36.6733%{opacity:1}47.3267%{opacity:1}47.3333%{opacity:0}100.0000%{opacity:0}}
-@keyframes ui-ok{0.0000%{opacity:0}47.3333%{opacity:0}47.3400%{opacity:1}49.9933%{opacity:1}50.0000%{opacity:0}100.0000%{opacity:0}}
-@keyframes pin-star-0{0.0000%{opacity:0}38.9000%{opacity:0}38.9067%{opacity:1}47.3267%{opacity:1}47.3333%{opacity:0}100.0000%{opacity:0}}
-@keyframes pin-star-1{0.0000%{opacity:0}41.0333%{opacity:0}41.0400%{opacity:1}47.3267%{opacity:1}47.3333%{opacity:0}100.0000%{opacity:0}}
-@keyframes pin-star-2{0.0000%{opacity:0}43.1667%{opacity:0}43.1733%{opacity:1}47.3267%{opacity:1}47.3333%{opacity:0}100.0000%{opacity:0}}
-@keyframes pin-star-3{0.0000%{opacity:0}45.3000%{opacity:0}45.3067%{opacity:1}47.3267%{opacity:1}47.3333%{opacity:0}100.0000%{opacity:0}}
-@keyframes pin-cursor{0.0000%{transform:translateX(49px)}37.3333%{transform:translateX(49px);animation-timing-function:steps(1,end)}39.4667%{transform:translateX(107.5px);animation-timing-function:steps(1,end)}41.6000%{transform:translateX(166px);animation-timing-function:steps(1,end)}43.7333%{transform:translateX(10px);animation-timing-function:steps(1,end)}45.8667%{transform:translateX(224.5px);animation-timing-function:steps(1,end)}100.0000%{transform:translateX(224.5px)}}
-@keyframes pin-pick{0.0000%{opacity:0}38.7333%{opacity:0}38.7667%{opacity:0.9}39.2667%{opacity:0}40.8667%{opacity:0}40.9000%{opacity:0.9}41.4000%{opacity:0}43.0000%{opacity:0}43.0333%{opacity:0.9}43.5333%{opacity:0}45.1333%{opacity:0}45.1667%{opacity:0.9}45.6667%{opacity:0}47.2667%{opacity:0}47.3000%{opacity:0.9}47.8000%{opacity:0}100.0000%{opacity:0}}
-@keyframes pin-pick-x{0.0000%{transform:translateX(49px)}37.3333%{transform:translateX(49px);animation-timing-function:steps(1,end)}39.4667%{transform:translateX(107.5px);animation-timing-function:steps(1,end)}41.6000%{transform:translateX(166px);animation-timing-function:steps(1,end)}43.7333%{transform:translateX(10px);animation-timing-function:steps(1,end)}45.8667%{transform:translateX(224.5px);animation-timing-function:steps(1,end)}100.0000%{transform:translateX(224.5px)}}
-@keyframes lock{0.0000%{opacity:0}37.3333%{opacity:0}38.3333%{opacity:1}55.6667%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes lock-pop{0.0000%{transform:scale(1)}47.3333%{transform:scale(1);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}48.5000%{transform:scale(1.18)}49.6667%{transform:scale(1)}100.0000%{transform:scale(1)}}
-@keyframes lock-body{0.0000%{fill:#E62828}47.3333%{fill:#E62828}48.3333%{fill:#00C850}100.0000%{fill:#00C850}}
-@keyframes shackle{0.0000%{transform:translateY(0) rotate(0)}47.3333%{transform:translateY(0) rotate(0);animation-timing-function:ease-out}48.6667%{transform:translateY(-7px) rotate(-28deg)}100.0000%{transform:translateY(-7px) rotate(-28deg)}}
-@keyframes lock-glow{0.0000%{opacity:0;transform:scale(0.5)}47.3333%{opacity:0;transform:scale(0.5)}47.6667%{opacity:0.5;transform:scale(0.6)}50.0000%{opacity:0;transform:scale(1.4)}100.0000%{opacity:0;transform:scale(0.5)}}
-@keyframes lp-login{0.0000%{opacity:0}12.0000%{opacity:0}12.6667%{opacity:1}36.0000%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes usb-dot-0{0.0000%{opacity:0}21.6667%{opacity:0}21.6733%{opacity:1}36.6600%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes usb-dot-1{0.0000%{opacity:0}22.0000%{opacity:0}22.0067%{opacity:1}36.6600%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes usb-dot-2{0.0000%{opacity:0}22.3333%{opacity:0}22.3400%{opacity:1}36.6600%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes usb-dot-3{0.0000%{opacity:0}22.6667%{opacity:0}22.6733%{opacity:1}36.6600%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes usb-dot-4{0.0000%{opacity:0}23.0000%{opacity:0}23.0067%{opacity:1}36.6600%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes usb-dot-5{0.0000%{opacity:0}23.3333%{opacity:0}23.3400%{opacity:1}36.6600%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes usb-dot-6{0.0000%{opacity:0}23.6667%{opacity:0}23.6733%{opacity:1}36.6600%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes usb-dot-7{0.0000%{opacity:0}24.0000%{opacity:0}24.0067%{opacity:1}36.6600%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes usb-dot-8{0.0000%{opacity:0}24.3333%{opacity:0}24.3400%{opacity:1}36.6600%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes usb-dot-9{0.0000%{opacity:0}24.6667%{opacity:0}24.6733%{opacity:1}36.6600%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes usb-dot-10{0.0000%{opacity:0}25.0000%{opacity:0}25.0067%{opacity:1}36.6600%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes usb-dot-11{0.0000%{opacity:0}25.3333%{opacity:0}25.3400%{opacity:1}36.6600%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes btn-blue{0.0000%{opacity:0}12.0000%{opacity:0}12.3333%{opacity:1}27.3333%{opacity:1}27.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes btn-green{0.0000%{opacity:0}27.6667%{opacity:0}28.0000%{opacity:1}36.3333%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes usb-caret{0.0000%{opacity:0}12.0000%{opacity:0}12.0067%{opacity:1}13.6600%{opacity:1}13.6667%{opacity:0}15.3333%{opacity:0}15.3400%{opacity:1}16.9933%{opacity:1}17.0000%{opacity:0}18.6667%{opacity:0}18.6733%{opacity:1}20.3267%{opacity:1}20.3333%{opacity:0}100.0000%{opacity:0}}
-@keyframes lp-term{0.0000%{opacity:0}36.6667%{opacity:0}37.3333%{opacity:1}76.0000%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes term-pin{0.0000%{opacity:0}36.6667%{opacity:0}36.6733%{opacity:1}56.6600%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes term-caret-a{0.0000%{opacity:0}36.6667%{opacity:0}36.6733%{opacity:1}38.3267%{opacity:1}38.3333%{opacity:0}40.0000%{opacity:0}40.0067%{opacity:1}41.6600%{opacity:1}41.6667%{opacity:0}43.3333%{opacity:0}43.3400%{opacity:1}44.9933%{opacity:1}45.0000%{opacity:0}46.6667%{opacity:0}46.6733%{opacity:1}48.3267%{opacity:1}48.3333%{opacity:0}50.0000%{opacity:0}50.0067%{opacity:1}51.4933%{opacity:1}51.5000%{opacity:0}100.0000%{opacity:0}}
-@keyframes pin-dot-0{0.0000%{opacity:0}51.5000%{opacity:0}51.5067%{opacity:1}56.6600%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes pin-dot-1{0.0000%{opacity:0}51.8000%{opacity:0}51.8067%{opacity:1}56.6600%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes pin-dot-2{0.0000%{opacity:0}52.1000%{opacity:0}52.1067%{opacity:1}56.6600%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes pin-dot-3{0.0000%{opacity:0}52.4000%{opacity:0}52.4067%{opacity:1}56.6600%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes pin-dot-4{0.0000%{opacity:0}52.7000%{opacity:0}52.7067%{opacity:1}56.6600%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes pin-dot-5{0.0000%{opacity:0}53.0000%{opacity:0}53.0067%{opacity:1}56.6600%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes pin-dot-6{0.0000%{opacity:0}53.3000%{opacity:0}53.3067%{opacity:1}56.6600%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes pin-dot-7{0.0000%{opacity:0}53.6000%{opacity:0}53.6067%{opacity:1}56.6600%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes pin-dot-8{0.0000%{opacity:0}53.9000%{opacity:0}53.9067%{opacity:1}56.6600%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes pin-dot-9{0.0000%{opacity:0}54.2000%{opacity:0}54.2067%{opacity:1}56.6600%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes term-pin-done{0.0000%{opacity:0}55.1667%{opacity:0}55.5000%{opacity:1}56.3333%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes term-ble{0.0000%{opacity:0}56.6667%{opacity:0}56.6733%{opacity:1}76.6600%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes term-caret-b{0.0000%{opacity:0}56.6667%{opacity:0}56.6733%{opacity:1}58.3267%{opacity:1}58.3333%{opacity:0}60.0000%{opacity:0}60.0067%{opacity:1}61.6600%{opacity:1}61.6667%{opacity:0}63.3333%{opacity:0}63.3400%{opacity:1}64.9933%{opacity:1}65.0000%{opacity:0}66.6667%{opacity:0}66.6733%{opacity:1}66.9933%{opacity:1}67.0000%{opacity:0}100.0000%{opacity:0}}
-@keyframes ble-dot-0{0.0000%{opacity:0}67.0000%{opacity:0}67.0067%{opacity:1}76.6600%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes ble-dot-1{0.0000%{opacity:0}67.3000%{opacity:0}67.3067%{opacity:1}76.6600%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes ble-dot-2{0.0000%{opacity:0}67.6000%{opacity:0}67.6067%{opacity:1}76.6600%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes ble-dot-3{0.0000%{opacity:0}67.9000%{opacity:0}67.9067%{opacity:1}76.6600%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes ble-dot-4{0.0000%{opacity:0}68.2000%{opacity:0}68.2067%{opacity:1}76.6600%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes ble-dot-5{0.0000%{opacity:0}68.5000%{opacity:0}68.5067%{opacity:1}76.6600%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes ble-dot-6{0.0000%{opacity:0}68.8000%{opacity:0}68.8067%{opacity:1}76.6600%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes ble-dot-7{0.0000%{opacity:0}69.1000%{opacity:0}69.1067%{opacity:1}76.6600%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes ble-dot-8{0.0000%{opacity:0}69.4000%{opacity:0}69.4067%{opacity:1}76.6600%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes ble-dot-9{0.0000%{opacity:0}69.7000%{opacity:0}69.7067%{opacity:1}76.6600%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes term-ble-done{0.0000%{opacity:0}71.6667%{opacity:0}72.0000%{opacity:1}76.3333%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes lp-toast{0.0000%{opacity:0}62.0000%{opacity:0}62.8333%{opacity:1}75.8333%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes lp-mm{0.0000%{opacity:0}76.6667%{opacity:0}77.3333%{opacity:1}89.3333%{opacity:1}90.0000%{opacity:0}100.0000%{opacity:0}}
-@keyframes mm-toast{0.0000%{opacity:0}83.0000%{opacity:0}83.6667%{opacity:1}89.3333%{opacity:1}90.0000%{opacity:0}100.0000%{opacity:0}}
-@keyframes mm-cursor{0.0000%{transform:translate(130px,92px)}77.6667%{transform:translate(130px,92px);animation-timing-function:ease-in-out}79.4000%{transform:translate(172px,84px);animation-timing-function:ease-in-out}81.1333%{transform:translate(186px,118px);animation-timing-function:ease-in-out}82.8667%{transform:translate(150px,134px);animation-timing-function:ease-in-out}84.6000%{transform:translate(116px,116px);animation-timing-function:ease-in-out}86.3333%{transform:translate(130px,92px);animation-timing-function:ease-in-out}88.0667%{transform:translate(172px,84px);animation-timing-function:ease-in-out}100.0000%{transform:translate(130px,92px)}}
-@keyframes waves{0.0000%{opacity:0}59.3333%{opacity:0}60.3333%{opacity:1}75.6667%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes wave-0{0.0000%{opacity:0;transform:scale(0.85)}59.3333%{opacity:0;transform:scale(0.85)}60.0000%{opacity:1;transform:scale(0.95)}62.3333%{opacity:0;transform:scale(1.08)}63.0000%{opacity:0;transform:scale(0.85)}63.6667%{opacity:1;transform:scale(0.95)}66.0000%{opacity:0;transform:scale(1.08)}66.6667%{opacity:0;transform:scale(0.85)}67.3333%{opacity:1;transform:scale(0.95)}69.6667%{opacity:0;transform:scale(1.08)}70.3333%{opacity:0;transform:scale(0.85)}71.0000%{opacity:1;transform:scale(0.95)}73.3333%{opacity:0;transform:scale(1.08)}74.0000%{opacity:0;transform:scale(0.85)}74.6667%{opacity:1;transform:scale(0.95)}77.0000%{opacity:0;transform:scale(1.08)}100.0000%{opacity:0;transform:scale(0.85)}}
-@keyframes wave-1{0.0000%{opacity:0;transform:scale(0.85)}60.0667%{opacity:0;transform:scale(0.85)}60.7333%{opacity:1;transform:scale(0.95)}63.0667%{opacity:0;transform:scale(1.08)}63.7333%{opacity:0;transform:scale(0.85)}64.4000%{opacity:1;transform:scale(0.95)}66.7333%{opacity:0;transform:scale(1.08)}67.4000%{opacity:0;transform:scale(0.85)}68.0667%{opacity:1;transform:scale(0.95)}70.4000%{opacity:0;transform:scale(1.08)}71.0667%{opacity:0;transform:scale(0.85)}71.7333%{opacity:1;transform:scale(0.95)}74.0667%{opacity:0;transform:scale(1.08)}74.7333%{opacity:0;transform:scale(0.85)}75.4000%{opacity:1;transform:scale(0.95)}77.7333%{opacity:0;transform:scale(1.08)}100.0000%{opacity:0;transform:scale(0.85)}}
-@keyframes wave-2{0.0000%{opacity:0;transform:scale(0.85)}60.8000%{opacity:0;transform:scale(0.85)}61.4667%{opacity:1;transform:scale(0.95)}63.8000%{opacity:0;transform:scale(1.08)}64.4667%{opacity:0;transform:scale(0.85)}65.1333%{opacity:1;transform:scale(0.95)}67.4667%{opacity:0;transform:scale(1.08)}68.1333%{opacity:0;transform:scale(0.85)}68.8000%{opacity:1;transform:scale(0.95)}71.1333%{opacity:0;transform:scale(1.08)}71.8000%{opacity:0;transform:scale(0.85)}72.4667%{opacity:1;transform:scale(0.95)}74.8000%{opacity:0;transform:scale(1.08)}75.4667%{opacity:0;transform:scale(0.85)}76.1333%{opacity:1;transform:scale(0.95)}78.4667%{opacity:0;transform:scale(1.08)}100.0000%{opacity:0;transform:scale(0.85)}}
-@keyframes cap-usb{0.0000%{opacity:0}12.3333%{opacity:0}13.5000%{opacity:1}35.5000%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes cap-usb-in{0.0000%{transform:translateY(10px)}12.3333%{transform:translateY(10px);animation-timing-function:ease-out}14.0000%{transform:translateY(0)}100.0000%{transform:translateY(0)}}
-@keyframes cap-pin{0.0000%{opacity:0}37.0000%{opacity:0}38.1667%{opacity:1}55.5000%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes cap-pin-in{0.0000%{transform:translateY(10px)}37.0000%{transform:translateY(10px);animation-timing-function:ease-out}38.6667%{transform:translateY(0)}100.0000%{transform:translateY(0)}}
-@keyframes cap-ble{0.0000%{opacity:0}57.0000%{opacity:0}58.1667%{opacity:1}75.5000%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes cap-ble-in{0.0000%{transform:translateY(10px)}57.0000%{transform:translateY(10px);animation-timing-function:ease-out}58.6667%{transform:translateY(0)}100.0000%{transform:translateY(0)}}
-@keyframes cap-mm{0.0000%{opacity:0}77.0000%{opacity:0}78.1667%{opacity:1}88.8333%{opacity:1}90.0000%{opacity:0}100.0000%{opacity:0}}
-@keyframes cap-mm-in{0.0000%{transform:translateY(10px)}77.0000%{transform:translateY(10px);animation-timing-function:ease-out}78.6667%{transform:translateY(0)}100.0000%{transform:translateY(0)}}
-@keyframes sdot-0{0.0000%{opacity:1}11.3333%{opacity:1}12.0000%{opacity:0}100.0000%{opacity:0}}
-@keyframes sdot-1{0.0000%{opacity:0}12.0000%{opacity:0}12.6667%{opacity:1}36.0000%{opacity:1}36.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes sdot-2{0.0000%{opacity:0}36.6667%{opacity:0}37.3333%{opacity:1}56.0000%{opacity:1}56.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes sdot-3{0.0000%{opacity:0}56.6667%{opacity:0}57.3333%{opacity:1}76.0000%{opacity:1}76.6667%{opacity:0}100.0000%{opacity:0}}
-@keyframes sdot-4{0.0000%{opacity:0}76.6667%{opacity:0}77.3333%{opacity:1}89.3333%{opacity:1}90.0000%{opacity:0}100.0000%{opacity:0}}
-@keyframes sdot-5{0.0000%{opacity:0}90.0000%{opacity:0}90.6667%{opacity:1}100.0000%{opacity:1}}
+@keyframes note-0{0.0000%{opacity:0;transform:translateY(0)}19.1176%{opacity:0;transform:translateY(0)}19.5588%{opacity:1;transform:translateY(-6px)}22.9412%{opacity:0;transform:translateY(-34px)}45.4412%{opacity:0;transform:translateY(0)}45.8824%{opacity:1;transform:translateY(-6px)}48.3824%{opacity:0;transform:translateY(-34px)}59.1176%{opacity:0;transform:translateY(0)}59.5588%{opacity:1;transform:translateY(-6px)}62.0588%{opacity:0;transform:translateY(-34px)}100.0000%{opacity:0;transform:translateY(0)}}
+@keyframes note-1{0.0000%{opacity:0;transform:translateY(0)}20.0000%{opacity:0;transform:translateY(0)}20.4412%{opacity:1;transform:translateY(-6px)}23.8235%{opacity:0;transform:translateY(-34px)}46.3235%{opacity:0;transform:translateY(0)}46.7647%{opacity:1;transform:translateY(-6px)}49.2647%{opacity:0;transform:translateY(-34px)}60.0000%{opacity:0;transform:translateY(0)}60.4412%{opacity:1;transform:translateY(-6px)}62.9412%{opacity:0;transform:translateY(-34px)}100.0000%{opacity:0;transform:translateY(0)}}
+@keyframes note-2{0.0000%{opacity:0;transform:translateY(0)}20.8824%{opacity:0;transform:translateY(0)}21.3235%{opacity:1;transform:translateY(-6px)}24.7059%{opacity:0;transform:translateY(-34px)}47.2059%{opacity:0;transform:translateY(0)}47.6471%{opacity:1;transform:translateY(-6px)}50.1471%{opacity:0;transform:translateY(-34px)}60.8824%{opacity:0;transform:translateY(0)}61.3235%{opacity:1;transform:translateY(-6px)}63.8235%{opacity:0;transform:translateY(-34px)}100.0000%{opacity:0;transform:translateY(0)}}
+@keyframes title{0.0000%{opacity:0}0.1471%{opacity:0}1.3235%{opacity:1}9.4118%{opacity:1}10.5882%{opacity:0}100.0000%{opacity:0}}
+@keyframes endcard{0.0000%{opacity:0}92.0588%{opacity:0}93.2353%{opacity:1}97.9412%{opacity:1}99.1176%{opacity:0}100.0000%{opacity:0}}
+@keyframes title-in{0.0000%{transform:translateX(24px)}1.7647%{transform:translateX(0)}100.0000%{transform:translateX(0)}}
+@keyframes laptop{0.0000%{opacity:0}10.8824%{opacity:0}12.0588%{opacity:1}78.8235%{opacity:1}80.0000%{opacity:0}100.0000%{opacity:0}}
+@keyframes cable{0.0000%{stroke-dashoffset:1}12.0588%{stroke-dashoffset:1;animation-timing-function:ease-in-out}14.7059%{stroke-dashoffset:0}50.5882%{stroke-dashoffset:0;animation-timing-function:ease-in}52.0588%{stroke-dashoffset:1}100.0000%{stroke-dashoffset:1}}
+@keyframes bubble{0.0000%{opacity:0}11.7647%{opacity:0}12.2059%{opacity:1}49.8529%{opacity:1}50.2941%{opacity:0}100.0000%{opacity:0}}
+@keyframes bubble-pop{0.0000%{transform:scale(0)}11.7647%{transform:scale(0);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}13.0882%{transform:scale(1)}49.4118%{transform:scale(1);animation-timing-function:ease-in}50.2941%{transform:scale(0)}100.0000%{transform:scale(0)}}
+@keyframes ui-list{0.0000%{opacity:0}11.7647%{opacity:0}11.7706%{opacity:1}32.3471%{opacity:1}32.3529%{opacity:0}44.1176%{opacity:0}44.1235%{opacity:1}50.2882%{opacity:1}50.2941%{opacity:0}100.0000%{opacity:0}}
+@keyframes ui-pin{0.0000%{opacity:0}32.3529%{opacity:0}32.3588%{opacity:1}41.7588%{opacity:1}41.7647%{opacity:0}100.0000%{opacity:0}}
+@keyframes ui-ok{0.0000%{opacity:0}41.7647%{opacity:0}41.7706%{opacity:1}44.1118%{opacity:1}44.1176%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-star-0{0.0000%{opacity:0}34.3235%{opacity:0}34.3294%{opacity:1}41.7588%{opacity:1}41.7647%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-star-1{0.0000%{opacity:0}36.2059%{opacity:0}36.2118%{opacity:1}41.7588%{opacity:1}41.7647%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-star-2{0.0000%{opacity:0}38.0882%{opacity:0}38.0941%{opacity:1}41.7588%{opacity:1}41.7647%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-star-3{0.0000%{opacity:0}39.9706%{opacity:0}39.9765%{opacity:1}41.7588%{opacity:1}41.7647%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-cursor{0.0000%{transform:translateX(49px)}32.9412%{transform:translateX(49px);animation-timing-function:steps(1,end)}34.8235%{transform:translateX(107.5px);animation-timing-function:steps(1,end)}36.7059%{transform:translateX(166px);animation-timing-function:steps(1,end)}38.5882%{transform:translateX(10px);animation-timing-function:steps(1,end)}40.4706%{transform:translateX(224.5px);animation-timing-function:steps(1,end)}100.0000%{transform:translateX(224.5px)}}
+@keyframes pin-pick{0.0000%{opacity:0}34.1765%{opacity:0}34.2059%{opacity:0.9}34.6471%{opacity:0}36.0588%{opacity:0}36.0882%{opacity:0.9}36.5294%{opacity:0}37.9412%{opacity:0}37.9706%{opacity:0.9}38.4118%{opacity:0}39.8235%{opacity:0}39.8529%{opacity:0.9}40.2941%{opacity:0}41.7059%{opacity:0}41.7353%{opacity:0.9}42.1765%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-pick-x{0.0000%{transform:translateX(49px)}32.9412%{transform:translateX(49px);animation-timing-function:steps(1,end)}34.8235%{transform:translateX(107.5px);animation-timing-function:steps(1,end)}36.7059%{transform:translateX(166px);animation-timing-function:steps(1,end)}38.5882%{transform:translateX(10px);animation-timing-function:steps(1,end)}40.4706%{transform:translateX(224.5px);animation-timing-function:steps(1,end)}100.0000%{transform:translateX(224.5px)}}
+@keyframes lock{0.0000%{opacity:0}32.9412%{opacity:0}33.8235%{opacity:1}49.1176%{opacity:1}50.0000%{opacity:0}100.0000%{opacity:0}}
+@keyframes lock-pop{0.0000%{transform:scale(1)}41.7647%{transform:scale(1);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}42.7941%{transform:scale(1.18)}43.8235%{transform:scale(1)}100.0000%{transform:scale(1)}}
+@keyframes lock-body{0.0000%{fill:#E62828}41.7647%{fill:#E62828}42.6471%{fill:#00C850}100.0000%{fill:#00C850}}
+@keyframes shackle{0.0000%{transform:translateY(0) rotate(0)}41.7647%{transform:translateY(0) rotate(0);animation-timing-function:ease-out}42.9412%{transform:translateY(-7px) rotate(-28deg)}100.0000%{transform:translateY(-7px) rotate(-28deg)}}
+@keyframes lock-glow{0.0000%{opacity:0;transform:scale(0.5)}41.7647%{opacity:0;transform:scale(0.5)}42.0588%{opacity:0.5;transform:scale(0.6)}44.1176%{opacity:0;transform:scale(1.4)}100.0000%{opacity:0;transform:scale(0.5)}}
+@keyframes lp-login{0.0000%{opacity:0}10.5882%{opacity:0}11.1765%{opacity:1}31.7647%{opacity:1}32.3529%{opacity:0}100.0000%{opacity:0}}
+@keyframes usb-dot-0{0.0000%{opacity:0}19.1176%{opacity:0}19.1235%{opacity:1}32.3471%{opacity:1}32.3529%{opacity:0}100.0000%{opacity:0}}
+@keyframes usb-dot-1{0.0000%{opacity:0}19.4118%{opacity:0}19.4176%{opacity:1}32.3471%{opacity:1}32.3529%{opacity:0}100.0000%{opacity:0}}
+@keyframes usb-dot-2{0.0000%{opacity:0}19.7059%{opacity:0}19.7118%{opacity:1}32.3471%{opacity:1}32.3529%{opacity:0}100.0000%{opacity:0}}
+@keyframes usb-dot-3{0.0000%{opacity:0}20.0000%{opacity:0}20.0059%{opacity:1}32.3471%{opacity:1}32.3529%{opacity:0}100.0000%{opacity:0}}
+@keyframes usb-dot-4{0.0000%{opacity:0}20.2941%{opacity:0}20.3000%{opacity:1}32.3471%{opacity:1}32.3529%{opacity:0}100.0000%{opacity:0}}
+@keyframes usb-dot-5{0.0000%{opacity:0}20.5882%{opacity:0}20.5941%{opacity:1}32.3471%{opacity:1}32.3529%{opacity:0}100.0000%{opacity:0}}
+@keyframes usb-dot-6{0.0000%{opacity:0}20.8824%{opacity:0}20.8882%{opacity:1}32.3471%{opacity:1}32.3529%{opacity:0}100.0000%{opacity:0}}
+@keyframes usb-dot-7{0.0000%{opacity:0}21.1765%{opacity:0}21.1824%{opacity:1}32.3471%{opacity:1}32.3529%{opacity:0}100.0000%{opacity:0}}
+@keyframes usb-dot-8{0.0000%{opacity:0}21.4706%{opacity:0}21.4765%{opacity:1}32.3471%{opacity:1}32.3529%{opacity:0}100.0000%{opacity:0}}
+@keyframes usb-dot-9{0.0000%{opacity:0}21.7647%{opacity:0}21.7706%{opacity:1}32.3471%{opacity:1}32.3529%{opacity:0}100.0000%{opacity:0}}
+@keyframes usb-dot-10{0.0000%{opacity:0}22.0588%{opacity:0}22.0647%{opacity:1}32.3471%{opacity:1}32.3529%{opacity:0}100.0000%{opacity:0}}
+@keyframes usb-dot-11{0.0000%{opacity:0}22.3529%{opacity:0}22.3588%{opacity:1}32.3471%{opacity:1}32.3529%{opacity:0}100.0000%{opacity:0}}
+@keyframes btn-blue{0.0000%{opacity:0}10.5882%{opacity:0}10.8824%{opacity:1}24.1176%{opacity:1}24.4118%{opacity:0}100.0000%{opacity:0}}
+@keyframes btn-green{0.0000%{opacity:0}24.4118%{opacity:0}24.7059%{opacity:1}32.0588%{opacity:1}32.3529%{opacity:0}100.0000%{opacity:0}}
+@keyframes usb-caret{0.0000%{opacity:0}10.5882%{opacity:0}10.5941%{opacity:1}12.0529%{opacity:1}12.0588%{opacity:0}13.5294%{opacity:0}13.5353%{opacity:1}14.9941%{opacity:1}15.0000%{opacity:0}16.4706%{opacity:0}16.4765%{opacity:1}17.9353%{opacity:1}17.9412%{opacity:0}100.0000%{opacity:0}}
+@keyframes lp-term{0.0000%{opacity:0}32.3529%{opacity:0}32.9412%{opacity:1}67.0588%{opacity:1}67.6471%{opacity:0}100.0000%{opacity:0}}
+@keyframes term-pin{0.0000%{opacity:0}32.3529%{opacity:0}32.3588%{opacity:1}49.9941%{opacity:1}50.0000%{opacity:0}100.0000%{opacity:0}}
+@keyframes term-caret-a{0.0000%{opacity:0}32.3529%{opacity:0}32.3588%{opacity:1}33.8176%{opacity:1}33.8235%{opacity:0}35.2941%{opacity:0}35.3000%{opacity:1}36.7588%{opacity:1}36.7647%{opacity:0}38.2353%{opacity:0}38.2412%{opacity:1}39.7000%{opacity:1}39.7059%{opacity:0}41.1765%{opacity:0}41.1824%{opacity:1}42.6412%{opacity:1}42.6471%{opacity:0}44.1176%{opacity:0}44.1235%{opacity:1}45.4353%{opacity:1}45.4412%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-dot-0{0.0000%{opacity:0}45.4412%{opacity:0}45.4471%{opacity:1}49.9941%{opacity:1}50.0000%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-dot-1{0.0000%{opacity:0}45.7059%{opacity:0}45.7118%{opacity:1}49.9941%{opacity:1}50.0000%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-dot-2{0.0000%{opacity:0}45.9706%{opacity:0}45.9765%{opacity:1}49.9941%{opacity:1}50.0000%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-dot-3{0.0000%{opacity:0}46.2353%{opacity:0}46.2412%{opacity:1}49.9941%{opacity:1}50.0000%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-dot-4{0.0000%{opacity:0}46.5000%{opacity:0}46.5059%{opacity:1}49.9941%{opacity:1}50.0000%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-dot-5{0.0000%{opacity:0}46.7647%{opacity:0}46.7706%{opacity:1}49.9941%{opacity:1}50.0000%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-dot-6{0.0000%{opacity:0}47.0294%{opacity:0}47.0353%{opacity:1}49.9941%{opacity:1}50.0000%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-dot-7{0.0000%{opacity:0}47.2941%{opacity:0}47.3000%{opacity:1}49.9941%{opacity:1}50.0000%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-dot-8{0.0000%{opacity:0}47.5588%{opacity:0}47.5647%{opacity:1}49.9941%{opacity:1}50.0000%{opacity:0}100.0000%{opacity:0}}
+@keyframes pin-dot-9{0.0000%{opacity:0}47.8235%{opacity:0}47.8294%{opacity:1}49.9941%{opacity:1}50.0000%{opacity:0}100.0000%{opacity:0}}
+@keyframes term-pin-done{0.0000%{opacity:0}48.6765%{opacity:0}48.9706%{opacity:1}49.7059%{opacity:1}50.0000%{opacity:0}100.0000%{opacity:0}}
+@keyframes term-ble{0.0000%{opacity:0}50.0000%{opacity:0}50.0059%{opacity:1}67.6412%{opacity:1}67.6471%{opacity:0}100.0000%{opacity:0}}
+@keyframes term-caret-b{0.0000%{opacity:0}50.0000%{opacity:0}50.0059%{opacity:1}51.4647%{opacity:1}51.4706%{opacity:0}52.9412%{opacity:0}52.9471%{opacity:1}54.4059%{opacity:1}54.4118%{opacity:0}55.8824%{opacity:0}55.8882%{opacity:1}57.3471%{opacity:1}57.3529%{opacity:0}58.8235%{opacity:0}58.8294%{opacity:1}59.1118%{opacity:1}59.1176%{opacity:0}100.0000%{opacity:0}}
+@keyframes ble-dot-0{0.0000%{opacity:0}59.1176%{opacity:0}59.1235%{opacity:1}67.6412%{opacity:1}67.6471%{opacity:0}100.0000%{opacity:0}}
+@keyframes ble-dot-1{0.0000%{opacity:0}59.3824%{opacity:0}59.3882%{opacity:1}67.6412%{opacity:1}67.6471%{opacity:0}100.0000%{opacity:0}}
+@keyframes ble-dot-2{0.0000%{opacity:0}59.6471%{opacity:0}59.6529%{opacity:1}67.6412%{opacity:1}67.6471%{opacity:0}100.0000%{opacity:0}}
+@keyframes ble-dot-3{0.0000%{opacity:0}59.9118%{opacity:0}59.9176%{opacity:1}67.6412%{opacity:1}67.6471%{opacity:0}100.0000%{opacity:0}}
+@keyframes ble-dot-4{0.0000%{opacity:0}60.1765%{opacity:0}60.1824%{opacity:1}67.6412%{opacity:1}67.6471%{opacity:0}100.0000%{opacity:0}}
+@keyframes ble-dot-5{0.0000%{opacity:0}60.4412%{opacity:0}60.4471%{opacity:1}67.6412%{opacity:1}67.6471%{opacity:0}100.0000%{opacity:0}}
+@keyframes ble-dot-6{0.0000%{opacity:0}60.7059%{opacity:0}60.7118%{opacity:1}67.6412%{opacity:1}67.6471%{opacity:0}100.0000%{opacity:0}}
+@keyframes ble-dot-7{0.0000%{opacity:0}60.9706%{opacity:0}60.9765%{opacity:1}67.6412%{opacity:1}67.6471%{opacity:0}100.0000%{opacity:0}}
+@keyframes ble-dot-8{0.0000%{opacity:0}61.2353%{opacity:0}61.2412%{opacity:1}67.6412%{opacity:1}67.6471%{opacity:0}100.0000%{opacity:0}}
+@keyframes ble-dot-9{0.0000%{opacity:0}61.5000%{opacity:0}61.5059%{opacity:1}67.6412%{opacity:1}67.6471%{opacity:0}100.0000%{opacity:0}}
+@keyframes term-ble-done{0.0000%{opacity:0}63.2353%{opacity:0}63.5294%{opacity:1}67.3529%{opacity:1}67.6471%{opacity:0}100.0000%{opacity:0}}
+@keyframes lp-toast{0.0000%{opacity:0}54.7059%{opacity:0}55.4412%{opacity:1}66.9118%{opacity:1}67.6471%{opacity:0}100.0000%{opacity:0}}
+@keyframes lp-mm{0.0000%{opacity:0}67.6471%{opacity:0}68.2353%{opacity:1}78.8235%{opacity:1}79.4118%{opacity:0}100.0000%{opacity:0}}
+@keyframes mm-toast{0.0000%{opacity:0}73.2353%{opacity:0}73.8235%{opacity:1}78.8235%{opacity:1}79.4118%{opacity:0}100.0000%{opacity:0}}
+@keyframes mm-cursor{0.0000%{transform:translate(130px,92px)}68.5294%{transform:translate(130px,92px);animation-timing-function:ease-in-out}70.0588%{transform:translate(172px,84px);animation-timing-function:ease-in-out}71.5882%{transform:translate(186px,118px);animation-timing-function:ease-in-out}73.1176%{transform:translate(150px,134px);animation-timing-function:ease-in-out}74.6471%{transform:translate(116px,116px);animation-timing-function:ease-in-out}76.1765%{transform:translate(130px,92px);animation-timing-function:ease-in-out}77.7059%{transform:translate(172px,84px);animation-timing-function:ease-in-out}100.0000%{transform:translate(130px,92px)}}
+@keyframes waves{0.0000%{opacity:0}52.3529%{opacity:0}53.2353%{opacity:1}66.7647%{opacity:1}67.6471%{opacity:0}100.0000%{opacity:0}}
+@keyframes wave-0{0.0000%{opacity:0;transform:scale(0.85)}52.3529%{opacity:0;transform:scale(0.85)}52.9412%{opacity:1;transform:scale(0.95)}55.0000%{opacity:0;transform:scale(1.08)}55.5882%{opacity:0;transform:scale(0.85)}56.1765%{opacity:1;transform:scale(0.95)}58.2353%{opacity:0;transform:scale(1.08)}58.8235%{opacity:0;transform:scale(0.85)}59.4118%{opacity:1;transform:scale(0.95)}61.4706%{opacity:0;transform:scale(1.08)}62.0588%{opacity:0;transform:scale(0.85)}62.6471%{opacity:1;transform:scale(0.95)}64.7059%{opacity:0;transform:scale(1.08)}65.2941%{opacity:0;transform:scale(0.85)}65.8824%{opacity:1;transform:scale(0.95)}67.9412%{opacity:0;transform:scale(1.08)}100.0000%{opacity:0;transform:scale(0.85)}}
+@keyframes wave-1{0.0000%{opacity:0;transform:scale(0.85)}53.0000%{opacity:0;transform:scale(0.85)}53.5882%{opacity:1;transform:scale(0.95)}55.6471%{opacity:0;transform:scale(1.08)}56.2353%{opacity:0;transform:scale(0.85)}56.8235%{opacity:1;transform:scale(0.95)}58.8824%{opacity:0;transform:scale(1.08)}59.4706%{opacity:0;transform:scale(0.85)}60.0588%{opacity:1;transform:scale(0.95)}62.1176%{opacity:0;transform:scale(1.08)}62.7059%{opacity:0;transform:scale(0.85)}63.2941%{opacity:1;transform:scale(0.95)}65.3529%{opacity:0;transform:scale(1.08)}65.9412%{opacity:0;transform:scale(0.85)}66.5294%{opacity:1;transform:scale(0.95)}68.5882%{opacity:0;transform:scale(1.08)}100.0000%{opacity:0;transform:scale(0.85)}}
+@keyframes wave-2{0.0000%{opacity:0;transform:scale(0.85)}53.6471%{opacity:0;transform:scale(0.85)}54.2353%{opacity:1;transform:scale(0.95)}56.2941%{opacity:0;transform:scale(1.08)}56.8824%{opacity:0;transform:scale(0.85)}57.4706%{opacity:1;transform:scale(0.95)}59.5294%{opacity:0;transform:scale(1.08)}60.1176%{opacity:0;transform:scale(0.85)}60.7059%{opacity:1;transform:scale(0.95)}62.7647%{opacity:0;transform:scale(1.08)}63.3529%{opacity:0;transform:scale(0.85)}63.9412%{opacity:1;transform:scale(0.95)}66.0000%{opacity:0;transform:scale(1.08)}66.5882%{opacity:0;transform:scale(0.85)}67.1765%{opacity:1;transform:scale(0.95)}69.2353%{opacity:0;transform:scale(1.08)}100.0000%{opacity:0;transform:scale(0.85)}}
+@keyframes boards{0.0000%{opacity:0}80.2941%{opacity:0}81.3235%{opacity:1}90.1471%{opacity:1}91.1765%{opacity:0}100.0000%{opacity:0}}
+@keyframes boards-in{0.0000%{transform:translateY(14px)}80.2941%{transform:translateY(14px);animation-timing-function:ease-out}81.7647%{transform:translateY(0)}100.0000%{transform:translateY(0)}}
+@keyframes dk-led-r{0.0000%{fill:#FFB000}82.3529%{fill:#FFB000;animation-timing-function:steps(1,end)}83.5294%{fill:#FFE600;animation-timing-function:steps(1,end)}84.7059%{fill:#00C850;animation-timing-function:steps(1,end)}85.8824%{fill:#00FFB4;animation-timing-function:steps(1,end)}87.0588%{fill:#3C8CFF;animation-timing-function:steps(1,end)}88.2353%{fill:#AA00FF;animation-timing-function:steps(1,end)}89.4118%{fill:#FF0078;animation-timing-function:steps(1,end)}100.0000%{fill:#FFB000}}
+@keyframes dk-led-r-top{0.0000%{fill:#FFB000}82.3529%{fill:#FFB000;animation-timing-function:steps(1,end)}83.5294%{fill:#FFE600;animation-timing-function:steps(1,end)}84.7059%{fill:#00C850;animation-timing-function:steps(1,end)}85.8824%{fill:#00FFB4;animation-timing-function:steps(1,end)}87.0588%{fill:#3C8CFF;animation-timing-function:steps(1,end)}88.2353%{fill:#AA00FF;animation-timing-function:steps(1,end)}89.4118%{fill:#FF0078;animation-timing-function:steps(1,end)}100.0000%{fill:#FFB000}}
+@keyframes st-led{0.0000%{fill:#FFB000}82.9412%{fill:#FFB000;animation-timing-function:steps(1,end)}84.1176%{fill:#FFE600;animation-timing-function:steps(1,end)}85.2941%{fill:#00C850;animation-timing-function:steps(1,end)}86.4706%{fill:#00FFB4;animation-timing-function:steps(1,end)}87.6471%{fill:#3C8CFF;animation-timing-function:steps(1,end)}88.8235%{fill:#AA00FF;animation-timing-function:steps(1,end)}90.0000%{fill:#FF0078;animation-timing-function:steps(1,end)}100.0000%{fill:#FFB000}}
+@keyframes st-led-top{0.0000%{fill:#FFB000}82.9412%{fill:#FFB000;animation-timing-function:steps(1,end)}84.1176%{fill:#FFE600;animation-timing-function:steps(1,end)}85.2941%{fill:#00C850;animation-timing-function:steps(1,end)}86.4706%{fill:#00FFB4;animation-timing-function:steps(1,end)}87.6471%{fill:#3C8CFF;animation-timing-function:steps(1,end)}88.8235%{fill:#AA00FF;animation-timing-function:steps(1,end)}90.0000%{fill:#FF0078;animation-timing-function:steps(1,end)}100.0000%{fill:#FFB000}}
+@keyframes cap-usb{0.0000%{opacity:0}10.8824%{opacity:0}11.9118%{opacity:1}31.3235%{opacity:1}32.3529%{opacity:0}100.0000%{opacity:0}}
+@keyframes cap-usb-in{0.0000%{transform:translateY(10px)}10.8824%{transform:translateY(10px);animation-timing-function:ease-out}12.3529%{transform:translateY(0)}100.0000%{transform:translateY(0)}}
+@keyframes cap-pin{0.0000%{opacity:0}32.6471%{opacity:0}33.6765%{opacity:1}48.9706%{opacity:1}50.0000%{opacity:0}100.0000%{opacity:0}}
+@keyframes cap-pin-in{0.0000%{transform:translateY(10px)}32.6471%{transform:translateY(10px);animation-timing-function:ease-out}34.1176%{transform:translateY(0)}100.0000%{transform:translateY(0)}}
+@keyframes cap-ble{0.0000%{opacity:0}50.2941%{opacity:0}51.3235%{opacity:1}66.6176%{opacity:1}67.6471%{opacity:0}100.0000%{opacity:0}}
+@keyframes cap-ble-in{0.0000%{transform:translateY(10px)}50.2941%{transform:translateY(10px);animation-timing-function:ease-out}51.7647%{transform:translateY(0)}100.0000%{transform:translateY(0)}}
+@keyframes cap-mm{0.0000%{opacity:0}67.9412%{opacity:0}68.9706%{opacity:1}78.3824%{opacity:1}79.4118%{opacity:0}100.0000%{opacity:0}}
+@keyframes cap-mm-in{0.0000%{transform:translateY(10px)}67.9412%{transform:translateY(10px);animation-timing-function:ease-out}69.4118%{transform:translateY(0)}100.0000%{transform:translateY(0)}}
+@keyframes cap-boards{0.0000%{opacity:0}79.7059%{opacity:0}80.7353%{opacity:1}90.1471%{opacity:1}91.1765%{opacity:0}100.0000%{opacity:0}}
+@keyframes cap-boards-in{0.0000%{transform:translateY(10px)}79.7059%{transform:translateY(10px);animation-timing-function:ease-out}81.1765%{transform:translateY(0)}100.0000%{transform:translateY(0)}}
+@keyframes sdot-0{0.0000%{opacity:1}10.0000%{opacity:1}10.5882%{opacity:0}100.0000%{opacity:0}}
+@keyframes sdot-1{0.0000%{opacity:0}10.5882%{opacity:0}11.1765%{opacity:1}31.7647%{opacity:1}32.3529%{opacity:0}100.0000%{opacity:0}}
+@keyframes sdot-2{0.0000%{opacity:0}32.3529%{opacity:0}32.9412%{opacity:1}49.4118%{opacity:1}50.0000%{opacity:0}100.0000%{opacity:0}}
+@keyframes sdot-3{0.0000%{opacity:0}50.0000%{opacity:0}50.5882%{opacity:1}67.0588%{opacity:1}67.6471%{opacity:0}100.0000%{opacity:0}}
+@keyframes sdot-4{0.0000%{opacity:0}67.6471%{opacity:0}68.2353%{opacity:1}78.8235%{opacity:1}79.4118%{opacity:0}100.0000%{opacity:0}}
+@keyframes sdot-5{0.0000%{opacity:0}79.4118%{opacity:0}80.0000%{opacity:1}90.5882%{opacity:1}91.1765%{opacity:0}100.0000%{opacity:0}}
+@keyframes sdot-6{0.0000%{opacity:0}91.1765%{opacity:0}91.7647%{opacity:1}100.0000%{opacity:1}}
 @keyframes progress{0.0000%{transform:scaleX(0)}100.0000%{transform:scaleX(1)}}
-.m-hop{animation:m-hop 30s linear infinite;transform-box:fill-box;transform-origin:center;}
-.blink{animation:blink 30s linear infinite;transform-box:fill-box;transform-origin:center;}
-.wink{animation:wink 30s linear infinite;transform-box:fill-box;transform-origin:center}
-.look{animation:look 30s ease-in-out infinite;}
-.press{animation:press 30s linear infinite;transform-box:fill-box;transform-origin:center;}
-.press-ring{animation:press-ring 30s linear infinite;transform-box:fill-box;transform-origin:center;opacity:0}
-.sparkle{animation:sparkle 30s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
-.note-0{animation:note-0 30s ease-out infinite;opacity:0}
-.note-1{animation:note-1 30s ease-out infinite;opacity:0}
-.note-2{animation:note-2 30s ease-out infinite;opacity:0}
-.title{opacity:0;animation:title 30s linear infinite;}
-.endcard{opacity:0;animation:endcard 30s linear infinite;}
-.title-in{animation:title-in 30s ease-out infinite;}
-.laptop{opacity:0;animation:laptop 30s linear infinite;}
-.cable{animation:cable 30s linear infinite;stroke-dasharray:1;stroke-dashoffset:1}
-.bubble{opacity:0;animation:bubble 30s linear infinite;}
-.bubble-pop{animation:bubble-pop 30s linear infinite;transform-box:fill-box;transform-origin:8% 100%}
-.ui-list{opacity:0;animation:ui-list 30s linear infinite;}
-.ui-pin{opacity:0;animation:ui-pin 30s linear infinite;}
-.ui-ok{opacity:0;animation:ui-ok 30s linear infinite;}
-.pin-star-0{opacity:0;animation:pin-star-0 30s linear infinite;}
-.pin-star-1{opacity:0;animation:pin-star-1 30s linear infinite;}
-.pin-star-2{opacity:0;animation:pin-star-2 30s linear infinite;}
-.pin-star-3{opacity:0;animation:pin-star-3 30s linear infinite;}
-.pin-cursor{animation:pin-cursor 30s linear infinite;}
-.pin-pick{animation:pin-pick 30s linear infinite;opacity:0}
-.pin-pick-x{animation:pin-pick-x 30s linear infinite;}
-.lock{opacity:0;animation:lock 30s linear infinite;}
-.lock-pop{animation:lock-pop 30s linear infinite;}
-.lock-body{animation:lock-body 30s linear infinite;}
-.shackle{animation:shackle 30s linear infinite;}
-.lock-glow{animation:lock-glow 30s ease-out infinite;opacity:0;transform-box:fill-box;transform-origin:center}
-.lp-login{opacity:0;animation:lp-login 30s linear infinite;}
-.usb-dot-0{opacity:0;animation:usb-dot-0 30s linear infinite;}
-.usb-dot-1{opacity:0;animation:usb-dot-1 30s linear infinite;}
-.usb-dot-2{opacity:0;animation:usb-dot-2 30s linear infinite;}
-.usb-dot-3{opacity:0;animation:usb-dot-3 30s linear infinite;}
-.usb-dot-4{opacity:0;animation:usb-dot-4 30s linear infinite;}
-.usb-dot-5{opacity:0;animation:usb-dot-5 30s linear infinite;}
-.usb-dot-6{opacity:0;animation:usb-dot-6 30s linear infinite;}
-.usb-dot-7{opacity:0;animation:usb-dot-7 30s linear infinite;}
-.usb-dot-8{opacity:0;animation:usb-dot-8 30s linear infinite;}
-.usb-dot-9{opacity:0;animation:usb-dot-9 30s linear infinite;}
-.usb-dot-10{opacity:0;animation:usb-dot-10 30s linear infinite;}
-.usb-dot-11{opacity:0;animation:usb-dot-11 30s linear infinite;}
-.btn-blue{opacity:0;animation:btn-blue 30s linear infinite;}
-.btn-green{opacity:0;animation:btn-green 30s linear infinite;}
-.usb-caret{opacity:0;animation:usb-caret 30s linear infinite;}
-.lp-term{opacity:0;animation:lp-term 30s linear infinite;}
-.term-pin{opacity:0;animation:term-pin 30s linear infinite;}
-.term-caret-a{opacity:0;animation:term-caret-a 30s linear infinite;}
-.pin-dot-0{opacity:0;animation:pin-dot-0 30s linear infinite;}
-.pin-dot-1{opacity:0;animation:pin-dot-1 30s linear infinite;}
-.pin-dot-2{opacity:0;animation:pin-dot-2 30s linear infinite;}
-.pin-dot-3{opacity:0;animation:pin-dot-3 30s linear infinite;}
-.pin-dot-4{opacity:0;animation:pin-dot-4 30s linear infinite;}
-.pin-dot-5{opacity:0;animation:pin-dot-5 30s linear infinite;}
-.pin-dot-6{opacity:0;animation:pin-dot-6 30s linear infinite;}
-.pin-dot-7{opacity:0;animation:pin-dot-7 30s linear infinite;}
-.pin-dot-8{opacity:0;animation:pin-dot-8 30s linear infinite;}
-.pin-dot-9{opacity:0;animation:pin-dot-9 30s linear infinite;}
-.term-pin-done{opacity:0;animation:term-pin-done 30s linear infinite;}
-.term-ble{opacity:0;animation:term-ble 30s linear infinite;}
-.term-caret-b{opacity:0;animation:term-caret-b 30s linear infinite;}
-.ble-dot-0{opacity:0;animation:ble-dot-0 30s linear infinite;}
-.ble-dot-1{opacity:0;animation:ble-dot-1 30s linear infinite;}
-.ble-dot-2{opacity:0;animation:ble-dot-2 30s linear infinite;}
-.ble-dot-3{opacity:0;animation:ble-dot-3 30s linear infinite;}
-.ble-dot-4{opacity:0;animation:ble-dot-4 30s linear infinite;}
-.ble-dot-5{opacity:0;animation:ble-dot-5 30s linear infinite;}
-.ble-dot-6{opacity:0;animation:ble-dot-6 30s linear infinite;}
-.ble-dot-7{opacity:0;animation:ble-dot-7 30s linear infinite;}
-.ble-dot-8{opacity:0;animation:ble-dot-8 30s linear infinite;}
-.ble-dot-9{opacity:0;animation:ble-dot-9 30s linear infinite;}
-.term-ble-done{opacity:0;animation:term-ble-done 30s linear infinite;}
-.lp-toast{opacity:0;animation:lp-toast 30s linear infinite;}
-.lp-mm{opacity:0;animation:lp-mm 30s linear infinite;}
-.mm-toast{opacity:0;animation:mm-toast 30s linear infinite;}
-.mm-cursor{animation:mm-cursor 30s linear infinite;}
-.waves{opacity:0;animation:waves 30s linear infinite;}
-.wave-0{animation:wave-0 30s ease-out infinite;opacity:0}
-.wave-1{animation:wave-1 30s ease-out infinite;opacity:0}
-.wave-2{animation:wave-2 30s ease-out infinite;opacity:0}
-.cap-usb{opacity:0;animation:cap-usb 30s linear infinite;}
-.cap-usb-in{animation:cap-usb-in 30s linear infinite;}
-.cap-pin{opacity:0;animation:cap-pin 30s linear infinite;}
-.cap-pin-in{animation:cap-pin-in 30s linear infinite;}
-.cap-ble{opacity:0;animation:cap-ble 30s linear infinite;}
-.cap-ble-in{animation:cap-ble-in 30s linear infinite;}
-.cap-mm{opacity:0;animation:cap-mm 30s linear infinite;}
-.cap-mm-in{animation:cap-mm-in 30s linear infinite;}
-.sdot-0{opacity:1;animation:sdot-0 30s linear infinite;}
-.sdot-1{opacity:0;animation:sdot-1 30s linear infinite;}
-.sdot-2{opacity:0;animation:sdot-2 30s linear infinite;}
-.sdot-3{opacity:0;animation:sdot-3 30s linear infinite;}
-.sdot-4{opacity:0;animation:sdot-4 30s linear infinite;}
-.sdot-5{opacity:0;animation:sdot-5 30s linear infinite;}
-.progress{animation:progress 30s linear infinite;transform-origin:0 0}
+.m-hop{animation:m-hop 34s linear infinite;transform-box:fill-box;transform-origin:center;}
+.blink{animation:blink 34s linear infinite;transform-box:fill-box;transform-origin:center;}
+.wink{animation:wink 34s linear infinite;transform-box:fill-box;transform-origin:center}
+.look{animation:look 34s ease-in-out infinite;}
+.press{animation:press 34s linear infinite;transform-box:fill-box;transform-origin:center;}
+.press-ring{animation:press-ring 34s linear infinite;transform-box:fill-box;transform-origin:center;opacity:0}
+.sparkle{animation:sparkle 34s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+.note-0{animation:note-0 34s ease-out infinite;opacity:0}
+.note-1{animation:note-1 34s ease-out infinite;opacity:0}
+.note-2{animation:note-2 34s ease-out infinite;opacity:0}
+.title{opacity:0;animation:title 34s linear infinite;}
+.endcard{opacity:0;animation:endcard 34s linear infinite;}
+.title-in{animation:title-in 34s ease-out infinite;}
+.laptop{opacity:0;animation:laptop 34s linear infinite;}
+.cable{animation:cable 34s linear infinite;stroke-dasharray:1;stroke-dashoffset:1}
+.bubble{opacity:0;animation:bubble 34s linear infinite;}
+.bubble-pop{animation:bubble-pop 34s linear infinite;transform-box:fill-box;transform-origin:8% 100%}
+.ui-list{opacity:0;animation:ui-list 34s linear infinite;}
+.ui-pin{opacity:0;animation:ui-pin 34s linear infinite;}
+.ui-ok{opacity:0;animation:ui-ok 34s linear infinite;}
+.pin-star-0{opacity:0;animation:pin-star-0 34s linear infinite;}
+.pin-star-1{opacity:0;animation:pin-star-1 34s linear infinite;}
+.pin-star-2{opacity:0;animation:pin-star-2 34s linear infinite;}
+.pin-star-3{opacity:0;animation:pin-star-3 34s linear infinite;}
+.pin-cursor{animation:pin-cursor 34s linear infinite;}
+.pin-pick{animation:pin-pick 34s linear infinite;opacity:0}
+.pin-pick-x{animation:pin-pick-x 34s linear infinite;}
+.lock{opacity:0;animation:lock 34s linear infinite;}
+.lock-pop{animation:lock-pop 34s linear infinite;}
+.lock-body{animation:lock-body 34s linear infinite;}
+.shackle{animation:shackle 34s linear infinite;}
+.lock-glow{animation:lock-glow 34s ease-out infinite;opacity:0;transform-box:fill-box;transform-origin:center}
+.lp-login{opacity:0;animation:lp-login 34s linear infinite;}
+.usb-dot-0{opacity:0;animation:usb-dot-0 34s linear infinite;}
+.usb-dot-1{opacity:0;animation:usb-dot-1 34s linear infinite;}
+.usb-dot-2{opacity:0;animation:usb-dot-2 34s linear infinite;}
+.usb-dot-3{opacity:0;animation:usb-dot-3 34s linear infinite;}
+.usb-dot-4{opacity:0;animation:usb-dot-4 34s linear infinite;}
+.usb-dot-5{opacity:0;animation:usb-dot-5 34s linear infinite;}
+.usb-dot-6{opacity:0;animation:usb-dot-6 34s linear infinite;}
+.usb-dot-7{opacity:0;animation:usb-dot-7 34s linear infinite;}
+.usb-dot-8{opacity:0;animation:usb-dot-8 34s linear infinite;}
+.usb-dot-9{opacity:0;animation:usb-dot-9 34s linear infinite;}
+.usb-dot-10{opacity:0;animation:usb-dot-10 34s linear infinite;}
+.usb-dot-11{opacity:0;animation:usb-dot-11 34s linear infinite;}
+.btn-blue{opacity:0;animation:btn-blue 34s linear infinite;}
+.btn-green{opacity:0;animation:btn-green 34s linear infinite;}
+.usb-caret{opacity:0;animation:usb-caret 34s linear infinite;}
+.lp-term{opacity:0;animation:lp-term 34s linear infinite;}
+.term-pin{opacity:0;animation:term-pin 34s linear infinite;}
+.term-caret-a{opacity:0;animation:term-caret-a 34s linear infinite;}
+.pin-dot-0{opacity:0;animation:pin-dot-0 34s linear infinite;}
+.pin-dot-1{opacity:0;animation:pin-dot-1 34s linear infinite;}
+.pin-dot-2{opacity:0;animation:pin-dot-2 34s linear infinite;}
+.pin-dot-3{opacity:0;animation:pin-dot-3 34s linear infinite;}
+.pin-dot-4{opacity:0;animation:pin-dot-4 34s linear infinite;}
+.pin-dot-5{opacity:0;animation:pin-dot-5 34s linear infinite;}
+.pin-dot-6{opacity:0;animation:pin-dot-6 34s linear infinite;}
+.pin-dot-7{opacity:0;animation:pin-dot-7 34s linear infinite;}
+.pin-dot-8{opacity:0;animation:pin-dot-8 34s linear infinite;}
+.pin-dot-9{opacity:0;animation:pin-dot-9 34s linear infinite;}
+.term-pin-done{opacity:0;animation:term-pin-done 34s linear infinite;}
+.term-ble{opacity:0;animation:term-ble 34s linear infinite;}
+.term-caret-b{opacity:0;animation:term-caret-b 34s linear infinite;}
+.ble-dot-0{opacity:0;animation:ble-dot-0 34s linear infinite;}
+.ble-dot-1{opacity:0;animation:ble-dot-1 34s linear infinite;}
+.ble-dot-2{opacity:0;animation:ble-dot-2 34s linear infinite;}
+.ble-dot-3{opacity:0;animation:ble-dot-3 34s linear infinite;}
+.ble-dot-4{opacity:0;animation:ble-dot-4 34s linear infinite;}
+.ble-dot-5{opacity:0;animation:ble-dot-5 34s linear infinite;}
+.ble-dot-6{opacity:0;animation:ble-dot-6 34s linear infinite;}
+.ble-dot-7{opacity:0;animation:ble-dot-7 34s linear infinite;}
+.ble-dot-8{opacity:0;animation:ble-dot-8 34s linear infinite;}
+.ble-dot-9{opacity:0;animation:ble-dot-9 34s linear infinite;}
+.term-ble-done{opacity:0;animation:term-ble-done 34s linear infinite;}
+.lp-toast{opacity:0;animation:lp-toast 34s linear infinite;}
+.lp-mm{opacity:0;animation:lp-mm 34s linear infinite;}
+.mm-toast{opacity:0;animation:mm-toast 34s linear infinite;}
+.mm-cursor{animation:mm-cursor 34s linear infinite;}
+.waves{opacity:0;animation:waves 34s linear infinite;}
+.wave-0{animation:wave-0 34s ease-out infinite;opacity:0}
+.wave-1{animation:wave-1 34s ease-out infinite;opacity:0}
+.wave-2{animation:wave-2 34s ease-out infinite;opacity:0}
+.boards{opacity:0;animation:boards 34s linear infinite;}
+.boards-in{animation:boards-in 34s linear infinite;}
+.dk-led-r{animation:dk-led-r 34s linear infinite;}
+.dk-led-r-top{animation:dk-led-r-top 34s linear infinite;}
+.st-led{animation:st-led 34s linear infinite;}
+.st-led-top{animation:st-led-top 34s linear infinite;}
+.cap-usb{opacity:0;animation:cap-usb 34s linear infinite;}
+.cap-usb-in{animation:cap-usb-in 34s linear infinite;}
+.cap-pin{opacity:0;animation:cap-pin 34s linear infinite;}
+.cap-pin-in{animation:cap-pin-in 34s linear infinite;}
+.cap-ble{opacity:0;animation:cap-ble 34s linear infinite;}
+.cap-ble-in{animation:cap-ble-in 34s linear infinite;}
+.cap-mm{opacity:0;animation:cap-mm 34s linear infinite;}
+.cap-mm-in{animation:cap-mm-in 34s linear infinite;}
+.cap-boards{opacity:0;animation:cap-boards 34s linear infinite;}
+.cap-boards-in{animation:cap-boards-in 34s linear infinite;}
+.sdot-0{opacity:1;animation:sdot-0 34s linear infinite;}
+.sdot-1{opacity:0;animation:sdot-1 34s linear infinite;}
+.sdot-2{opacity:0;animation:sdot-2 34s linear infinite;}
+.sdot-3{opacity:0;animation:sdot-3 34s linear infinite;}
+.sdot-4{opacity:0;animation:sdot-4 34s linear infinite;}
+.sdot-5{opacity:0;animation:sdot-5 34s linear infinite;}
+.sdot-6{opacity:0;animation:sdot-6 34s linear infinite;}
+.progress{animation:progress 34s linear infinite;transform-origin:0 0}
 @media (prefers-reduced-motion: reduce){ *{animation:none !important} .title{opacity:1 !important} .m-hop,.press,.blink{transform:none} }
 </style>
 <defs>
@@ -221,8 +239,8 @@
   <rect width="960" height="540" fill="url(#glow)"/>
 
   <!-- header -->
-  <text x="40" y="46" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="20" font-weight="700" fill="#FFB000">hw-pass<tspan dx="12" font-size="14" font-weight="400" fill="#9AA0A6">hardware password typer · M5Stack StickS3</tspan></text>
-  <g><circle cx="842" cy="40" r="4" fill="#fff" opacity="0.15"/><circle class="sdot-0" cx="842" cy="40" r="4" fill="#FFB000"/><circle cx="858" cy="40" r="4" fill="#fff" opacity="0.15"/><circle class="sdot-1" cx="858" cy="40" r="4" fill="#FFB000"/><circle cx="874" cy="40" r="4" fill="#fff" opacity="0.15"/><circle class="sdot-2" cx="874" cy="40" r="4" fill="#FFB000"/><circle cx="890" cy="40" r="4" fill="#fff" opacity="0.15"/><circle class="sdot-3" cx="890" cy="40" r="4" fill="#FFB000"/><circle cx="906" cy="40" r="4" fill="#fff" opacity="0.15"/><circle class="sdot-4" cx="906" cy="40" r="4" fill="#FFB000"/><circle cx="922" cy="40" r="4" fill="#fff" opacity="0.15"/><circle class="sdot-5" cx="922" cy="40" r="4" fill="#FFB000"/></g>
+  <text x="40" y="46" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="20" font-weight="700" fill="#FFB000">hw-pass<tspan dx="12" font-size="14" font-weight="400" fill="#9AA0A6">hardware password typer · M5Stack StickS3 · Chain Dual Key · StampS3A</tspan></text>
+  <g><circle cx="826" cy="40" r="4" fill="#fff" opacity="0.15"/><circle class="sdot-0" cx="826" cy="40" r="4" fill="#FFB000"/><circle cx="842" cy="40" r="4" fill="#fff" opacity="0.15"/><circle class="sdot-1" cx="842" cy="40" r="4" fill="#FFB000"/><circle cx="858" cy="40" r="4" fill="#fff" opacity="0.15"/><circle class="sdot-2" cx="858" cy="40" r="4" fill="#FFB000"/><circle cx="874" cy="40" r="4" fill="#fff" opacity="0.15"/><circle class="sdot-3" cx="874" cy="40" r="4" fill="#FFB000"/><circle cx="890" cy="40" r="4" fill="#fff" opacity="0.15"/><circle class="sdot-4" cx="890" cy="40" r="4" fill="#FFB000"/><circle cx="906" cy="40" r="4" fill="#fff" opacity="0.15"/><circle class="sdot-5" cx="906" cy="40" r="4" fill="#FFB000"/><circle cx="922" cy="40" r="4" fill="#fff" opacity="0.15"/><circle class="sdot-6" cx="922" cy="40" r="4" fill="#FFB000"/></g>
   <rect class="progress" x="0" y="536" width="960" height="4" fill="#FFB000" opacity="0.7"/>
 
   <!-- title -->
@@ -230,13 +248,13 @@
     <text x="360" y="236" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="66" font-weight="800" fill="#E8E8E8" text-anchor="start" >hw-pass</text>
     <text x="362" y="284" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="28" font-weight="700" fill="#FFB000" text-anchor="start" >Your passwords. One button.</text>
     <text x="362" y="320" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="17" font-weight="400" fill="#9AA0A6" text-anchor="start" >A USB and Bluetooth LE keyboard that types your stored passwords.</text>
-    <text x="362" y="346" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="17" font-weight="400" fill="#9AA0A6" text-anchor="start" >Firmware for the ESP32-S3 (M5Stack StickS3).</text>
+    <text x="362" y="346" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="17" font-weight="400" fill="#9AA0A6" text-anchor="start" >For the ESP32-S3: M5Stack StickS3, Chain Dual Key, and StampS3A.</text>
   </g></g>
 
   <!-- end card -->
   <g class="endcard">
     <text x="360" y="232" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="54" font-weight="800" fill="#E8E8E8" text-anchor="start" >Open source.</text>
-    <text x="362" y="274" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="18" font-weight="400" fill="#9AA0A6" text-anchor="start" >MIT license · ESP32-S3 · ESP-IDF v5.5 · M5Stack StickS3</text>
+    <text x="362" y="274" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="17" font-weight="400" fill="#9AA0A6" text-anchor="start" >MIT license · ESP-IDF v5.5 · StickS3 · Chain Dual Key · StampS3A</text>
     <text x="362" y="322" font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-size="24" font-weight="700" fill="#FFB000" text-anchor="start" >github.com/krivokhatko/hw-pass</text>
     <text x="362" y="366" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="18" fill="#9AA0A6">Free. If it saves your time: <tspan font-family='ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace' font-weight="700" fill="#FFB000">donatello.to/hw-pass</tspan></text>
   </g>
@@ -418,6 +436,38 @@
     </g>
   </g></g></g>
 
+  <g class="boards"><g class="boards-in" style="transform-box:fill-box;transform-origin:center">
+    <g transform="translate(498 186)"><g class="dualkey">
+    <rect x="104" y="-8" width="38" height="14" rx="4" fill="#4A5160" stroke="#2B1D0E" stroke-width="4"/>
+    <rect x="0" y="0" width="240" height="106" rx="28" fill="#1E2229" stroke="#2B1D0E" stroke-width="6"/>
+    <circle cx="25" cy="53" r="8" fill="#0F1115" stroke="#2B1D0E" stroke-width="4"/>
+    
+    <circle class="dk-led-l" cx="84" cy="53" r="44" fill="#00C850" opacity="0.45"/>
+    <rect x="50" y="19" width="68" height="68" rx="12" fill="#2A2E36" stroke="#2B1D0E" stroke-width="5"/>
+    <rect x="59" y="27" width="50" height="50" rx="8" fill="#363B46"/>
+    <rect class="dk-led-l-top" x="59" y="27" width="50" height="50" rx="8" fill="#00C850" opacity="0.4"/>
+    
+    <circle class="dk-led-r" cx="174" cy="53" r="44" fill="#00C850" opacity="0.45"/>
+    <rect x="140" y="19" width="68" height="68" rx="12" fill="#2A2E36" stroke="#2B1D0E" stroke-width="5"/>
+    <rect x="149" y="27" width="50" height="50" rx="8" fill="#363B46"/>
+    <rect class="dk-led-r-top" x="149" y="27" width="50" height="50" rx="8" fill="#00C850" opacity="0.4"/>
+    <rect x="230" y="41" width="16" height="24" rx="5" fill="#4A5160" stroke="#2B1D0E" stroke-width="4"/>
+  </g></g>
+    <g transform="translate(780 200)"><g class="stamp">
+    <rect x="0" y="0" width="130" height="92" rx="8" fill="#15181D" stroke="#2B1D0E" stroke-width="6"/>
+    <circle cx="0" cy="13" r="3.4" fill="#D4B04A"/><circle cx="130" cy="13" r="3.4" fill="#D4B04A"/><circle cx="0" cy="21.4" r="3.4" fill="#D4B04A"/><circle cx="130" cy="21.4" r="3.4" fill="#D4B04A"/><circle cx="0" cy="29.8" r="3.4" fill="#D4B04A"/><circle cx="130" cy="29.8" r="3.4" fill="#D4B04A"/><circle cx="0" cy="38.2" r="3.4" fill="#D4B04A"/><circle cx="130" cy="38.2" r="3.4" fill="#D4B04A"/><circle cx="0" cy="46.6" r="3.4" fill="#D4B04A"/><circle cx="130" cy="46.6" r="3.4" fill="#D4B04A"/><circle cx="0" cy="55" r="3.4" fill="#D4B04A"/><circle cx="130" cy="55" r="3.4" fill="#D4B04A"/><circle cx="0" cy="63.400000000000006" r="3.4" fill="#D4B04A"/><circle cx="130" cy="63.400000000000006" r="3.4" fill="#D4B04A"/><circle cx="0" cy="71.80000000000001" r="3.4" fill="#D4B04A"/><circle cx="130" cy="71.80000000000001" r="3.4" fill="#D4B04A"/><circle cx="0" cy="80.2" r="3.4" fill="#D4B04A"/><circle cx="130" cy="80.2" r="3.4" fill="#D4B04A"/>
+    <rect x="22" y="10" width="86" height="34" rx="4" fill="#B8BEC8" stroke="#80868F" stroke-width="2"/>
+    <rect x="30" y="16" width="70" height="4" rx="2" fill="#D9DDE3"/>
+    <rect x="94" y="55" width="20" height="15" rx="3" fill="#3A3F4A" stroke="#2B1D0E" stroke-width="3"/>
+    <rect x="99" y="59" width="10" height="7" rx="2" fill="#5A606C"/>
+    <circle class="st-led" cx="38" cy="63" r="18" fill="#00C850" opacity="0.5"/>
+    <rect class="st-led-top" x="31" y="56" width="14" height="14" rx="3" fill="#00C850"/>
+    <rect x="48" y="80" width="34" height="18" rx="5" fill="#4A5160" stroke="#2B1D0E" stroke-width="4"/>
+  </g></g>
+    <text x="618" y="336" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="17" font-weight="700" fill="#E8E8E8" text-anchor="middle" >Chain Dual Key</text><text x="618" y="358" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="13.5" font-weight="400" fill="#9AA0A6" text-anchor="middle" >Two keys, an RGB LED under each</text>
+    <text x="845" y="336" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="17" font-weight="700" fill="#E8E8E8" text-anchor="middle" >StampS3A</text><text x="845" y="358" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="13.5" font-weight="400" fill="#9AA0A6" text-anchor="middle" >One button, one RGB LED</text>
+    <text x="190" y="420" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="17" font-weight="700" fill="#E8E8E8" text-anchor="middle" >StickS3</text><text x="190" y="442" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="13.5" font-weight="400" fill="#9AA0A6" text-anchor="middle" >Screen, speaker, battery</text>
+  </g></g>
   <g class="cap-usb"><g class="cap-usb-in" style="transform-box:fill-box;transform-origin:center">
     <text x="480" y="470" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="26" font-weight="700" fill="#E8E8E8" text-anchor="middle" >Push the button. The device types the password.</text>
     <text x="480" y="502" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="16.5" font-weight="400" fill="#9AA0A6" text-anchor="middle" >A USB keyboard. Nothing to install on the computer.</text>
@@ -430,6 +480,9 @@
   </g></g><g class="cap-mm"><g class="cap-mm-in" style="transform-box:fill-box;transform-origin:center">
     <text x="480" y="470" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="26" font-weight="700" fill="#E8E8E8" text-anchor="middle" >Mouse mover.</text>
     <text x="480" y="502" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="16.5" font-weight="400" fill="#9AA0A6" text-anchor="middle" >Keeps the computer awake, by hand or on a schedule. The time comes from NTP.</text>
+  </g></g><g class="cap-boards"><g class="cap-boards-in" style="transform-box:fill-box;transform-origin:center">
+    <text x="480" y="470" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="26" font-weight="700" fill="#E8E8E8" text-anchor="middle" >Three boards. One firmware.</text>
+    <text x="480" y="502" font-family='"Segoe UI", Ubuntu, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif' font-size="16.5" font-weight="400" fill="#9AA0A6" text-anchor="middle" >M5Stack StickS3, Chain Dual Key, and StampS3A. The same commands on each.</text>
   </g></g>
 </g>
 </svg>

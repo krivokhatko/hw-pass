@@ -196,7 +196,7 @@ Always:
 
 1. `idf.py build` gives no warnings. The CI fails on a warning.
 2. The start-up log has no `E (` lines. The device shows the list, and `info` works.
-3. `info` shows a "Heap" line like the one before the change. A minimum below 80 KB needs a look.
+3. `info` shows a "Heap" line like the one before the change. A minimum below 80 KB needs a look (StickC Plus: below 50 KB; the ESP32 has less RAM).
 4. Type an entry with the front button into a text editor on the USB host. `kbtest` shows no difference.
 5. With a PIN: lock with `lock`, unlock with the buttons and with `unlock`. Pull the cable: the device locks.
 
@@ -268,6 +268,7 @@ Git ignores `managed_components/`. `idf.py build` downloads them.
 ## Configuration options
 
 - A build option for a function that a user can leave out goes in `main/Kconfig.projbuild` (`CONFIG_HWPASS_*`). The code around it uses `#if CONFIG_HWPASS_*`. A build with the option off must compile.
+- After a change in a Kconfig file, run `idf.py reconfigure` (for a second build directory: `idf.py -B build-<name> reconfigure`). A plain `idf.py build` does not always see the change, and the old `sdkconfig` stays: a new option is then off in the build.
 - A change of an ESP-IDF option goes in `sdkconfig.defaults`, or in `sdkconfig.defaults.<chip>` when the value differs by chip, with a comment that says why. Then delete `sdkconfig` and build again.
 - Do not commit `sdkconfig`, `build/`, or `managed_components/`.
 

@@ -112,6 +112,13 @@ menu "hw-pass"
         help
             A passive buzzer on a pin: tones by PWM (components/sound/buzzer.c).
 
+    config HWPASS_SOUND
+        bool
+        default y if HWPASS_SPEAKER || HWPASS_BUZZER
+        help
+            The board makes sounds: the sound task runs, and the command
+            line has the "sound" command and the "Sound" line of "info".
+
     config HWPASS_PM1
         bool
         help

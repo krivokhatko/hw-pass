@@ -5,8 +5,9 @@
  *   the ipad and opad blocks are saved, and each iteration hashes 2
  *   blocks (sha_core.h).
  * - The ESP32: the engine starts from the first block each time, thus
- *   each iteration hashes 4 blocks (sha_parallel_engine.h). About twice
- *   the time. */
+ *   each iteration hashes 4 blocks (sha_parallel_engine.h). Its SHA-512
+ *   engine is also slower (about 17 us for a block): 50000 iterations
+ *   take about 5 s, against 1 s on the ESP32-S3. */
 #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"

@@ -925,7 +925,7 @@ static void cmd_ntp(char *arg)
     }
 }
 
-#if CONFIG_HWPASS_SPEAKER
+#if CONFIG_HWPASS_SOUND
 static void cmd_sound(char *arg)
 {
     bool on = !sound_enabled();
@@ -1037,8 +1037,8 @@ static void cmd_info(char *arg)
     } else if (result[0]) {
         out("Last sync: %s\n", result);
     }
-#if CONFIG_HWPASS_SPEAKER
-    out("Sound:     %s%s\n", sound_enabled() ? "on" : "off", sound_ready() ? "" : ", audio codec error");
+#if CONFIG_HWPASS_SOUND
+    out("Sound:     %s%s\n", sound_enabled() ? "on" : "off", sound_ready() ? "" : ", output error");
 #endif
     out("Wi-Fi:     %s\n", ntp_busy() ? "on, time sync" : !web_active() ? "off" :
         web_connected() ? "on, 1 device" : "on, no device");
@@ -1146,7 +1146,7 @@ static const struct {
     { "tz", "[zone]", "Show or set the time zone (POSIX TZ).", cmd_tz },
     { "wifi", "[<name>|off]", "Network of the time sync. Asks for the password.", cmd_wifi },
     { "ntp", "[on|off|server x]", "Sync the time now, or set the automatic sync.", cmd_ntp },
-#if CONFIG_HWPASS_SPEAKER
+#if CONFIG_HWPASS_SOUND
     { "sound", "", "Turn the sounds on or off.", cmd_sound },
 #endif
 #if CONFIG_HWPASS_LCD

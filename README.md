@@ -97,7 +97,7 @@ Then set a PIN (`pin`), add entries on the web page, pair a keypad, or pair a la
 | Board | File | Status |
 |---|---|---|
 | M5Stack StickS3 | `boards/sticks3.defaults` | The default board. Tested. |
-| M5Stack StickC Plus | `boards/stickcplus.defaults` | ESP32. Builds; the test on the device is pending. |
+| M5Stack StickC Plus | `boards/stickcplus.defaults` | ESP32. Tested; the check of the screen orientation is pending. |
 | M5Stack Chain Dual Key | `boards/dualkey.defaults` | Tested. |
 | M5Stack StampS3A | `boards/stamps3a.defaults` | Tested. |
 
@@ -107,7 +107,7 @@ Then set a PIN (`pin`), add entries on the web page, pair a keypad, or pair a la
 idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;boards/<name>.defaults" build
 ```
 
-The board file selects the board in Kconfig (`CONFIG_HWPASS_BOARD_*`, `main/Kconfig.projbuild`). The board selects its parts: `CONFIG_HWPASS_LCD`, `HWPASS_IMU` with `HWPASS_IMU_BMI270` or `HWPASS_IMU_MPU6886`, `HWPASS_SPEAKER` or `HWPASS_BUZZER`, `HWPASS_BATTERY`, `HWPASS_PM1` or `HWPASS_AXP192`, `HWPASS_LEDS`, and the counts `HWPASS_BUTTONS` and `HWPASS_LED_COUNT`. `HWPASS_USB` comes from the chip: on without USB OTG. The code checks the parts, and the pins of a board go behind `#if CONFIG_HWPASS_BOARD_*`. The "Board" line of `info` shows the name. The CI builds each board of `.github/workflows/build.yml`. To add a board, see "Add a board" in [docs/contributing.md](docs/contributing.md).
+The board file selects the board in Kconfig (`CONFIG_HWPASS_BOARD_*`, `main/Kconfig.projbuild`). The board selects its parts: `CONFIG_HWPASS_LCD`, `HWPASS_IMU` with `HWPASS_IMU_BMI270` or `HWPASS_IMU_MPU6886`, `HWPASS_SPEAKER` or `HWPASS_BUZZER` (both give `HWPASS_SOUND`), `HWPASS_BATTERY`, `HWPASS_PM1` or `HWPASS_AXP192`, `HWPASS_LEDS`, and the counts `HWPASS_BUTTONS` and `HWPASS_LED_COUNT`. `HWPASS_USB` comes from the chip: off without USB OTG. The code checks the parts, and the pins of a board go behind `#if CONFIG_HWPASS_BOARD_*`. The "Board" line of `info` shows the name. The CI builds each board of `.github/workflows/build.yml`. To add a board, see "Add a board" in [docs/contributing.md](docs/contributing.md).
 
 ## Toolchain
 
@@ -241,7 +241,7 @@ To change the configuration:
 
 Project options are in the "hw-pass" menu of `idf.py menuconfig` (`main/Kconfig.projbuild`). For a build without the web page, add `CONFIG_HWPASS_WEB=n` to `sdkconfig.defaults`. For a build without the time sync, add `CONFIG_HWPASS_NTP=n`. With both, the build has no Wi-Fi code. For a build without Bluetooth, add `CONFIG_BT_ENABLED=n`: then the device cannot pair a keypad or a computer.
 
-Wi-Fi and Bluetooth can run at the same time. Both need much internal RAM: the Wi-Fi and NimBLE options in `sdkconfig.defaults` make the buffers small. With both on, about 90 KB of heap stays free.
+Wi-Fi and Bluetooth can run at the same time. Both need much internal RAM: the Wi-Fi and NimBLE options in `sdkconfig.defaults` make the buffers small. With both on, about 90 KB of heap stays free on the ESP32-S3 boards, and about 50 KB on the StickC Plus (the ESP32 has less RAM for the heap).
 
 ## Battery use
 

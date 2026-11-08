@@ -77,7 +77,7 @@ What differs from the StickS3:
 - The header shows "BLE" always. Red: no computer is paired. Gray: the computer is not connected. Green: the computer gets the keys. "No computer" with "Pair a computer" tells that the device cannot type.
 - The buzzer plays the sounds and the melody of the table in "Sounds" as square waves: the same notes, a harder tone.
 - The power button on the side, under button B: one push turns the device on. Hold it 4 s: the device turns off. The chip has no download mode by this button: flashing needs none (see "First flash of a new device" in [dev-setup.md](dev-setup.md)).
-- The PIN check takes about 2 s: the hash unit of the ESP32 is slower (see "PIN").
+- The PIN check takes about 5 s: the hash unit of the ESP32 is slower, and it hashes two times more blocks (see "PIN").
 - The chip has no eFuse HMAC key: the key of the entries comes from the PIN alone (see "Hardware key").
 - The device locks when the Bluetooth computer disconnects, after a start, and with `lock`. There is no USB connection that can stop.
 - `info` has no "USB host" line. "Battery" shows "USB power" while the cable is in.
@@ -187,7 +187,7 @@ The screen shows a row of items: the digits 0 to 9, `<` (delete the last digit),
 - Keypad: type the digits, then push Enter. Backspace deletes the last digit. While the device is locked, no key goes to the computer.
 - Command line: type `unlock`, then the PIN. The PIN then goes through the USB host (see "Security").
 
-The check takes about 1 s (StickC Plus: about 2 s). After 3 wrong PINs in a row, each next try waits two times longer than the last one: 10 s, 20 s, 40 s, and so on, up to 1 h. A restart does not reset the wait. A correct PIN resets the count.
+The check takes about 1 s (StickC Plus: about 5 s). After 3 wrong PINs in a row, each next try waits two times longer than the last one: 10 s, 20 s, 40 s, and so on, up to 1 h. A restart does not reset the wait. A correct PIN resets the count.
 
 `lock` on the command line locks the device at once, for example before you leave the computer with the cable in it.
 

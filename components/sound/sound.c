@@ -6,7 +6,7 @@
 #include "sdkconfig.h"
 #include "sound.h"
 
-#if CONFIG_HWPASS_SPEAKER || CONFIG_HWPASS_BUZZER
+#if CONFIG_HWPASS_SOUND
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
@@ -238,7 +238,7 @@ bool sound_ready(void)
     return s_ready;
 }
 
-#else   /* CONFIG_HWPASS_SPEAKER || CONFIG_HWPASS_BUZZER */
+#else   /* CONFIG_HWPASS_SOUND */
 
 /* A board without a speaker and without a buzzer: the sounds go nowhere.
  * The LEDs of the board show the state instead (components/ui/view_led.c). */
@@ -277,4 +277,4 @@ bool sound_ready(void)
     return false;
 }
 
-#endif  /* CONFIG_HWPASS_SPEAKER || CONFIG_HWPASS_BUZZER */
+#endif  /* CONFIG_HWPASS_SOUND */

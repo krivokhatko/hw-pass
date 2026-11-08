@@ -6,10 +6,9 @@
 #include "driver/i2c_master.h"
 #include "esp_check.h"
 #include "esp_log.h"
+#include "i2cbus.h"
 #include "pm1.h"
 
-#define PM1_SDA         47
-#define PM1_SCL         48
 #define PM1_ADDR        0x6E
 #define PM1_HZ          100000
 #define PM1_TIMEOUT_MS  50
@@ -35,7 +34,6 @@
 #define PIN_SPEAKER     (1 << 3)    /* PM1 G3: speaker amplifier enable */
 
 static const char *TAG = "pm1";
-static i2c_master_bus_handle_t s_bus;
 static i2c_master_dev_handle_t s_dev;
 
 /* One access can fail with no answer from the chip. Try again: the I2C
@@ -116,24 +114,17 @@ static esp_err_t pm1_input(uint8_t pin)
 
 esp_err_t pm1_init(void)
 {
-    i2c_master_bus_config_t bus_cfg = {
-        .i2c_port = -1,
-        .sda_io_num = PM1_SDA,
-        .scl_io_num = PM1_SCL,
-        .clk_source = I2C_CLK_SRC_DEFAULT,
-        .glitch_ignore_cnt = 7,
-        .flags.enable_internal_pullup = true,
-    };
     i2c_device_config_t dev_cfg = {
         .dev_addr_length = I2C_ADDR_BIT_LEN_7,
         .device_address = PM1_ADDR,
         .scl_speed_hz = PM1_HZ,
     };
+    i2c_master_bus_handle_t bus = i2cbus_internal();
     uint8_t id = 0;
     esp_err_t err;
 
-    ESP_RETURN_ON_ERROR(i2c_new_master_bus(&bus_cfg, &s_bus), TAG, "bus");
-    ESP_RETURN_ON_ERROR(i2c_master_bus_add_device(s_bus, &dev_cfg, &s_dev), TAG, "device");
+    ESP_RETURN_ON_FALSE(bus != NULL, ESP_ERR_INVALID_STATE, TAG, "no bus");
+    ESP_RETURN_ON_ERROR(i2c_master_bus_add_device(bus, &dev_cfg, &s_dev), TAG, "device");
 
     /* The chip can sleep on the bus. The first access wakes it. */
     for (int i = 0; i < 5; i++) {
@@ -154,11 +145,6 @@ esp_err_t pm1_init(void)
     vTaskDelay(pdMS_TO_TICKS(100));
     ESP_LOGI(TAG, "id 0x%02x, LCD power on", id);
     return ESP_OK;
-}
-
-i2c_master_bus_handle_t pm1_bus(void)
-{
-    return s_bus;
 }
 
 esp_err_t pm1_speaker(bool on)

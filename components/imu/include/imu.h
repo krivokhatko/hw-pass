@@ -15,8 +15,8 @@ typedef enum {
     IMU_BOTTOM_UP,  /* The bottom edge is up: the picture needs the flip. */
 } imu_up_t;
 
-/* Start the BMI270: load its configuration file and turn on the
- * accelerometer at 25 Hz in low power. Call after pm1_init. */
+/* Start the tilt sensor of the board (BMI270 or MPU6886): the
+ * accelerometer on at 25 Hz, the rest off. Call after the power chip. */
 esp_err_t imu_init(void);
 
 /* True when the sensor started. */

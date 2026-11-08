@@ -6,7 +6,7 @@
 extern "C" {
 #endif
 
-/* Start the command line task on the USB serial port. */
+/* Start the command line task on the serial port (components/serial). */
 esp_err_t cli_start(void);
 
 #ifdef __cplusplus

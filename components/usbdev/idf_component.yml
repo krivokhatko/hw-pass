@@ -1,3 +1,7 @@
 dependencies:
   idf: ">=5.5"
-  espressif/esp_tinyusb: "^2.4.0"
+  # TinyUSB: only for a chip with USB OTG (CMakeLists.txt).
+  espressif/esp_tinyusb:
+    version: "^2.4.0"
+    rules:
+      - if: "target in [esp32s2, esp32s3, esp32p4]"

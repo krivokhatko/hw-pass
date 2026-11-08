@@ -32,9 +32,9 @@
 #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "serial.h"
 #include "hid.h"
 #include "leds.h"
-#include "usbdev.h"
 #include "vault.h"
 #include "view.h"
 
@@ -103,7 +103,7 @@ static void print(const char *fmt, ...)
     n = vsnprintf(buf, sizeof(buf), fmt, ap);
     va_end(ap);
     if (n > 0) {
-        usbdev_write(buf, n < (int)sizeof(buf) ? n : (int)sizeof(buf) - 1);
+        serial_write(buf, n < (int)sizeof(buf) ? n : (int)sizeof(buf) - 1);
     }
 }
 

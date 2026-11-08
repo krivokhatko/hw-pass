@@ -22,9 +22,17 @@ static const gpio_num_t s_pin[BUTTON_COUNT] = { [BUTTON_FRONT] = GPIO_NUM_0, [BU
 /* StampS3A: the one button, G0, with a pull-up on the board (schematic
  * v0.3.3). Also the boot strap pin. No side button. */
 static const gpio_num_t s_pin[BUTTON_COUNT] = { [BUTTON_FRONT] = GPIO_NUM_0, [BUTTON_SIDE] = GPIO_NUM_NC };
+#elif CONFIG_HWPASS_BOARD_STICKCPLUS
+/* StickC Plus: button A (G37) below the LCD types, button B (G39) on the
+ * side selects. Pull-ups on the board: these pins have no internal ones. */
+static const gpio_num_t s_pin[BUTTON_COUNT] = { [BUTTON_FRONT] = GPIO_NUM_37, [BUTTON_SIDE] = GPIO_NUM_39 };
+#define BUTTONS_PULLUP  GPIO_PULLUP_DISABLE
 #else
 /* StickS3: KEY1 below the LCD, KEY2 on the side. */
 static const gpio_num_t s_pin[BUTTON_COUNT] = { [BUTTON_FRONT] = GPIO_NUM_11, [BUTTON_SIDE] = GPIO_NUM_12 };
+#endif
+#ifndef BUTTONS_PULLUP
+#define BUTTONS_PULLUP  GPIO_PULLUP_ENABLE
 #endif
 
 static struct {
@@ -40,7 +48,7 @@ esp_err_t buttons_init(void)
 {
     gpio_config_t cfg = {
         .mode = GPIO_MODE_INPUT,
-        .pull_up_en = GPIO_PULLUP_ENABLE,
+        .pull_up_en = BUTTONS_PULLUP,
     };
 
     for (int b = 0; b < BUTTON_COUNT; b++) {

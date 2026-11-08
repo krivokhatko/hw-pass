@@ -5,25 +5,40 @@ menu "hw-pass"
         default HWPASS_BOARD_STICKS3
         help
             The hardware that runs the firmware. Each board has a file
-            boards/<name>.defaults that selects it. The CI builds a
-            release for each board. "info" shows the board name.
+            boards/<name>.defaults that names the chip and selects the
+            board. The CI builds a release for each board. "info" shows
+            the board name.
 
         config HWPASS_BOARD_STICKS3
             bool "M5Stack StickS3"
+            depends on IDF_TARGET_ESP32S3
             select HWPASS_PM1
             select HWPASS_LCD
             select HWPASS_IMU
+            select HWPASS_IMU_BMI270
             select HWPASS_SPEAKER
             select HWPASS_BATTERY
 
         config HWPASS_BOARD_DUALKEY
             bool "M5Stack Chain Dual Key"
+            depends on IDF_TARGET_ESP32S3
             select HWPASS_LEDS
             select HWPASS_BATTERY
 
         config HWPASS_BOARD_STAMPS3A
             bool "M5Stack StampS3A"
+            depends on IDF_TARGET_ESP32S3
             select HWPASS_LEDS
+
+        config HWPASS_BOARD_STICKCPLUS
+            bool "M5Stack StickC Plus"
+            depends on IDF_TARGET_ESP32
+            select HWPASS_AXP192
+            select HWPASS_LCD
+            select HWPASS_IMU
+            select HWPASS_IMU_MPU6886
+            select HWPASS_BUZZER
+            select HWPASS_BATTERY
     endchoice
 
     config HWPASS_BOARD_NAME
@@ -31,6 +46,7 @@ menu "hw-pass"
         default "sticks3" if HWPASS_BOARD_STICKS3
         default "dualkey" if HWPASS_BOARD_DUALKEY
         default "stamps3a" if HWPASS_BOARD_STAMPS3A
+        default "stickcplus" if HWPASS_BOARD_STICKCPLUS
 
     config HWPASS_BUTTONS
         int
@@ -52,7 +68,16 @@ menu "hw-pass"
             entry while a computer gets the keys (components/ui/view_led.c).
 
     # The parts of the board. The board selects them; the code checks
-    # them, not the board name.
+    # them, not the board name. HWPASS_USB comes from the chip.
+    config HWPASS_USB
+        bool
+        default y if SOC_USB_OTG_SUPPORTED
+        help
+            The USB device: a keyboard, a mouse, and a serial port
+            (components/usbdev). The ESP32-S3 has USB. The ESP32 has none:
+            the keys go to a computer over Bluetooth LE only, and the
+            console is UART0 (components/console).
+
     config HWPASS_LCD
         bool
         help
@@ -62,19 +87,43 @@ menu "hw-pass"
     config HWPASS_IMU
         bool
         help
-            A tilt sensor: the screen turns with the device.
+            A tilt sensor: the screen turns with the device. The board
+            selects the chip: HWPASS_IMU_BMI270 or HWPASS_IMU_MPU6886.
+
+    config HWPASS_IMU_BMI270
+        bool
+        help
+            The BMI270 of the StickS3 (components/imu/bmi270.c).
+
+    config HWPASS_IMU_MPU6886
+        bool
+        help
+            The MPU6886 of the StickC Plus (components/imu/mpu6886.c).
 
     config HWPASS_SPEAKER
         bool
         help
-            A speaker with the audio codec (components/sound). Without
-            it, the sound module builds, but it makes no sound.
+            A speaker with the ES8311 audio codec (components/sound/speaker.c).
+            Without a speaker and without a buzzer, the sound module
+            builds, but it makes no sound.
+
+    config HWPASS_BUZZER
+        bool
+        help
+            A passive buzzer on a pin: tones by PWM (components/sound/buzzer.c).
 
     config HWPASS_PM1
         bool
         help
             The M5PM1 power chip of the StickS3 (components/pm1): the LCD
             power, the speaker amplifier, and the battery measurement.
+
+    config HWPASS_AXP192
+        bool
+        help
+            The AXP192 power chip of the StickC Plus (components/axp192):
+            the LCD power and backlight, the charger, and the battery
+            measurement.
 
     config HWPASS_BATTERY
         bool

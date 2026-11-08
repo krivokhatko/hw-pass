@@ -2,4 +2,5 @@
 # LED under each key. No screen, no speaker, no tilt sensor, no battery.
 # The key LEDs and the serial port show the state (components/ui/view_led.c).
 # idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;boards/dualkey.defaults" build
+CONFIG_IDF_TARGET="esp32s3"
 CONFIG_HWPASS_BOARD_DUALKEY=y

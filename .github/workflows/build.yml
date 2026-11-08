@@ -22,7 +22,7 @@ jobs:
       fail-fast: false
       matrix:
         # One name for each file in boards/.
-        board: [sticks3, dualkey, stamps3a]
+        board: [sticks3, dualkey, stamps3a, stickcplus]
     steps:
       - uses: actions/checkout@v7
         with:
@@ -82,16 +82,18 @@ jobs:
           cat > notes.md <<EOF
           ## Install
 
-          The device must be in the download mode: type "dfu" on the serial port, or hold the power button (StickS3), or hold Key1 (Chain Dual Key) or the button (StampS3A) while you connect the cable. See docs/dev-setup.md.
+          The device must be in the download mode: type "dfu" on the serial port, or hold the power button (StickS3), or hold Key1 (Chain Dual Key) or the button (StampS3A) while you connect the cable. The StickC Plus needs no download mode: esptool resets it through its serial bridge. See docs/dev-setup.md.
+
+          The port is /dev/ttyACM0 for the ESP32-S3 boards and /dev/ttyUSB0 for the StickC Plus. esptool finds the chip itself.
 
           A new device (the firmware of M5Stack): erase the flash, then write the full image. The full image also writes 0xFF over the "nvs" partition: the settings and the pairings reset. The entries in the "vault" partition stay.
 
-              esptool.py --chip esp32s3 -p /dev/ttyACM0 erase_flash
-              esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash 0x0 hw-pass-$TAG-<board>.bin
+              esptool.py -p <port> erase_flash
+              esptool.py -p <port> write_flash 0x0 hw-pass-$TAG-<board>.bin
 
           A device with hw-pass: write the application only. The settings, the pairings, and the entries stay.
 
-              esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash 0x10000 hw-pass-$TAG-<board>-app.bin
+              esptool.py -p <port> write_flash 0x10000 hw-pass-$TAG-<board>-app.bin
 
           Check the files with "sha256sum -c SHA256SUMS". After the start, the "Firmware" line of "info" shows $TAG, and the "Board" line shows the board.
 

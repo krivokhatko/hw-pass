@@ -7,9 +7,9 @@
 extern "C" {
 #endif
 
-/* Short sounds and the typing melody on the speaker. The sound task plays
- * them: the caller does not wait. All functions are safe to call from
- * different tasks. */
+/* Short sounds and the typing melody on the speaker (StickS3) or the
+ * buzzer (StickC Plus). The sound task plays them: the caller does not
+ * wait. All functions are safe to call from different tasks. */
 
 typedef enum {
     SOUND_CLICK,    /* The selection changed. */
@@ -21,7 +21,7 @@ typedef enum {
     SOUND_COUNT,
 } sound_t;
 
-/* Start the ES8311 codec and the sound task. Call after pm1_init. The
+/* Start the output and the sound task. Call after the power chip. The
  * sounds are off until sound_enable(true). */
 esp_err_t sound_init(void);
 
@@ -45,7 +45,7 @@ void sound_melody_stop(void);
 void sound_enable(bool on);
 bool sound_enabled(void);
 
-/* The codec started: the speaker works. */
+/* The output started: the sounds work. */
 bool sound_ready(void);
 
 #ifdef __cplusplus

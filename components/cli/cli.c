@@ -1,5 +1,6 @@
-/* Command line on the USB serial port. It changes the entries, but it
- * cannot show a password. Only the buttons can type a password. */
+/* Command line on the serial port (components/serial). It changes the
+ * entries, but it cannot show a password. Only the buttons can type a
+ * password. */
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -17,6 +18,7 @@
 #include "battery.h"
 #include "blehid.h"
 #include "clock.h"
+#include "serial.h"
 #include "hid.h"
 #include "keypad.h"
 #include "mover.h"
@@ -57,7 +59,7 @@ static void out(const char *fmt, ...)
     n = vsnprintf(buf, sizeof(buf), fmt, ap);
     va_end(ap);
     if (n > 0) {
-        usbdev_write(buf, n < (int)sizeof(buf) ? n : (int)sizeof(buf) - 1);
+        serial_write(buf, n < (int)sizeof(buf) ? n : (int)sizeof(buf) - 1);
     }
 }
 
@@ -65,7 +67,7 @@ static void drain_input(void)
 {
     char buf[32];
 
-    while (usbdev_read(buf, sizeof(buf), 0) > 0) {
+    while (serial_read(buf, sizeof(buf), 0) > 0) {
     }
 }
 
@@ -75,17 +77,17 @@ static void drain_input(void)
 static int read_line(char *buf, size_t size, bool echo, uint32_t timeout_ms)
 {
     static bool skip_lf;
-    bool was_open = usbdev_serial_open();
+    bool was_open = serial_open();
     size_t len = 0;
     uint32_t idle_ms = 0;
     int esc = 0;
     char c;
 
     for (;;) {
-        if (was_open && !usbdev_serial_open()) {
+        if (was_open && !serial_open()) {
             return -1;
         }
-        if (usbdev_read(&c, 1, 100) == 0) {
+        if (serial_read(&c, 1, 100) == 0) {
             idle_ms += 100;
             if (len == 0 && idle_ms >= timeout_ms) {
                 return -2;
@@ -130,7 +132,7 @@ static int read_line(char *buf, size_t size, bool echo, uint32_t timeout_ms)
             if (c >= 0x20 && c <= 0x7E && len + 1 < size) {
                 buf[len++] = c;
                 if (echo) {
-                    usbdev_write(&c, 1);
+                    serial_write(&c, 1);
                 }
             }
             break;
@@ -193,7 +195,11 @@ static bool report(esp_err_t err, const char *what)
         out("The %s must contain only printable ASCII characters.\n", what);
         break;
     case ESP_ERR_INVALID_STATE:
+#if CONFIG_HWPASS_USB
         out("No computer is ready: no USB host, and no Bluetooth computer.\n");
+#else
+        out("No computer is ready: no Bluetooth computer is connected.\n");
+#endif
         break;
     case ESP_ERR_INVALID_RESPONSE:
         out("Caps Lock did not turn off. Nothing was typed. Turn Caps Lock off.\n");
@@ -428,7 +434,7 @@ static void cmd_pin(char *arg)
         } else if (report(vault_set_pin(pin), "")) {
             out("The PIN is set. The entries are encrypted with a key from the PIN%s.\n",
                 vault_pin_bound() ? " and the eFuse key" : "");
-            out("The device asks for the PIN after a start and after a stop of the USB connection.\n");
+            out("The device asks for the PIN after a start and when the connection to the computer stops.\n");
             pin_hint();
         }
     }
@@ -972,8 +978,10 @@ static void cmd_info(char *arg)
     }
     out("eFuse:     %s\n", vault_efuse_key() ? "HMAC key present" : "no HMAC key");
     out("NVS:       %u of %u slots used\n", (unsigned)stats.used_entries, (unsigned)stats.total_entries);
+#if CONFIG_HWPASS_USB
     out("USB host:  %s, Caps Lock %s\n", usbdev_ready() ? "ready" : "not ready",
         usbdev_caps_lock() ? "on" : "off");
+#endif
 #if CONFIG_HWPASS_BATTERY
     if (battery_level() >= 0) {
         out("Battery:   %d %%, %.2f V%s%s\n", battery_level(), battery_mv() / 1000.0,
@@ -1100,7 +1108,11 @@ static void cmd_web(char *arg)
 
 static void cmd_dfu(char *arg)
 {
+#if CONFIG_HWPASS_USB
     out("Restart into download mode. Then flash with \"idf.py -p <port> flash\".\n");
+#else
+    out("Restart. On this board, \"idf.py -p <port> flash\" puts the chip in download mode itself.\n");
+#endif
     vTaskDelay(pdMS_TO_TICKS(100));
     ui_dfu();
 }
@@ -1192,10 +1204,10 @@ static void cli_task(void *arg)
     int n;
 
     for (;;) {
-        if (usbdev_serial_open() && !open) {
+        if (serial_open() && !open) {
             out("\nhw-pass %s. Type \"help\" for the commands.\n> ", esp_app_get_description()->version);
         }
-        open = usbdev_serial_open();
+        open = serial_open();
         n = read_line(line, sizeof(line), true, 200);
         if (n == -2) {
             continue;

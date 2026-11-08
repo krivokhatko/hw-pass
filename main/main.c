@@ -8,6 +8,7 @@
 #include "blehid.h"
 #include "cli.h"
 #include "clock.h"
+#include "serial.h"
 #include "hid.h"
 #include "keypad.h"
 #include "mover.h"
@@ -23,6 +24,9 @@
 #if CONFIG_HWPASS_PM1
 #include "pm1.h"
 #endif
+#if CONFIG_HWPASS_AXP192
+#include "axp192.h"
+#endif
 #if CONFIG_HWPASS_LCD
 #include "display.h"
 #endif
@@ -32,8 +36,8 @@
 
 static const char *TAG = "main";
 
-/* Log an error and continue. The USB serial port must stay available,
- * because it is the only way to restart into download mode. */
+/* Log an error and continue. The serial port must stay available: it
+ * is the way to restart into download mode. */
 static void check(esp_err_t err, const char *what)
 {
     if (err != ESP_OK) {
@@ -65,6 +69,9 @@ void app_main(void)
 #if CONFIG_HWPASS_PM1
     check(pm1_init(), "pm1");
 #endif
+#if CONFIG_HWPASS_AXP192
+    check(axp192_init(), "axp192");
+#endif
     check(battery_init(), "battery");
 #if CONFIG_HWPASS_LCD
     check(display_init(), "display");
@@ -76,6 +83,7 @@ void app_main(void)
     check(vault_init(), "vault");
     check(clock_init(), "clock");
     check(usbdev_init(), "usb");
+    check(serial_init(), "serial");
     check(ble_init(), "ble");
     check(blehid_init(), "blehid");     /* Before keypad_init: its services must be in the host before the start. */
     check(hid_init(), "hid");

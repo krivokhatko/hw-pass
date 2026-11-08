@@ -4,7 +4,7 @@
 
 <h1 align="center">hw-pass</h1>
 
-<p align="center"><b>Hardware password typer. Firmware for the M5Stack StickS3, Chain Dual Key, and StampS3A (ESP32-S3).</b><br>
+<p align="center"><b>Hardware password typer. Firmware for the M5Stack StickS3, StickC Plus, Chain Dual Key, and StampS3A.</b><br>
 Free and open source. Your donations keep the development going.</p>
 
 <p align="center">
@@ -53,6 +53,7 @@ Donatello takes a card from any country, or cryptocurrency, and pays out in Ukra
 | Item | Note |
 |---|---|
 | M5Stack StickS3 | ESP32-S3-PICO-1 with 8 MB flash, a 240 × 135 LCD, two buttons, a speaker, a tilt sensor, a battery, and USB-C. No change to the hardware. |
+| M5Stack StickC Plus (SKU K016-P) | Instead of the StickS3. ESP32-PICO-D4 with 4 MB flash, the same 240 × 135 LCD, two buttons, a buzzer, a tilt sensor, a battery, and USB-C. The ESP32 has no USB: the device is a Bluetooth keyboard only, and the serial port is a USB bridge chip. See "StickC Plus" in [docs/usage.md](docs/usage.md). |
 | M5Stack Chain Dual Key (SKU C147) | Instead of the StickS3. ESP32-S3FN8 with 8 MB flash, two mechanical keys with an RGB LED under each key, a battery, a power switch, and USB-C. No screen and no speaker: the LEDs show the state, and the serial port shows the texts. See "Chain Dual Key" in [docs/usage.md](docs/usage.md). |
 | M5Stack StampS3A (SKU S007-V033) | Instead of the StickS3. ESP32-S3FN8 with 8 MB flash, one button, one RGB LED, and USB-C. No screen, no speaker, no battery: the LED shows the state, and the serial port shows the texts. A tap of the button types, a hold selects the next entry. See "StampS3A" in [docs/usage.md](docs/usage.md). |
 | USB-C cable | A data cable, not a charge-only cable. |
@@ -68,42 +69,45 @@ Donatello takes a card from any country, or cryptocurrency, and pays out in Ukra
    idf.py build
    ```
    Or take the full image of the [latest release](https://github.com/krivokhatko/hw-pass/releases/latest), without a build. See "Releases".
-3. Flash. A new device comes with the firmware of M5Stack: put it in the download mode (StickS3: hold the power button; Chain Dual Key: hold Key1 while you connect the cable; StampS3A: hold the button while you connect the cable), then run `idf.py -p /dev/ttyACM0 erase-flash` and `idf.py -p /dev/ttyACM0 flash`. A device with hw-pass: `tools/flash.sh`. For a release image, use the esptool commands of "Releases". For the Chain Dual Key and the StampS3A, build with the board file first: see "Boards".
+3. Flash. A new device comes with the firmware of M5Stack: put it in the download mode (StickS3: hold the power button; Chain Dual Key: hold Key1 while you connect the cable; StampS3A: hold the button while you connect the cable; StickC Plus: nothing, esptool resets it), then run `idf.py -p /dev/ttyACM0 erase-flash` and `idf.py -p /dev/ttyACM0 flash`. A device with hw-pass: `tools/flash.sh`. For a release image, use the esptool commands of "Releases". For a board other than the StickS3, build with the board file first: see "Boards". The port of the StickC Plus is `/dev/ttyUSB0`.
 4. Open the command line with `picocom /dev/ttyACM0` and push Enter. Add an entry:
    ```
    add GitHub
    ```
    The device asks for the password two times.
-5. Put the focus on a text editor and push the front button (Chain Dual Key: Key1, the key far from the lanyard hole; StampS3A: tap the button). The device types the password.
+5. Put the focus on a text editor and push the front button (Chain Dual Key: Key1, the key far from the lanyard hole; StampS3A: tap the button). The device types the password. The StickC Plus types over Bluetooth only: pair a computer first (`wireless pair`).
 
 Then set a PIN (`pin`), add entries on the web page, pair a keypad, or pair a laptop. The user guide tells how: [docs/usage.md](docs/usage.md).
 
 ## Target
 
-| Item | StickS3 | Chain Dual Key | StampS3A |
-|---|---|---|---|
-| SoC | ESP32-S3-PICO-1, revision v0.2 | ESP32-S3FN8 | ESP32-S3FN8 |
-| Flash | 8 MB, quad | 8 MB, quad, in the chip | 8 MB, quad, in the chip |
-| PSRAM | 8 MB, not enabled | None | None |
-| Console | USB Serial/JTAG. UART0 is not connected to USB. | The same. | The same. |
-| Input | Two buttons | Two mechanical keys | One button |
-| Output | LCD, speaker | Two RGB LEDs, the serial port | One RGB LED, the serial port |
+| Item | StickS3 | StickC Plus | Chain Dual Key | StampS3A |
+|---|---|---|---|---|
+| SoC | ESP32-S3-PICO-1, revision v0.2 | ESP32-PICO-D4, revision v1.1 | ESP32-S3FN8 | ESP32-S3FN8 |
+| Flash | 8 MB, quad | 4 MB, quad, in the module | 8 MB, quad, in the chip | 8 MB, quad, in the chip |
+| PSRAM | 8 MB, not enabled | None | None | None |
+| USB | USB Serial/JTAG in the ROM, TinyUSB in the firmware | None. A serial bridge chip (FTDI FT232R or CH9102, by the unit) to UART0. | As the StickS3 | As the StickS3 |
+| Console | USB Serial/JTAG. UART0 is not connected to USB. | UART0 through the bridge, 115200 | As the StickS3 | As the StickS3 |
+| Input | Two buttons | Two buttons | Two mechanical keys | One button |
+| Output | LCD, speaker | LCD, buzzer | Two RGB LEDs, the serial port | One RGB LED, the serial port |
+| Keys to | USB host, Bluetooth computer | Bluetooth computer | USB host, Bluetooth computer | USB host, Bluetooth computer |
 
 ## Boards
 
 | Board | File | Status |
 |---|---|---|
 | M5Stack StickS3 | `boards/sticks3.defaults` | The default board. Tested. |
+| M5Stack StickC Plus | `boards/stickcplus.defaults` | ESP32. Builds; the test on the device is pending. |
 | M5Stack Chain Dual Key | `boards/dualkey.defaults` | Tested. |
 | M5Stack StampS3A | `boards/stamps3a.defaults` | Tested. |
 
-`sdkconfig.defaults` is the build for the StickS3, and `idf.py build` builds it. A board file comes after it and changes the options that differ:
+`sdkconfig.defaults` has the options that are the same for all boards. `sdkconfig.defaults.esp32s3` and `sdkconfig.defaults.esp32` have the options of each chip (flash size, partition table, console, USB, Bluetooth controller); ESP-IDF applies the file of the chip itself. The board file names the chip and the board. `idf.py build` builds the StickS3. For another board, give its file after the common one:
 
 ```
 idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;boards/<name>.defaults" build
 ```
 
-The board file selects the board in Kconfig (`CONFIG_HWPASS_BOARD_*`, `main/Kconfig.projbuild`). The board selects its parts: `CONFIG_HWPASS_LCD`, `HWPASS_IMU`, `HWPASS_SPEAKER`, `HWPASS_BATTERY`, `HWPASS_PM1`, `HWPASS_LEDS`, and the counts `HWPASS_BUTTONS` and `HWPASS_LED_COUNT`. The code checks the parts, and the pins of a board go behind `#if CONFIG_HWPASS_BOARD_*`. The "Board" line of `info` shows the name. The CI builds each board of `.github/workflows/build.yml`. To add a board, see "Add a board" in [docs/contributing.md](docs/contributing.md).
+The board file selects the board in Kconfig (`CONFIG_HWPASS_BOARD_*`, `main/Kconfig.projbuild`). The board selects its parts: `CONFIG_HWPASS_LCD`, `HWPASS_IMU` with `HWPASS_IMU_BMI270` or `HWPASS_IMU_MPU6886`, `HWPASS_SPEAKER` or `HWPASS_BUZZER`, `HWPASS_BATTERY`, `HWPASS_PM1` or `HWPASS_AXP192`, `HWPASS_LEDS`, and the counts `HWPASS_BUTTONS` and `HWPASS_LED_COUNT`. `HWPASS_USB` comes from the chip: on without USB OTG. The code checks the parts, and the pins of a board go behind `#if CONFIG_HWPASS_BOARD_*`. The "Board" line of `info` shows the name. The CI builds each board of `.github/workflows/build.yml`. To add a board, see "Add a board" in [docs/contributing.md](docs/contributing.md).
 
 ## Toolchain
 
@@ -116,9 +120,12 @@ For the setup, refer to [docs/dev-setup.md](docs/dev-setup.md).
 
 ```
 CMakeLists.txt        Project file.
-sdkconfig.defaults    Project configuration for the StickS3. Edit this file, not sdkconfig.
-boards/               One file for each board: sticks3.defaults, dualkey.defaults, stamps3a.defaults. The options that differ from sdkconfig.defaults.
-partitions.csv        Flash partition table for 8 MB flash.
+sdkconfig.defaults    Project configuration for all boards. Edit this file, not sdkconfig.
+sdkconfig.defaults.esp32s3, sdkconfig.defaults.esp32
+                      The options of each chip. ESP-IDF applies the file of the chip after each defaults file.
+boards/               One file for each board: sticks3.defaults, stickcplus.defaults, dualkey.defaults, stamps3a.defaults. The chip and the board.
+partitions.csv        Flash partition table for 8 MB flash (ESP32-S3 boards).
+partitions-4mb.csv    Flash partition table for 4 MB flash (StickC Plus).
 main/                 Application entry point (app_main) and the project options (Kconfig.projbuild). Keep it small.
 components/           Project modules. One directory for each module.
 docs/                 User and developer documentation. docs/media/ has the logo, the promo animation, and the coffee mascot of this page.
@@ -131,37 +138,42 @@ tools/                Host scripts: flash.sh flashes the device (with a build di
 
 | Module | Function |
 |---|---|
-| `pm1` | StickS3: M5PM1 power chip: watchdog off, LCD power on, speaker amplifier on and off, battery voltage, USB power and charge state. It owns the internal I2C bus. |
-| `battery` | Battery of the device: the voltage every 20 s from `pm1` (StickS3) or from the ADC (Chain Dual Key), and the level in % from a discharge curve. `blehid` reports the level to the computer; `info` shows it. |
-| `display` | StickS3: ST7789 LCD, backlight, panel sleep while the screen is dark, frame buffer, and text. |
-| `sound` | StickS3: ES8311 audio codec on I2S, and the AW8737 speaker amplifier: short tones and the typing melody for `ui`. On a board without a speaker, the sounds go nowhere. |
-| `clock` | Time in the system clock (UTC) and the time zone: kept across a restart, lost at a power loss. The boards have no clock chip. |
-| `imu` | StickS3: BMI270 accelerometer on the internal I2C bus: which edge of the screen is up. The chip loads its 8 KB configuration file at each start (`bmi270_config.c`, from the Bosch BMI270 Sensor API, BSD-3-Clause). |
+| `i2cbus` | The internal I2C bus of the board (the power chip, the tilt sensor, the audio codec). The modules get the bus from it. |
+| `pm1` | StickS3: M5PM1 power chip: watchdog off, LCD power on, speaker amplifier on and off, battery voltage, USB power and charge state. |
+| `axp192` | StickC Plus: AXP192 power chip: the regulators of the LCD, the backlight level, the charger, battery voltage, USB power and charge state. |
+| `battery` | Battery of the device: the voltage every 20 s from the power chip (`pm1`, `axp192`) or from the ADC (Chain Dual Key), and the level in % from a discharge curve. `blehid` reports the level to the computer; `info` shows it. |
+| `display` | StickS3 and StickC Plus: ST7789 LCD, backlight (PWM, or a regulator of the AXP192), panel sleep while the screen is dark, frame buffer, and text. |
+| `sound` | Short tones and the typing melody for `ui` (`sound.c`), on the output of the board: the ES8311 audio codec on I2S with the AW8737 speaker amplifier of the StickS3 (`speaker.c`), or the passive buzzer of the StickC Plus on a PWM (`buzzer.c`). On a board without both, the sounds go nowhere. |
+| `clock` | Time in the system clock (UTC) and the time zone: kept across a restart, lost at a power loss. The firmware uses no clock chip. |
+| `imu` | The tilt sensor: which edge of the screen is up (`imu.c`). The chip driver differs: the BMI270 of the StickS3 (`bmi270.c`; the chip loads its 8 KB configuration file at each start, `bmi270_config.c`, from the Bosch BMI270 Sensor API, BSD-3-Clause), or the MPU6886 of the StickC Plus (`mpu6886.c`). |
 | `buttons` | Front and side buttons (the two keys of the Chain Dual Key): debounce, short and long push, push of both. StampS3A: the one button; a tap is a short push, a longer push is a hold. |
 | `leds` | The WS2812 LEDs on an RMT channel: two under the keys of the Chain Dual Key, one on the StampS3A. |
 | `vault` | Password entries in the `vault` NVS partition. With a PIN, the entries are one AES-256-GCM blob: the key comes from PBKDF2 of the PIN, and from the eFuse HMAC key when the chip has one. The lock state, the wrong-PIN counter, and the wait times. |
 | `kdf` | PBKDF2-HMAC-SHA512 on the SHA hardware, for `vault` and `backup`. |
 | `rng` | Random passwords. Selects the entropy source: ADC noise or radio. |
-| `usbdev` | TinyUSB device: HID boot keyboard, CDC-ACM serial port, and HID boot mouse. Sends the reports of `hid`. |
-| `hid` | Keyboard and mouse output: types text, holds keys, and moves the pointer of the mouse mover. Selects the link: the Bluetooth computer when it is connected, else the USB host. The layout key and the Caps Lock check. |
+| `usbdev` | TinyUSB device: HID boot keyboard, CDC-ACM serial port, and HID boot mouse. Sends the reports of `hid`. On a chip without USB OTG (ESP32), a version without a device: the link is never ready. |
+| `serial` | The serial port for `cli` and the texts of `view_led.c`: the CDC-ACM port of `usbdev`, or UART0 on a board without USB (the log lines go through the same buffer). |
+| `hid` | Keyboard and mouse output: types text, holds keys, and moves the pointer of the mouse mover. Selects the link: the Bluetooth computer when it is connected, else the USB host. The layout key and the Caps Lock check. The key codes are in `hid_keys.h`. |
 | `mover` | Mouse mover: the on/off setting, and the schedule that turns it on and off at set times. |
 | `ntp` | Time sync: a Wi-Fi station joins the network for some seconds and gets the time from an NTP server (SNTP, RFC 4330). |
-| `cli` | Command line on the USB serial port. |
+| `cli` | Command line on the serial port. |
 | `web` | Wi-Fi setup mode: access point, captive DNS, web server, and the page (`www/index.html`). |
 | `backup` | Encrypted backup of the entries. The file format is the same as `openssl enc`. |
 | `ble` | Bluetooth LE host (NimBLE), shared by `keypad` and `blehid`: the start, the pairing method, and the bonding keys in NVS. |
 | `blehid` | Bluetooth LE keyboard and mouse for a computer (HID over GATT): the services, the advertising, the pairing with a passkey, the key and mouse reports, and the battery level. One paired computer in NVS. |
 | `keypad` | Bluetooth LE keypad: NimBLE central, pairing, HID over GATT client, battery level, and key changes for `ui`. `hidmap.c` reads the HID report map. |
-| `ui` | Button actions, the modes, the PIN entry, and the lock when the USB connection stops (`ui.c`). The view shows the state: `view_lcd.c` draws the screen of the StickS3, `view_led.c` sets the key LEDs of the Chain Dual Key or the one LED of the StampS3A, and prints the texts on the serial port. |
+| `ui` | Button actions, the modes, the PIN entry, and the lock when the connection to the computer stops (`ui.c`). The view shows the state: `view_lcd.c` draws the screen of the StickS3 and the StickC Plus, `view_led.c` sets the key LEDs of the Chain Dual Key or the one LED of the StampS3A, and prints the texts on the serial port. |
 | `sysinfo` | Chip information in the log. |
 
-`main.c` starts the modules in this order: power chip, battery, display, sound, tilt sensor, vault, random numbers, clock, USB, Bluetooth host, Bluetooth computer link, keyboard output, mouse mover, keypad, time sync, command line. Then it runs the UI. It does not start the modules of the parts that the board does not have (`CONFIG_HWPASS_*`); the linker removes their code. A module that fails to start logs an error, and the device goes on: the serial port must stay available for the next flash.
+`main.c` starts the modules in this order: random numbers, power chip, battery, display, sound, tilt sensor, vault, clock, USB, serial port, Bluetooth host, Bluetooth computer link, keyboard output, mouse mover, keypad, time sync, command line. Then it runs the UI. It does not start the modules of the parts that the board does not have (`CONFIG_HWPASS_*`); the linker removes their code. A module that fails to start logs an error, and the device goes on: the serial port must stay available for the next flash.
 
-Threads: `ui_run` runs in the main task. `cli` has its own task. TinyUSB has its own task. In the Wi-Fi setup mode, the web server, the DNS server, and the Wi-Fi driver have their own tasks. `ui_run` starts and stops this mode. `keypad` has its own task, and the NimBLE host has a task after the first Bluetooth start (`ble`). `blehid` has no task: the host task runs the events of the computer link. `sound` has its own task. The mouse mover, its schedule, and the battery measurement run in the `esp_timer` task. `ntp` has its own task; the Wi-Fi setup mode holds it while the mode runs. `vault`, `rng`, `hid`, `blehid`, `mover`, `ntp`, and the serial port in `usbdev` have locks.
+Threads: `ui_run` runs in the main task. `cli` has its own task. TinyUSB has its own task. In the Wi-Fi setup mode, the web server, the DNS server, and the Wi-Fi driver have their own tasks. `ui_run` starts and stops this mode. `keypad` has its own task, and the NimBLE host has a task after the first Bluetooth start (`ble`). `blehid` has no task: the host task runs the events of the computer link. `sound` has its own task. The mouse mover, its schedule, and the battery measurement run in the `esp_timer` task. `ntp` has its own task; the Wi-Fi setup mode holds it while the mode runs. `vault`, `rng`, `hid`, `blehid`, `mover`, `ntp`, the serial port in `usbdev`, and the UART in `serial` have locks.
 
-Flash layout (`partitions.csv`): two 3 MB application slots for a later OTA update, the `nvs` partition for the settings and the bonding keys, and the `vault` partition for the entries. `wipe` erases the `vault` partition only.
+Flash layout (`partitions.csv`, 8 MB): two 3 MB application slots for a later OTA update, the `nvs` partition for the settings and the bonding keys, and the `vault` partition for the entries. `partitions-4mb.csv` (StickC Plus) has the same partitions with two slots of 1920 KB. `wipe` erases the `vault` partition only.
 
 ## USB
+
+This section is about the ESP32-S3 boards. The ESP32 of the StickC Plus has no USB: `usbdev` builds without a device, and the serial port is UART0 through the bridge chip of the board (FTDI FT232R `0403:6001`, or CH9102 `1a86:55d4`, by the unit).
 
 The ROM and the first part of the start-up use the built-in USB Serial/JTAG (`303a:1001`). Then `usbdev` gives the USB PHY to TinyUSB, and the device connects again as `303a:4005`. Log output goes to the CDC serial port.
 
@@ -183,13 +195,13 @@ idf.py build
 tools/flash.sh
 ```
 
-`tools/flash.sh` sends `dfu` to the hw-pass serial port, waits for the ROM download mode, and runs `idf.py flash`. After the flash, esptool resets the chip and the firmware starts.
+`tools/flash.sh` sends `dfu` to the hw-pass serial port, waits for the ROM download mode, and runs `idf.py flash`. After the flash, esptool resets the chip and the firmware starts. On the StickC Plus, the script runs `idf.py flash` on the port of the serial bridge at once: esptool resets the chip through the bridge.
 
 If the device runs other firmware with USB Serial/JTAG, use `idf.py -p /dev/ttyACM0 flash`.
 
 If the firmware does not start the serial port, push and hold the power button: the power chip starts the ROM download mode (StickS3). On the Chain Dual Key, hold Key1 while you connect the cable. On the StampS3A, hold the button while you connect the cable.
 
-To open the command line: `picocom /dev/ttyACM0`. `idf.py monitor` also works, but it cannot show the start-up log.
+To open the command line: `picocom /dev/ttyACM0` (StickC Plus: `picocom -b 115200 /dev/ttyUSB0`). `idf.py monitor` also works, but on the ESP32-S3 boards it cannot show the start-up log.
 
 Flashing does not erase the `vault` partition. `idf.py erase-flash` erases it.
 
@@ -205,10 +217,10 @@ Each push to `master` and each pull request builds every board (`.github/workflo
 | `hw-pass-<version>-<board>-app.bin` | The application only. For the update of a device with hw-pass: the settings, the pairings, and the entries stay. | `0x10000` |
 
 ```
-esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash 0x10000 hw-pass-v1.1.0-sticks3-app.bin
+esptool.py -p /dev/ttyACM0 write_flash 0x10000 hw-pass-v1.2.0-sticks3-app.bin
 ```
 
-The device must be in the download mode: `dfu` on the serial port, or hold the power button (StickS3), or hold Key1 (Chain Dual Key) or the button (StampS3A) while you connect the cable. Without ESP-IDF, `pip install esptool` gives `esptool.py`. When a release changes the partition table or the bootloader, its notes say that the full image is necessary.
+esptool finds the chip itself. The device must be in the download mode: `dfu` on the serial port, or hold the power button (StickS3), or hold Key1 (Chain Dual Key) or the button (StampS3A) while you connect the cable. The StickC Plus needs no download mode: esptool resets it through the bridge, on `/dev/ttyUSB0`. Without ESP-IDF, `pip install esptool` gives `esptool.py`. When a release changes the partition table or the bootloader, its notes say that the full image is necessary.
 
 To publish a release, tag the commit on `master` and push the tag:
 
@@ -219,11 +231,11 @@ git push origin v1.2.0
 
 ## Configuration
 
-`sdkconfig` is a generated file. Git ignores it. `sdkconfig.defaults` is the source of the configuration.
+`sdkconfig` is a generated file. Git ignores it. `sdkconfig.defaults`, the file of the chip (`sdkconfig.defaults.esp32s3`, `sdkconfig.defaults.esp32`), and the board file are the source of the configuration.
 
 To change the configuration:
 
-1. Add or change the option in `sdkconfig.defaults`.
+1. Add or change the option in `sdkconfig.defaults`, or in the file of the chip when it differs by chip.
 2. Delete `sdkconfig`.
 3. Run `idf.py build`.
 
@@ -241,6 +253,7 @@ The device has no current measurement. These measures keep the use low on batter
 - Computer link (`blehid`): after the encryption, the device asks for a connection interval of 15 to 30 ms with a latency of 30 events. The computer can refuse. Key reports go at the next event in both cases.
 - Advertising for the paired computer: 100 to 150 ms. A slower rate would save little and make the connection of the computer slow.
 - Tilt sensor: low-power mode, 25 Hz, read every 100 ms (`imu`). Sound: the amplifier and the I2S clocks are off 1 s after a sound (`sound`). Wi-Fi: on only in the setup mode (5 min idle limit) and during a time sync.
+- StickC Plus: the backlight regulator of the AXP192 is off while the screen is dark, and the LCD panel sleeps.
 
 Not done: light sleep between Bluetooth events (the largest possible gain), standby of the audio codec between sounds (adds 50 ms and a click risk), and USB off without USB power (TinyUSB restart).
 
@@ -261,8 +274,8 @@ MIT, see [LICENSE](LICENSE). The third-party code below keeps its own license.
 | Code | Use | License |
 |---|---|---|
 | [ESP-IDF](https://github.com/espressif/esp-idf) v5.5.5 | Framework, drivers, NimBLE, mbedTLS, Wi-Fi | Apache-2.0 |
-| [esp_tinyusb](https://components.espressif.com/components/espressif/esp_tinyusb) | USB device stack glue | Apache-2.0 |
-| [TinyUSB](https://github.com/hathach/tinyusb) | USB device stack | MIT |
+| [esp_tinyusb](https://components.espressif.com/components/espressif/esp_tinyusb) | USB device stack glue (ESP32-S3 boards) | Apache-2.0 |
+| [TinyUSB](https://github.com/hathach/tinyusb) | USB device stack (ESP32-S3 boards) | MIT |
 | [espressif/qrcode](https://components.espressif.com/components/espressif/qrcode) | QR code on the screen. Contains qrcodegen by Project Nayuki (MIT). | Apache-2.0 |
 | [Terminus Font](https://terminus-font.sourceforge.net/) | `components/display/font.c` | SIL Open Font License 1.1, `components/display/OFL.txt` |
 | Bosch BMI270 Sensor API | `components/imu/bmi270_config.c`, the configuration file of the sensor | BSD-3-Clause |

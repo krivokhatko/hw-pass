@@ -14,8 +14,8 @@ extern "C" {
 #define BUTTONS_LONG_MS     600
 
 typedef enum {
-    BUTTON_FRONT,   /* Types. StickS3: KEY1, G11, below the LCD. Dual Key: Key1, G0. StampS3A: the button, G0. */
-    BUTTON_SIDE,    /* Selects. StickS3: KEY2, G12, on the side. Dual Key: Key2, G17. StampS3A: none. */
+    BUTTON_FRONT,   /* Types. StickS3: KEY1, G11, below the LCD. StickC Plus: A, G37. Dual Key: Key1, G0. StampS3A: the button, G0. */
+    BUTTON_SIDE,    /* Selects. StickS3: KEY2, G12, on the side. StickC Plus: B, G39. Dual Key: Key2, G17. StampS3A: none. */
     BUTTON_COUNT,
 } button_t;
 

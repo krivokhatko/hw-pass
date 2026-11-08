@@ -18,7 +18,9 @@ extern "C" {
 #define USBDEV_VERSION  0x0101
 
 /* Start the USB device: a boot keyboard, a CDC-ACM serial port, and a
- * boot mouse. After this call, log output goes to the serial port. */
+ * boot mouse. After this call, log output goes to the serial port.
+ * A chip without USB (ESP32) builds usbdev_none.c: no device, the host
+ * is never ready, and the serial functions do nothing. */
 esp_err_t usbdev_init(void);
 
 /* The host configured the device and did not suspend it. */
@@ -45,7 +47,9 @@ size_t usbdev_read(char *buf, size_t size, uint32_t timeout_ms);
  * replaces old data in the buffer. With DTR, wait a short time for space. */
 void usbdev_write(const char *s, size_t n);
 
-/* Restart into ROM download mode on USB Serial/JTAG. Does not return. */
+/* Restart into ROM download mode on USB Serial/JTAG. Does not return.
+ * Without USB: a plain restart (esptool resets the ESP32 through the
+ * USB bridge of the board). */
 void usbdev_dfu(void);
 
 #ifdef __cplusplus

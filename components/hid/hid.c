@@ -2,8 +2,7 @@
  * link (blehid). The Bluetooth computer gets the keys while it is
  * connected: the user turned this link on with a pairing. Else the USB
  * host gets them. Each report goes to the link with a delay after it. The
- * key codes come from the TinyUSB HID header: they are the same on both
- * links. */
+ * key codes are in hid_keys.h: they are the same on both links. */
 #include <ctype.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -18,8 +17,8 @@
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "nvs.h"
-#include "class/hid/hid.h"
 #include "blehid.h"
+#include "hid_keys.h"
 #include "usbdev.h"
 #include "hid.h"
 
@@ -52,10 +51,10 @@ static const struct {
     const char *name;
     uint8_t mod;
 } s_mods[] = {
-    { "Ctrl", KEYBOARD_MODIFIER_LEFTCTRL },
-    { "Shift", KEYBOARD_MODIFIER_LEFTSHIFT },
-    { "Alt", KEYBOARD_MODIFIER_LEFTALT },
-    { "Win", KEYBOARD_MODIFIER_LEFTGUI },
+    { "Ctrl", HID_MOD_LEFT_CTRL },
+    { "Shift", HID_MOD_LEFT_SHIFT },
+    { "Alt", HID_MOD_LEFT_ALT },
+    { "Win", HID_MOD_LEFT_GUI },
 };
 
 /* ---- Links ---- */
@@ -146,7 +145,7 @@ static bool set_caps_lock(hid_link_t link, bool on)
 
 esp_err_t hid_type(const char *s, bool enter)
 {
-    static const uint8_t ascii[128][2] = { HID_ASCII_TO_KEYCODE };
+    static const uint8_t ascii[128][2] = { HID_ASCII_TO_KEY };
     hid_link_t link;
     bool caps, ok = true;
 
@@ -174,7 +173,7 @@ esp_err_t hid_type(const char *s, bool enter)
     for (; ok && *s; s++) {
         unsigned char c = *s;
         if (c >= 0x20 && c <= 0x7E) {
-            ok = push_key(link, ascii[c][0] ? KEYBOARD_MODIFIER_LEFTSHIFT : 0, ascii[c][1], 0);
+            ok = push_key(link, ascii[c][0] ? HID_MOD_LEFT_SHIFT : 0, ascii[c][1], 0);
         }
     }
     if (ok && enter) {

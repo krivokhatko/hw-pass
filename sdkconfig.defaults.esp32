@@ -1,0 +1,9 @@
+# ESP32 (StickC Plus): ESP32-PICO-D4 with 4 MB flash. ESP-IDF reads this
+# file after sdkconfig.defaults when the chip is the ESP32. The chip has no
+# USB: the console is UART0, through the CH9102 USB bridge of the board.
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions-4mb.csv"
+CONFIG_ESP_CONSOLE_UART_DEFAULT=y
+# Bluetooth LE only: the memory of classic Bluetooth goes to the heap.
+CONFIG_BTDM_CTRL_MODE_BLE_ONLY=y
+CONFIG_BTDM_CTRL_BLE_MAX_CONN=2

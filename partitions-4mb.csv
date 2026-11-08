@@ -1,0 +1,9 @@
+# 4 MB flash (StickC Plus). Two 1920 KB app slots for OTA updates.
+# Name,   Type, SubType, Offset,   Size
+nvs,      data, nvs,     0x9000,   0x5000
+otadata,  data, ota,     0xe000,   0x2000
+ota_0,    app,  ota_0,   0x10000,  0x1E0000
+ota_1,    app,  ota_1,   0x1F0000, 0x1E0000
+# Password entries. A separate partition: "wipe" erases all of it.
+vault,    data, nvs,     0x3D0000, 0x10000
+# 0x3E0000-0x400000 (128 KB) is free.

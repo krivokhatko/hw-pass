@@ -1,0 +1,7 @@
+# M5Stack StickC Plus: ESP32-PICO-D4 with 4 MB flash, a 240 x 135 LCD, two
+# buttons, a buzzer, a tilt sensor (MPU6886), the AXP192 power chip, and a
+# battery. The ESP32 has no USB: the keys go to a computer over Bluetooth
+# LE only, and the command line is on UART0 through the serial bridge chip.
+# idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;boards/stickcplus.defaults" build
+CONFIG_IDF_TARGET="esp32"
+CONFIG_HWPASS_BOARD_STICKCPLUS=y

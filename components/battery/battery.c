@@ -1,7 +1,7 @@
-/* Battery of the device. The M5PM1 power chip (StickS3) or the ADC (Chain
- * Dual Key) measures the voltage of the battery; a discharge curve gives
- * the level in %. The measurement runs in the esp_timer task every
- * BATTERY_PERIOD_S.
+/* Battery of the device. The power chip (M5PM1 on the StickS3, AXP192 on
+ * the StickC Plus) or the ADC (Chain Dual Key) measures the voltage of
+ * the battery; a discharge curve gives the level in %. The measurement
+ * runs in the esp_timer task every BATTERY_PERIOD_S.
  *
  * The level moves in steps of STEP %: a small change of the voltage does
  * not change the level, and the computer does not get a notification for
@@ -45,6 +45,25 @@ static esp_err_t source_read(int *mv, bool *usb, bool *charging)
 {
     ESP_RETURN_ON_ERROR(pm1_battery_mv(mv), TAG, "pm1");
     if (pm1_power(usb, charging) != ESP_OK) {
+        *usb = false;
+        *charging = false;
+    }
+    return ESP_OK;
+}
+
+#elif CONFIG_HWPASS_AXP192
+#include "axp192.h"
+
+static esp_err_t source_init(void)
+{
+    return ESP_OK;
+}
+
+/* mv 0: no battery. */
+static esp_err_t source_read(int *mv, bool *usb, bool *charging)
+{
+    ESP_RETURN_ON_ERROR(axp192_battery_mv(mv), TAG, "axp192");
+    if (axp192_power(usb, charging) != ESP_OK) {
         *usb = false;
         *charging = false;
     }
@@ -130,7 +149,7 @@ static esp_err_t source_read(int *mv, bool *usb, bool *charging)
     *charging = charge >= CHARGE_MIN_MV && charge <= CHARGE_MAX_MV;
     return ESP_OK;
 }
-#endif  /* CONFIG_HWPASS_PM1 */
+#endif  /* The source */
 
 static esp_timer_handle_t s_timer;
 static volatile int s_level = -1;

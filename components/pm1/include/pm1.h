@@ -1,20 +1,15 @@
 #pragma once
 
 #include <stdbool.h>
-#include "driver/i2c_master.h"
 #include "esp_err.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* Start the M5PM1 power chip. Stop its watchdog, turn off the speaker
- * amplifier, and turn on the LCD power. */
+/* Start the M5PM1 power chip on the internal I2C bus (i2cbus). Stop its
+ * watchdog, turn off the speaker amplifier, and turn on the LCD power. */
 esp_err_t pm1_init(void);
-
-/* The internal I2C bus. The ES8311 audio codec is also on this bus.
- * NULL before pm1_init. */
-i2c_master_bus_handle_t pm1_bus(void);
 
 /* Turn the speaker amplifier (AW8737) on or off. Call from one task
  * only: the output register of the PM1 also has the LCD power. */

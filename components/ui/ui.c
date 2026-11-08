@@ -5,11 +5,12 @@
  * key. The keypad keys - and + select an entry, and * turns the mouse
  * mover on or off. A sound tells the result of each action: the user does
  * not have to look at the device. The keys go to the Bluetooth computer
- * while it is connected, else to the USB host (hid.c).
+ * while it is connected, else to the USB host (hid.c). A board without
+ * USB (StickC Plus) has the Bluetooth computer only.
  *
- * The view (view.h) shows the state: the LCD of the StickS3, or the key
- * LEDs of the Chain Dual Key. This file has the logic that is the same
- * for all boards.
+ * The view (view.h) shows the state: the LCD of the StickS3 and the
+ * StickC Plus, or the key LEDs of the Chain Dual Key. This file has the
+ * logic that is the same for all boards.
  *
  * With a PIN, the device starts locked and locks again when the USB
  * connection or the link to the Bluetooth computer stops. The keypad
@@ -22,6 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
@@ -46,6 +48,13 @@
 #define DONE_MS         600
 #define ERROR_MS        1500
 #define INFO_MS         1500    /* Message after a pairing or a key change */
+
+/* The second line of the "No computer" error: what the user can do. */
+#if CONFIG_HWPASS_USB
+#define NO_COMPUTER_HINT    "USB or Bluetooth"
+#else
+#define NO_COMPUTER_HINT    "Pair a computer"
+#endif
 
 /* Keypad keys that go to the computer: HID usage IDs */
 #define KEY_ENTER       0x28
@@ -184,7 +193,7 @@ static void type_entry(int i, bool enter)
         return;
     }
     if (!hid_ready()) {
-        show_error("No computer", "USB or Bluetooth");
+        show_error("No computer", NO_COMPUTER_HINT);
         return;
     }
     /* At once: the melody of the label plays while the device types. The
@@ -467,7 +476,7 @@ static bool poll_keypad(void)
         } else if (passthru(ev.key)) {
             if (ev.down && !hid_ready()) {
                 view_wake();
-                show_error("No computer", "USB or Bluetooth");
+                show_error("No computer", NO_COMPUTER_HINT);
                 break;
             }
             /* A click as the key goes down: the key went to the computer. */
@@ -717,7 +726,11 @@ void ui_run(void)
             sound_prepare();
         }
         if (s_dfu_request) {
+#if CONFIG_HWPASS_USB
             show_message("Download mode", "Flash with idf.py", VIEW_INFO);
+#else
+            show_message("Restart", "Flash with idf.py", VIEW_INFO);
+#endif
             view_wake();
             usbdev_dfu();
         }

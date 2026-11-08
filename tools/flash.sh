@@ -1,5 +1,7 @@
 #!/bin/sh
-# Restart hw-pass into ROM download mode, then flash the firmware.
+# Flash the firmware. A board with USB (ESP32-S3): restart hw-pass into the
+# ROM download mode first. A board with a USB serial bridge (StickC Plus):
+# esptool resets the chip itself.
 # Run "get_idf" first. Usage: tools/flash.sh [build-dir]
 # The build directory is "build", or the one of "idf.py -B <dir>" for
 # a second board (see "Add a board" in docs/contributing.md).
@@ -7,21 +9,37 @@ set -eu
 
 BUILD_DIR="${1:-build}"
 
-APP_ID="303a:4005"  # hw-pass firmware (TinyUSB)
-ROM_ID="303a:1001"  # ROM download mode (USB Serial/JTAG)
+APP_ID="303a:4005"      # hw-pass firmware (TinyUSB)
+ROM_ID="303a:1001"      # ROM download mode (USB Serial/JTAG)
+# The USB serial bridge of the StickC Plus: FTDI FT232R (or a compatible
+# chip) on some units, CH9102 on others.
+BRIDGE_IDS="0403:6001 1a86:55d4"
 
-# Print the first /dev/ttyACM* port of the USB device with the ID $1.
+# Print the first /dev/ttyACM* or /dev/ttyUSB* port of the USB device with
+# the ID $1. A ttyACM port is the device itself; a ttyUSB port is one more
+# level down, under the interface of the bridge chip.
 find_port() {
-    for tty in /sys/class/tty/ttyACM*; do
+    for tty in /sys/class/tty/ttyACM* /sys/class/tty/ttyUSB*; do
         [ -e "$tty" ] || continue
-        dev=$(readlink -f "$tty/device/..")
-        if [ "$(cat "$dev/idVendor"):$(cat "$dev/idProduct")" = "$1" ]; then
-            echo "/dev/${tty##*/}"
-            return 0
-        fi
+        for dev in "$tty/device/.." "$tty/device/../.."; do
+            dev=$(readlink -f "$dev")
+            [ -e "$dev/idVendor" ] || continue
+            if [ "$(cat "$dev/idVendor"):$(cat "$dev/idProduct")" = "$1" ]; then
+                echo "/dev/${tty##*/}"
+                return 0
+            fi
+            break
+        done
     done
     return 1
 }
+
+for id in $BRIDGE_IDS; do
+    if port=$(find_port "$id"); then
+        echo "Flash through the serial bridge $port."
+        exec idf.py -B "$BUILD_DIR" -p "$port" flash
+    fi
+done
 
 if port=$(find_port "$APP_ID"); then
     echo "Restart $port into download mode."

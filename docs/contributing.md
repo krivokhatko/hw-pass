@@ -32,7 +32,23 @@ The M5Stack StickS3 wires these parts to the ESP32-S3. The values are from the c
 | Battery, charger | The power chip: voltage, USB power, and the charge state on its G0 | `pm1`, `battery` |
 | USB-C | USB Serial/JTAG in the ROM, TinyUSB in the firmware | `usbdev` |
 
-`pm1` owns the internal I2C bus. The other modules get the bus from it.
+`i2cbus` owns the internal I2C bus. The other modules get the bus from it.
+
+The M5Stack StickC Plus (SKU K016-P) wires these parts to the ESP32-PICO-D4. The values are from the M5Stack documents and the M5Unified code.
+
+| Part | Connection | Module |
+|---|---|---|
+| AXP192 power chip | I2C, SDA G21, SCL G22, address 0x34. DCDC1: the chip. LDO2: the backlight. LDO3: the LCD logic. | `axp192` |
+| MPU6886 tilt sensor | Same I2C bus, address 0x68 | `imu` (`mpu6886.c`) |
+| BM8563 clock chip | Same I2C bus, address 0x51. Not used. | - |
+| ST7789V2 LCD, 240 × 135 | SPI3: MOSI G15, SCLK G13, DC G23, CS G5, RST G18. Backlight: LDO2 of the power chip, 2.5 to 3.3 V. | `display` |
+| Passive buzzer | G2, PWM | `sound` (`buzzer.c`) |
+| Button A | G37, below the LCD, pull-up on the board, active low. No internal pull-up on this pin. | `buttons` (front: types) |
+| Button B | G39, on the side, pull-up on the board, active low. No internal pull-up on this pin. | `buttons` (side: selects) |
+| Power button | The power chip. One push powers on; a hold of 4 s powers off. No download mode. | - |
+| Battery, 120 mAh, charger | The power chip: voltage, USB power, and the charge state | `axp192`, `battery` |
+| Infrared LED, red LED | G9, G10. Not used. | - |
+| USB-C | A serial bridge chip to UART0: FTDI FT232R or a compatible chip (`0403:6001`, product "M5stack") on the tested unit; CH9102 (`1a86:55d4`) on other units. The ESP32 has no USB. | `serial` |
 
 The M5Stack Chain Dual Key (SKU C147) wires these parts to the ESP32-S3FN8. The values are from the schematic V1.5 and the factory firmware ([M5DualKey-UserDemo](https://github.com/m5stack/M5DualKey-UserDemo)).
 
@@ -115,7 +131,7 @@ Words:
 
 | Word | Meaning |
 |---|---|
-| the device | hw-pass, the StickS3, the Chain Dual Key, or the StampS3A with this firmware |
+| the device | hw-pass, the StickS3, the StickC Plus, the Chain Dual Key, or the StampS3A with this firmware |
 | the view | the part of the UI that shows the state: the screen, or the key LEDs with the serial port |
 | entry | a stored label and password |
 | label | the name of an entry |
@@ -133,7 +149,7 @@ Words:
 | the schedule | the times that turn the mouse mover on and off |
 | the time sync | the NTP sync over Wi-Fi |
 | the screen | the LCD and what it shows |
-| the serial port, the command line | the CDC-ACM port and the commands on it |
+| the serial port, the command line | the CDC-ACM port (StickC Plus: UART0 through the bridge) and the commands on it |
 | push, hold, release | what you do with a button or a key |
 | type | what the device does with a password |
 
@@ -174,7 +190,7 @@ Battery level for the Bluetooth computer
 
 ## Test a change
 
-The project has no automatic tests on the device. Test by hand. Each test needs a flashed device and the serial port (`picocom /dev/ttyACM0`).
+The project has no automatic tests on the device. Test by hand. Each test needs a flashed device and the serial port (`picocom /dev/ttyACM0`; StickC Plus: `picocom -b 115200 /dev/ttyUSB0`). On the StickC Plus, "the USB host" in the tests is the Bluetooth computer: the board has no USB.
 
 Always:
 
@@ -195,7 +211,7 @@ For a change in a module, also test its function:
 | `usbdev`, `hid` | `kbtest` on Windows and on Linux. Caps Lock on before the typing: the text is correct. The mouse mover moves the pointer. Unplug and plug the cable. |
 | `mover`, `clock`, `ntp` | `mouse`, `auto`, `time`, `tz`, `wifi`, `ntp`. A change of the time moves the schedule as "Time" in `docs/usage.md` says. |
 | `sound` | Each sound in the table of `docs/usage.md`. A melody while the device types. `sound` off and on. |
-| `pm1`, `battery` | `info` on USB and on battery. The screen goes dark after 20 s on battery. The level on the computer changes while the battery goes down. |
+| `pm1`, `axp192`, `battery` | `info` on USB and on battery. The screen goes dark after 20 s on battery. The level on the computer changes while the battery goes down. |
 | `web`, `ntp` | Wi-Fi and Bluetooth at the same time: the setup mode with a connected keypad and a connected computer. The heap stays above 80 KB. |
 
 For the Bluetooth computer link, a Linux computer with BlueZ shows the GATT services with `bluetoothctl` (`menu gatt`, `list-attributes`). `btmon` shows the packets. On Windows, the Device Manager shows the HID devices under the Bluetooth device.
@@ -222,13 +238,13 @@ The build includes only the components that `main` needs (`MINIMAL_BUILD`). A mo
 
 ## Add a board
 
-The StickS3 is the default board: `sdkconfig.defaults` and the values in the code are its values. A new board changes only what differs.
+The StickS3 is the default board: the values in the code are its values. A new board changes only what differs.
 
-1. Add `HWPASS_BOARD_<NAME>` to the `HWPASS_BOARD` choice in `main/Kconfig.projbuild`, and its name to `HWPASS_BOARD_NAME`. The name is short and in lower case: it is in the file names of the release. The board selects its parts: `HWPASS_LCD`, `HWPASS_IMU`, `HWPASS_SPEAKER`, `HWPASS_BATTERY`, `HWPASS_PM1`, `HWPASS_LEDS`. Add a part option for a new kind of part.
-2. Make `boards/<name>.defaults` with `CONFIG_HWPASS_BOARD_<NAME>=y` and the ESP-IDF options that differ from `sdkconfig.defaults`: the flash size, the partition table, the console.
-3. Put the pins of the board behind `#if CONFIG_HWPASS_BOARD_<NAME>` in the modules (`buttons.c`, `leds.c`, `battery.c`). The code that depends on a part checks the part option, not the board: `#if CONFIG_HWPASS_LCD`.
-4. All modules are in the build for each board: ESP-IDF reads the component requirements before it has the configuration, thus a requirement cannot depend on an option. `main.c` does not start the modules of the parts that the board does not have, and the linker removes their code. A module that many modules call (`sound`, `battery`, `leds`) builds a version without the part: its functions do nothing, and its status functions say so.
-5. The view shows the state: `components/ui/view.h`. A board with a screen uses `view_lcd.c`; a board with key LEDs uses `view_led.c` (`components/ui/CMakeLists.txt` picks the file). A new kind of output is a new view file. `ui.c` has the logic that is the same for all boards; only the PIN entry with the buttons differs (`pin_buttons`).
+1. Add `HWPASS_BOARD_<NAME>` to the `HWPASS_BOARD` choice in `main/Kconfig.projbuild`, with `depends on IDF_TARGET_<CHIP>`, and its name to `HWPASS_BOARD_NAME`. The name is short and in lower case: it is in the file names of the release. The board selects its parts: `HWPASS_LCD`, `HWPASS_IMU` with the chip (`HWPASS_IMU_BMI270`, `HWPASS_IMU_MPU6886`), `HWPASS_SPEAKER` or `HWPASS_BUZZER`, `HWPASS_BATTERY`, `HWPASS_PM1` or `HWPASS_AXP192`, `HWPASS_LEDS`. Add a part option for a new kind of part. `HWPASS_USB` comes from the chip.
+2. Make `boards/<name>.defaults` with `CONFIG_IDF_TARGET="<chip>"` and `CONFIG_HWPASS_BOARD_<NAME>=y`. The ESP-IDF options that differ by chip (the flash size, the partition table, the console, USB, the Bluetooth controller) go in `sdkconfig.defaults.<chip>`: ESP-IDF applies this file after each defaults file. A new chip gets a new file of this kind, and a new partition table when its flash is smaller. The project `CMakeLists.txt` reads the chip from the board file, so that `idf.py` needs no `set-target`.
+3. Put the pins of the board behind `#if CONFIG_HWPASS_BOARD_<NAME>` in the modules (`buttons.c`, `leds.c`, `battery.c`, `display.c`, `i2cbus.c`). The code that depends on a part checks the part option, not the board: `#if CONFIG_HWPASS_LCD`. The code that depends on the chip checks the capability of the chip: `#if SOC_HMAC_SUPPORTED`, `#if SOC_SHA_SUPPORT_RESUME` (`soc/soc_caps.h`).
+4. All modules are in the build for each board: ESP-IDF reads the component requirements before it has the configuration, thus a requirement cannot depend on an option. A requirement can depend on the chip (`usbdev`). `main.c` does not start the modules of the parts that the board does not have, and the linker removes their code. A module that many modules call (`sound`, `battery`, `leds`, `usbdev`) builds a version without the part: its functions do nothing, and its status functions say so. A module with one function and different chips (`imu`, `sound`) has a common file and one file for each chip, with a private header between them (`imu_chip.h`, `sound_out.h`); its `CMakeLists.txt` picks the file by the part option.
+5. The view shows the state: `components/ui/view.h`. A board with a screen uses `view_lcd.c`; a board with key LEDs uses `view_led.c` (`components/ui/CMakeLists.txt` picks the file). A new kind of output is a new view file. `ui.c` has the logic that is the same for all boards; only the PIN entry with the buttons differs (`pin_buttons`). Texts that name USB go behind `#if CONFIG_HWPASS_USB`.
 6. Build with the board file, and delete `sdkconfig` before it:
    ```
    rm sdkconfig
@@ -239,12 +255,12 @@ The StickS3 is the default board: `sdkconfig.defaults` and the values in the cod
    idf.py -B build-<name> -DSDKCONFIG=build-<name>/sdkconfig -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;boards/<name>.defaults" build
    ```
 7. Add the name to the `board` list in `.github/workflows/build.yml`. The CI builds it, and a release gets its files.
-8. Add the board to the "Boards" table in `README.md`, its parts to the "Hardware map" in this document, and its use to `docs/usage.md` and the download mode to `docs/dev-setup.md`. Flash the board and do the tests of "Test a change" on it.
+8. Add the board to the "Hardware", "Target", and "Boards" tables in `README.md`, its parts to the "Hardware map" in this document, and its use to `docs/usage.md` and the first flash to `docs/dev-setup.md`. Flash the board and do the tests of "Test a change" on it.
 
 ## External components
 
 1. Add the component to the module that uses it: `idf.py add-dependency --component <module> "<namespace>/<name>^<version>"`.
-2. Commit `components/<module>/idf_component.yml` and `dependencies.lock`.
+2. Commit `components/<module>/idf_component.yml` and the lock files `dependencies.lock.esp32s3` and `dependencies.lock.esp32`: one for each chip (`DEPENDENCIES_LOCK` in `CMakeLists.txt`), because the managed components differ by chip. A build of each chip renews its file. A component for one chip only gets a `rules` entry with the targets, as `esp_tinyusb` in `components/usbdev/idf_component.yml`.
 3. Add the component and its license to "Third-party code" in `README.md`.
 
 Git ignores `managed_components/`. `idf.py build` downloads them.
@@ -252,7 +268,7 @@ Git ignores `managed_components/`. `idf.py build` downloads them.
 ## Configuration options
 
 - A build option for a function that a user can leave out goes in `main/Kconfig.projbuild` (`CONFIG_HWPASS_*`). The code around it uses `#if CONFIG_HWPASS_*`. A build with the option off must compile.
-- A change of an ESP-IDF option goes in `sdkconfig.defaults`, with a comment that says why. Then delete `sdkconfig` and build again.
+- A change of an ESP-IDF option goes in `sdkconfig.defaults`, or in `sdkconfig.defaults.<chip>` when the value differs by chip, with a comment that says why. Then delete `sdkconfig` and build again.
 - Do not commit `sdkconfig`, `build/`, or `managed_components/`.
 
 ## Generated files

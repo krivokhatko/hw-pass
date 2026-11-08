@@ -18,16 +18,19 @@
 #include "freertos/semphr.h"
 #include "freertos/task.h"
 #include "esp_check.h"
-#include "esp_efuse.h"
-#include "esp_efuse_chip.h"
-#include "esp_hmac.h"
 #include "esp_log.h"
 #include "esp_random.h"
 #include "mbedtls/gcm.h"
 #include "nvs.h"
 #include "nvs_flash.h"
+#include "soc/soc_caps.h"
 #include "kdf.h"
 #include "vault.h"
+#if SOC_HMAC_SUPPORTED
+#include "esp_efuse.h"
+#include "esp_efuse_chip.h"
+#include "esp_hmac.h"
+#endif
 
 #define PARTITION   "vault"
 #define NAMESPACE   "vault"
@@ -142,14 +145,17 @@ static size_t store_size(int count)
 
 /* ---- Keys ---- */
 
-/* The eFuse key block with the purpose HMAC_UP, as an HMAC key ID, or -1. */
+/* The eFuse key block with the purpose HMAC_UP, as an HMAC key ID, or -1.
+ * A chip without the HMAC unit (ESP32) has no such key. */
 static int efuse_key_id(void)
 {
+#if SOC_HMAC_SUPPORTED
     esp_efuse_block_t block;
 
     if (esp_efuse_find_purpose(ESP_EFUSE_KEY_PURPOSE_HMAC_UP, &block)) {
         return HMAC_KEY0 + (block - EFUSE_BLK_KEY0);
     }
+#endif
     return -1;
 }
 
@@ -173,6 +179,7 @@ static esp_err_t derive(const char *pin, const params_t *p, uint8_t key[AES_KEY_
             ESP_LOGE(TAG, "the entries need the eFuse key, but the chip has none");
             return ESP_ERR_NOT_FOUND;
         }
+#if SOC_HMAC_SUPPORTED
         err = esp_hmac_calculate(id, pin, pass_len, secret);
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "hmac: %s", esp_err_to_name(err));
@@ -180,6 +187,7 @@ static esp_err_t derive(const char *pin, const params_t *p, uint8_t key[AES_KEY_
         }
         pass = secret;
         pass_len = sizeof(secret);
+#endif
     }
     err = kdf_pbkdf2_sha512(pass, pass_len, p->salt, SALT_LEN, p->iterations, hash);
     memcpy(key, hash, AES_KEY_LEN);

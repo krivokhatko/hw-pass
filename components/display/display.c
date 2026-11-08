@@ -1,12 +1,14 @@
-/* ST7789P3 LCD (135x240) used in landscape as 240x135. */
+/* ST7789 LCD (135x240) used in landscape as 240x135. StickS3: ST7789P3,
+ * the backlight by PWM. StickC Plus: ST7789V2, the backlight on a
+ * regulator of the AXP192. */
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+#include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
-#include "driver/ledc.h"
 #include "driver/spi_master.h"
 #include "esp_check.h"
 #include "esp_heap_caps.h"
@@ -14,14 +16,27 @@
 #include "esp_lcd_panel_io.h"
 #include "esp_log.h"
 #include "display.h"
+#if CONFIG_HWPASS_AXP192
+#include "axp192.h"
+#else
+#include "driver/ledc.h"
+#endif
 
 #define LCD_HOST        SPI3_HOST
+#if CONFIG_HWPASS_BOARD_STICKCPLUS
+#define LCD_MOSI        15
+#define LCD_SCLK        13
+#define LCD_DC          23
+#define LCD_CS          5
+#define LCD_RST         18
+#else   /* StickS3 */
 #define LCD_MOSI        39
 #define LCD_SCLK        40
 #define LCD_DC          45
 #define LCD_CS          41
 #define LCD_RST         21
 #define LCD_BL          38
+#endif
 #define LCD_HZ          40000000
 #define LCD_READ_HZ     10000000    /* Reads fail at the write clock. */
 #define FRAME_BYTES     (DISPLAY_W * DISPLAY_H * 2)
@@ -131,6 +146,21 @@ static esp_err_t panel_setup(void)
     return esp_lcd_panel_io_rx_param(s_io, CMD_RDDPM, &s_power_mode, 1);
 }
 
+#if CONFIG_HWPASS_AXP192
+
+/* The AXP192 has the backlight off from axp192_init. */
+static esp_err_t backlight_setup(void)
+{
+    return ESP_OK;
+}
+
+static void backlight_set(uint8_t level)
+{
+    axp192_backlight(level);
+}
+
+#else   /* PWM */
+
 static esp_err_t backlight_setup(void)
 {
     ledc_timer_config_t timer = {
@@ -151,6 +181,16 @@ static esp_err_t backlight_setup(void)
     ESP_RETURN_ON_ERROR(ledc_timer_config(&timer), TAG, "bl timer");
     return ledc_channel_config(&channel);
 }
+
+static void backlight_set(uint8_t level)
+{
+    uint32_t duty = level ? BL_MIN + (255 - BL_MIN) * level / 255 : 0;
+
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, duty);
+    ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+}
+
+#endif  /* CONFIG_HWPASS_AXP192 */
 
 esp_err_t display_init(void)
 {
@@ -214,13 +254,10 @@ static void panel_sleep(bool sleep)
 
 void display_backlight(uint8_t level)
 {
-    uint32_t duty = level ? BL_MIN + (255 - BL_MIN) * level / 255 : 0;
-
     if (level) {
         panel_sleep(false);
     }
-    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, duty);
-    ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+    backlight_set(level);
     if (!level) {
         panel_sleep(true);
     }

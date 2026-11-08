@@ -2,7 +2,7 @@
 
 hw-pass is a USB keyboard that types stored passwords. Select an entry with the buttons. The device types the password into the focused window. The device is also a Bluetooth keyboard for a computer without a cable. See "Bluetooth computer".
 
-The firmware runs on three boards. This guide describes the M5Stack StickS3, with a screen and a speaker. The M5Stack Chain Dual Key has two keys and two LEDs instead, and the M5Stack StampS3A has one button and one LED: "Chain Dual Key" and "StampS3A" tell what differs. All commands of the serial port, the Wi-Fi setup mode, the keypad, the Bluetooth computer, and the mouse mover work the same on all boards.
+The firmware runs on four boards. This guide describes the M5Stack StickS3, with a screen and a speaker. The M5Stack StickC Plus has the same screen, a buzzer, and no USB keyboard: it types over Bluetooth only. The M5Stack Chain Dual Key has two keys and two LEDs instead of the screen, and the M5Stack StampS3A has one button and one LED: "StickC Plus", "Chain Dual Key", and "StampS3A" tell what differs. All commands of the serial port, the Wi-Fi setup mode, the keypad, the Bluetooth computer, and the mouse mover work the same on all boards.
 
 ## Buttons
 
@@ -66,6 +66,21 @@ The device makes a short sound after each action, and plays a melody while it ty
 | Two low beeps | Error. The screen shows the cause. A keypad key without an entry also makes this sound. |
 
 To turn the sounds on or off, type `sound` on the serial port. The device keeps the setting. The default is on.
+
+## StickC Plus
+
+The StickC Plus has the screen and the two buttons of the StickS3, a buzzer instead of the speaker, and an older chip, the ESP32. The ESP32 has no USB: the device cannot be a USB keyboard. It types over Bluetooth only: pair a computer first (see "Bluetooth computer"). The USB-C port charges the battery and gives the serial port, through a bridge chip in the device: on Linux it is `/dev/ttyUSB0` (`picocom -b 115200 /dev/ttyUSB0`).
+
+What differs from the StickS3:
+
+- Button A, below the screen, is the front button. Button B, on the side, is the side button. The pushes are the same.
+- The header shows "BLE" always. Red: no computer is paired. Gray: the computer is not connected. Green: the computer gets the keys. "No computer" with "Pair a computer" tells that the device cannot type.
+- The buzzer plays the sounds and the melody of the table in "Sounds" as square waves: the same notes, a harder tone.
+- The power button on the side, under button B: one push turns the device on. Hold it 4 s: the device turns off. The chip has no download mode by this button: flashing needs none (see "First flash of a new device" in [dev-setup.md](dev-setup.md)).
+- The PIN check takes about 2 s: the hash unit of the ESP32 is slower (see "PIN").
+- The chip has no eFuse HMAC key: the key of the entries comes from the PIN alone (see "Hardware key").
+- The device locks when the Bluetooth computer disconnects, after a start, and with `lock`. There is no USB connection that can stop.
+- `info` has no "USB host" line. "Battery" shows "USB power" while the cable is in.
 
 ## Chain Dual Key
 
@@ -150,7 +165,7 @@ The board has no reset button: disconnect the cable and connect it again. The bu
 A PIN protects the entries. Without a PIN, a person with the device can type all passwords, and the entries are plain text in flash. With a PIN:
 
 - The entries in flash are encrypted. The key comes from the PIN. See "Security" for the limits.
-- The device asks for the PIN after a start, and each time the USB connection stops: cable out, computer off, or computer asleep.
+- The device asks for the PIN after a start, and each time the connection to the computer stops: cable out, computer off, or computer asleep; the Bluetooth computer disconnected.
 - Until you enter the PIN, the device types nothing. The command line and the page cannot show or change the entries. The Wi-Fi setup mode and the pairing of a keypad do not start.
 
 The mouse mover, its schedule, and the time sync work also while the device is locked. The keypad keys `*`, `-`, and `+` do not: the keypad gives only the PIN.
@@ -172,7 +187,7 @@ The screen shows a row of items: the digits 0 to 9, `<` (delete the last digit),
 - Keypad: type the digits, then push Enter. Backspace deletes the last digit. While the device is locked, no key goes to the computer.
 - Command line: type `unlock`, then the PIN. The PIN then goes through the USB host (see "Security").
 
-The check takes about 1 s. After 3 wrong PINs in a row, each next try waits two times longer than the last one: 10 s, 20 s, 40 s, and so on, up to 1 h. A restart does not reset the wait. A correct PIN resets the count.
+The check takes about 1 s (StickC Plus: about 2 s). After 3 wrong PINs in a row, each next try waits two times longer than the last one: 10 s, 20 s, 40 s, and so on, up to 1 h. A restart does not reset the wait. A correct PIN resets the count.
 
 `lock` on the command line locks the device at once, for example before you leave the computer with the cable in it.
 
@@ -182,7 +197,7 @@ Nothing can give the entries without the PIN. Type `wipe` on the serial port: it
 
 ### Hardware key
 
-The ESP32-S3 can keep a key in eFuse that software cannot read, only the HMAC hardware can use it. With such a key, the PIN key is made from the PIN and this key together: a copy of the flash is useless without the chip. Without it, a copy of the flash is enough to try all PINs on a fast computer (see "Security").
+The ESP32-S3 can keep a key in eFuse that software cannot read, only the HMAC hardware can use it. With such a key, the PIN key is made from the PIN and this key together: a copy of the flash is useless without the chip. Without it, a copy of the flash is enough to try all PINs on a fast computer (see "Security"). The ESP32 of the StickC Plus has no HMAC unit: this board has no hardware key, and `info` shows "eFuse: no HMAC key".
 
 Burn the key one time. This is permanent, and it uses one of the six key blocks of the chip. In the ESP-IDF environment:
 

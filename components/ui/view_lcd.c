@@ -1,11 +1,13 @@
-/* The view on the LCD of the StickS3. The screen turns with the device:
- * the tilt sensor tells which edge is up. When the device lies flat, the
- * screen keeps its orientation, and the "rotate" command turns it. */
+/* The view on the LCD of the StickS3 and the StickC Plus. The screen turns
+ * with the device: the tilt sensor tells which edge is up. When the device
+ * lies flat, the screen keeps its orientation, and the "rotate" command
+ * turns it. */
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
@@ -158,13 +160,18 @@ static void draw_frame(int sel)
     hid_link_t link = hid_link();
     /* "BLE": the computer gets the keys, or no link is ready and a
      * computer is paired (gray). "USB": the host gets the keys, or no
-     * link is ready and no computer is paired (red). */
+     * link is ready and no computer is paired (red). A board without
+     * USB: "BLE" always; red without a paired computer. */
+#if CONFIG_HWPASS_USB
     bool ble = link == HID_LINK_BLE || (link == HID_LINK_NONE && blehid_state() != BLEHID_NONE);
+#else
+    bool ble = true;
+#endif
 
     display_fill(0, 0, DISPLAY_W, DISPLAY_H, C_BG);
     display_text(4, HEADER_Y, "hw-pass", &font_8x16, C_DIM, C_BG);
     display_text(x, HEADER_Y, ble ? "BLE" : "USB", &font_8x16,
-                 link != HID_LINK_NONE ? C_OK : ble ? C_DIM : C_ERROR, C_BG);
+                 link != HID_LINK_NONE ? C_OK : blehid_state() != BLEHID_NONE ? C_DIM : C_ERROR, C_BG);
     if (kp != KEYPAD_NONE) {
         uint16_t color = kp == KEYPAD_CONNECTED ? C_OK : C_DIM;
 

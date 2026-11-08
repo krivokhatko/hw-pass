@@ -28,7 +28,7 @@ The project is tested with ESP-IDF v5.5.5. Other versions are not tested.
 
 ## Serial port access (Linux and WSL2)
 
-1. Add the user to the `dialout` group. This gives access to `/dev/ttyACM*`:
+1. Add the user to the `dialout` group. This gives access to `/dev/ttyACM*` and `/dev/ttyUSB*`:
    ```
    sudo usermod -aG dialout $USER
    ```
@@ -115,6 +115,30 @@ The StampS3A comes with a factory demo (Arduino, ESP-IDF v4.4.7) on the USB Seri
 
 If the chip does not answer esptool (other firmware without a serial port, or a firmware that does not start), hold the button while you connect the cable: the chip starts in the ROM download mode. After a flash from this state, the chip stays in the download mode: do the watchdog reset of step 5 in "Chain Dual Key", or disconnect the cable and connect it again.
 
+### StickC Plus
+
+The StickC Plus has an ESP32 without USB. A bridge chip on the board connects UART0 of the chip to the USB-C port: an FTDI FT232R or a compatible chip (`0403:6001`, product "M5stack") on the tested unit, a CH9102 (`1a86:55d4`) on other units. Linux names the port `/dev/ttyUSB0`. esptool resets the chip into the download mode through the DTR and RTS lines of the bridge: no button is necessary, with any firmware. The `dfu` command only restarts the device.
+
+1. Connect the device with a USB-C cable. On WSL2, bind and attach the bridge (see below). If the device is off, push the power button.
+2. Save the factory firmware, if you want it back one day (4 MB, about 1 minute at 115200 baud):
+   ```
+   esptool.py -p /dev/ttyUSB0 read_flash 0 0x400000 stickcplus-factory.bin
+   ```
+   M5Burner also has the images of the StickC Plus.
+3. Erase the flash, build with the board file, and flash:
+   ```
+   get_idf
+   idf.py -p /dev/ttyUSB0 erase-flash
+   rm sdkconfig
+   idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;boards/stickcplus.defaults" build
+   idf.py -p /dev/ttyUSB0 flash
+   ```
+   Or write the full image of a release: `hw-pass-<version>-stickcplus.bin` at `0x0`. The board file sets the chip (`CONFIG_IDF_TARGET="esp32"`): without `rm sdkconfig`, a `sdkconfig` of an ESP32-S3 build stays.
+4. The firmware starts and shows the list of entries, which is empty. The header shows "BLE" in red: no computer is paired.
+5. Open the command line: `picocom -b 115200 /dev/ttyUSB0`. The start-up log also comes here, and `idf.py monitor` shows it too.
+
+`tools/flash.sh` finds the bridge and runs `idf.py flash` on its port. The `sdkconfig` keeps the chip and the board until you delete it; for a build next to an ESP32-S3 build, give it its own directory (see "Add a board" in contributing.md).
+
 ## Windows with WSL2
 
 The device connects to Windows through USB. [usbipd-win](https://github.com/dorssel/usbipd-win) forwards the device to WSL2.
@@ -126,7 +150,7 @@ The device connects to Windows through USB. [usbipd-win](https://github.com/dors
    [boot]
    systemd=true
    ```
-2. Load the CDC-ACM driver at boot:
+2. Load the CDC-ACM driver at boot (the bridge chip of the StickC Plus needs `ftdi_sio` or `ch341` instead; the WSL2 kernel has both):
    ```
    echo cdc_acm | sudo tee /etc/modules-load.d/cdc_acm.conf
    ```
@@ -139,6 +163,8 @@ The device has two USB identities (see "USB identities"). Windows sees each iden
 
 1. Start the hw-pass firmware. Run `usbipd list` and find `303a:4005`. Run `usbipd bind --busid <BUSID>`.
 2. Put the device in download mode (`dfu` command, or hold the power button; Chain Dual Key: hold Key1 while you connect the cable; StampS3A: hold the button while you connect the cable). Find `303a:1001` and bind it.
+
+The StickC Plus has one identity, its bridge chip (`0403:6001` or `1a86:55d4`): bind it one time. The firmware and the download mode do not change it. If the bridge stops to answer (Windows shows "Device Descriptor Request Failed", `usbip list -r <host>` shows `0000:0002`), disconnect the cable and connect it again: a reset from software does not help.
 
 Then run:
 
@@ -186,7 +212,7 @@ WSL2 has no Bluetooth of its own. For a test of the Bluetooth computer link from
 
 ## Reset through DTR and RTS
 
-The USB Serial/JTAG controller uses the DTR and RTS lines to reset the chip.
+The USB Serial/JTAG controller of the ESP32-S3, and the serial bridge of the StickC Plus, use the DTR and RTS lines to reset the chip.
 
 - When a program opens the port, Linux sets DTR=1 and RTS=1. This does not reset the chip.
 - DTR=0 with RTS=1 resets the chip.
@@ -201,14 +227,16 @@ The USB Serial/JTAG controller uses the DTR and RTS lines to reset the chip.
 | UIFlow2 | `303a:832b` | StickS3(UiFlow2) |
 | Chain DualKey User Demo (factory firmware of the Chain Dual Key) | `303a:8000` | Chain DualKey |
 | Factory demo of the StampS3A (Arduino) | `303a:1001` | USB JTAG/serial debug unit: the built-in port, as the ROM |
+| StickC Plus, any firmware | `0403:6001` or `1a86:55d4` | The serial bridge chip of the board: FTDI FT232R or a compatible chip ("M5stack"), or CH9102 ("USB Single Serial") |
 
 ## Download mode
 
-Three ways put the chip in the ROM download mode:
+These ways put the chip in the ROM download mode:
 
 | Way | Works with | Note |
 |---|---|---|
-| `dfu` on the hw-pass serial port | hw-pass | `tools/flash.sh` does this. |
+| `dfu` on the hw-pass serial port | hw-pass on an ESP32-S3 board | `tools/flash.sh` does this. On the StickC Plus, `dfu` only restarts the device. |
+| The DTR and RTS lines of the serial bridge | StickC Plus, any firmware | esptool and `idf.py flash` do this. No button. |
 | Hold the power button | StickS3, any firmware, also a device that does not start | The power chip resets the chip into the download mode. |
 | Hold Key1 while you connect the cable | Chain Dual Key, any firmware | Key1 is the boot strap pin (G0). The power switch in the middle position. |
 | Hold the button while you connect the cable | StampS3A, any firmware | The button is the boot strap pin (G0). |

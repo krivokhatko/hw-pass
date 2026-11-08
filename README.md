@@ -97,7 +97,7 @@ Then set a PIN (`pin`), add entries on the web page, pair a keypad, or pair a la
 | Board | File | Status |
 |---|---|---|
 | M5Stack StickS3 | `boards/sticks3.defaults` | The default board. Tested. |
-| M5Stack StickC Plus | `boards/stickcplus.defaults` | ESP32. Tested; the check of the screen orientation is pending. |
+| M5Stack StickC Plus | `boards/stickcplus.defaults` | ESP32. Tested. |
 | M5Stack Chain Dual Key | `boards/dualkey.defaults` | Tested. |
 | M5Stack StampS3A | `boards/stamps3a.defaults` | Tested. |
 

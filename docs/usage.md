@@ -81,6 +81,7 @@ What differs from the StickS3:
 - The chip has no eFuse HMAC key: the key of the entries comes from the PIN alone (see "Hardware key").
 - The device locks when the Bluetooth computer disconnects, after a start, and with `lock`. There is no USB connection that can stop.
 - `info` has no "USB host" line. "Battery" shows "USB power" while the cable is in.
+- The Bluetooth link to the computer wakes the radio about 7 times a second, not once a second as on the StickS3: the ESP32 sends keys only when it wakes. The typing speed is the same, about 25 ms for each key.
 
 ## Chain Dual Key
 

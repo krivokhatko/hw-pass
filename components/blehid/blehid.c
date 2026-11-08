@@ -77,7 +77,17 @@
 #define HOST_VERSION        1
 #define LINK_ITVL_MIN       12      /* 15 ms: connection interval that the device asks for */
 #define LINK_ITVL_MAX       24      /* 30 ms */
+#if CONFIG_IDF_TARGET_ESP32
+/* The ESP32 controller sleeps through the latency also with reports to
+ * send: they go in one burst at the next event that it attends, and the
+ * host has buffers for about 16 reports. With 30, a typed text loses keys
+ * after 16 reports. With 4, the burst comes each 150 ms, and no buffer
+ * runs out: a text types at about 25 ms for each key. The ESP32-S3
+ * controller wakes at the next event when it has a report. */
+#define LINK_LATENCY        4
+#else
 #define LINK_LATENCY        30      /* Events the device can miss: wakes about once a second */
+#endif
 #define LINK_TIMEOUT        600     /* 6 s: more than 2 x (LINK_LATENCY + 1) x LINK_ITVL_MAX */
 
 #define ID(x)               ((void *)(intptr_t)(x))

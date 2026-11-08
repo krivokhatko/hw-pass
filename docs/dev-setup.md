@@ -208,7 +208,7 @@ The device keeps its port, its identity, and the download mode. This also helps 
 
 ### Bluetooth
 
-WSL2 has no Bluetooth of its own. For a test of the Bluetooth computer link from WSL2, attach a USB Bluetooth adapter with usbipd, and run BlueZ in WSL2 (`sudo apt-get install bluez`). The WSL2 kernel has no `uhid`: BlueZ cannot make an input device from the keyboard, but `bluetoothctl` can pair, and a program can read the HID service over GATT. For this, start the daemon as `bluetoothd -n -P hog`: with its own HID profile on, BlueZ hides the HID service from D-Bus. For a test as a keyboard, use a Linux or Windows computer with Bluetooth.
+WSL2 has no Bluetooth of its own. For a test of the Bluetooth computer link from WSL2, attach a USB Bluetooth adapter with usbipd, and run BlueZ in WSL2 (`sudo apt-get install bluez`). The WSL2 kernel has no `uhid`: BlueZ cannot make an input device from the keyboard, but `bluetoothctl` can pair, and a program can read the HID service over GATT. For this, start the daemon as `bluetoothd -n -P hog`: with its own HID profile on, BlueZ hides the HID service from D-Bus. A Python script with `dbus-python` can then register an agent (`org.bluez.Agent1`, capability `KeyboardOnly`) that gives the passkey, pair with `Device1.Pair`, find the Report characteristic (`0x2A4D`) whose Report Reference descriptor (`0x2908`) is `01 01`, and read the key reports with `StartNotify` while `kbtest` runs on the device. `btmon -w` records the HCI traffic with timestamps. For a test as a keyboard, use a Linux or Windows computer with Bluetooth.
 
 ## Reset through DTR and RTS
 

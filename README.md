@@ -205,7 +205,7 @@ Each push to `master` and each pull request builds every board (`.github/workflo
 | `hw-pass-<version>-<board>-app.bin` | The application only. For the update of a device with hw-pass: the settings, the pairings, and the entries stay. | `0x10000` |
 
 ```
-esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash 0x10000 hw-pass-v1.0.0-sticks3-app.bin
+esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash 0x10000 hw-pass-v1.1.0-sticks3-app.bin
 ```
 
 The device must be in the download mode: `dfu` on the serial port, or hold the power button (StickS3), or hold Key1 (Chain Dual Key) or the button (StampS3A) while you connect the cable. Without ESP-IDF, `pip install esptool` gives `esptool.py`. When a release changes the partition table or the bootloader, its notes say that the full image is necessary.
@@ -213,8 +213,8 @@ The device must be in the download mode: `dfu` on the serial port, or hold the p
 To publish a release, tag the commit on `master` and push the tag:
 
 ```
-git tag -a v1.1.0 -m "hw-pass 1.1.0"
-git push origin v1.1.0
+git tag -a v1.2.0 -m "hw-pass 1.2.0"
+git push origin v1.2.0
 ```
 
 ## Configuration

@@ -5,3 +5,5 @@ managed_components/
 # Generated from sdkconfig.defaults
 sdkconfig
 sdkconfig.old
+# Python
+__pycache__/
